@@ -2,11 +2,11 @@
 import os
 import streamlit as st
 
-# ✅ MUST be the first Streamlit command
+# MUST be the first Streamlit command in the file
 st.set_page_config(
     page_title="Chumcred Academy LMS",
     page_icon="🎓",
-    layout="wide",
+    layout="wide"
 )
 
 from services.db import init_db
@@ -15,10 +15,8 @@ from ui.admin import admin_router
 from ui.student import student_router
 
 
-def _find_logo_path() -> str | None:
-    """
-    Tries common logo locations without crashing Streamlit.
-    """
+def _logo_path():
+    # Try common locations safely
     candidates = [
         os.path.join("assets", "logo.png"),
         "logo.png",
@@ -31,33 +29,30 @@ def _find_logo_path() -> str | None:
     return None
 
 
-# Initialize DB (safe migrations included)
+# 1) Ensure DB + migrations + default admin are ready BEFORE login
 init_db()
 
-# Session user persistence
+# Session bootstrap
 if "user" not in st.session_state:
     st.session_state.user = None
 
 # Sidebar branding
 with st.sidebar:
-    logo_path = _find_logo_path()
-    if logo_path:
-        st.image(logo_path, width=180)
+    lp = _logo_path()
+    if lp:
+        st.image(lp, width=170)
     st.markdown("## Chumcred Academy LMS")
 
-# Login / Route
+# 2) Login then route
 if st.session_state.user is None:
     st.title("🔐 Login")
+    st.caption("Use your provided credentials to continue.")
     user = login_user()
     if user:
         st.session_state.user = user
         st.rerun()
-    else:
-        st.info("Please log in to continue.")
 else:
     user = st.session_state.user
-
-    # Route based on role
     if user.get("role") == "admin":
         admin_router(user)
     else:

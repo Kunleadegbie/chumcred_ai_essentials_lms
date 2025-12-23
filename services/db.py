@@ -1,18 +1,19 @@
+
 # services/db.py
 import os
 import sqlite3
 from datetime import datetime
 
-try:
-    import bcrypt
-except Exception:
-    bcrypt = None
+# Optional, but strongly recommended for password hashing
+import bcrypt
 
-
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
-# Railway tip: set LMS_DB_PATH=/app/data/chumcred_lms.db
-DB_PATH = os.environ.get("LMS_DB_PATH") or os.path.join(PROJECT_ROOT, "chumcred_lms.db")
+# -----------------------------------------
+# DB PATH (Railway-friendly)
+# -----------------------------------------
+# Set this in Railway Variables for persistence:
+# LMS_DB_PATH=/app/data/chumcred_lms.db
+DEFAULT_DB = "chumcred_lms.db"
+DB_PATH = os.getenv("LMS_DB_PATH", DEFAULT_DB)
 
 
 def _ensure_parent_dir(path: str) -> None:
@@ -28,9 +29,11 @@ def get_conn() -> sqlite3.Connection:
     return conn
 
 
-def _table_columns(cur: sqlite3.Cursor, table: str) -> list[str]:
+def _get_columns(cur: sqlite3.Cursor, table: str) -> list[str]:
     cur.execute(f"PRAGMA table_info({table})")
-    return [r["name"] if isinstance(r, sqlite3.Row) else r[1] for r in cur.fetchall()]
+    rows = cur.fetchall()
+    # sqlite Row: name is at key "name", fallback index 1
+    return [(r["name"] if isinstance(r, sqlite3.Row) else r[1]) for r in rows]
 
 
 def _add_column_if_missing(cur: sqlite3.Cursor, table: str, col_def: str) -> None:
@@ -38,22 +41,47 @@ def _add_column_if_missing(cur: sqlite3.Cursor, table: str, col_def: str) -> Non
     col_def example: "cohort TEXT DEFAULT 'Cohort 1'"
     """
     col_name = col_def.split()[0].strip()
-    cols = _table_columns(cur, table)
+    cols = _get_columns(cur, table)
     if col_name not in cols:
         cur.execute(f"ALTER TABLE {table} ADD COLUMN {col_def}")
 
 
+def _ensure_default_admin(cur: sqlite3.Cursor) -> None:
+    """
+    Ensures at least one admin exists.
+    Uses env vars if provided; otherwise defaults to admin/admin123.
+    """
+    cur.execute("SELECT COUNT(1) AS c FROM users WHERE role = 'admin'")
+    count = cur.fetchone()["c"]
+    if count and int(count) > 0:
+        return
+
+    admin_username = os.getenv("ADMIN_USERNAME", "admin").strip()
+    admin_password = os.getenv("ADMIN_PASSWORD", "admin123").strip()
+    admin_email = os.getenv("ADMIN_EMAIL", "admin@chumcred.com").strip()
+    admin_cohort = os.getenv("ADMIN_COHORT", "Staff").strip()
+
+    pw_hash = bcrypt.hashpw(admin_password.encode("utf-8"), bcrypt.gensalt())
+    now = datetime.utcnow().isoformat()
+
+    cur.execute(
+        """
+        INSERT OR IGNORE INTO users (username, email, cohort, role, password_hash, active, created_at)
+        VALUES (?, ?, ?, 'admin', ?, 1, ?)
+        """,
+        (admin_username, admin_email, admin_cohort, pw_hash, now),
+    )
+
+
 def init_db() -> None:
     """
-    Creates tables if missing and runs safe migrations for older DBs.
-    This prevents Railway crashes like: sqlite3.OperationalError: no such column: cohort
+    Creates tables + runs safe migrations (so old Railway DBs won't crash).
+    Also ensures a default admin exists.
     """
     conn = get_conn()
     cur = conn.cursor()
 
-    # -----------------------------
-    # USERS (newest schema)
-    # -----------------------------
+    # ---------------- USERS ----------------
     cur.execute(
         """
         CREATE TABLE IF NOT EXISTS users (
@@ -70,49 +98,16 @@ def init_db() -> None:
         """
     )
 
-    # Migrations for older users table
-    # (If you previously had: password TEXT NOT NULL, role TEXT NOT NULL, etc.)
+    # Migrations for older DBs
     _add_column_if_missing(cur, "users", "full_name TEXT")
     _add_column_if_missing(cur, "users", "email TEXT")
     _add_column_if_missing(cur, "users", "cohort TEXT DEFAULT 'Cohort 1'")
+    _add_column_if_missing(cur, "users", "role TEXT NOT NULL DEFAULT 'student'")
     _add_column_if_missing(cur, "users", "password_hash BLOB")
     _add_column_if_missing(cur, "users", "active INTEGER NOT NULL DEFAULT 1")
     _add_column_if_missing(cur, "users", "created_at TEXT")
 
-    # If older DB had plaintext `password` column, try to migrate it into password_hash
-    cols = _table_columns(cur, "users")
-    if "password" in cols and bcrypt is not None:
-        # Hash any users missing password_hash
-        cur.execute("SELECT id, password, password_hash FROM users")
-        rows = cur.fetchall()
-        for r in rows:
-            uid = r["id"]
-            pw = r["password"]
-            ph = r["password_hash"]
-            if pw and (ph is None or ph == b"" or ph == ""):
-                hashed = bcrypt.hashpw(str(pw).encode("utf-8"), bcrypt.gensalt())
-                cur.execute("UPDATE users SET password_hash = ? WHERE id = ?", (hashed, uid))
-
-    # Normalize bcrypt hashes stored as TEXT into bytes (prevents bcrypt.checkpw crash)
-    if bcrypt is not None:
-        cur.execute("SELECT id, password_hash FROM users WHERE password_hash IS NOT NULL")
-        rows = cur.fetchall()
-        for r in rows:
-            uid = r["id"]
-            ph = r["password_hash"]
-            if isinstance(ph, str):
-                cur.execute(
-                    "UPDATE users SET password_hash = ? WHERE id = ?",
-                    (ph.encode("utf-8"), uid),
-                )
-
-    # Ensure created_at exists for existing rows
-    now = datetime.utcnow().isoformat()
-    cur.execute("UPDATE users SET created_at = COALESCE(created_at, ?) ", (now,))
-
-    # -----------------------------
-    # PROGRESS
-    # -----------------------------
+    # ---------------- PROGRESS ----------------
     cur.execute(
         """
         CREATE TABLE IF NOT EXISTS progress (
@@ -129,11 +124,8 @@ def init_db() -> None:
     )
     _add_column_if_missing(cur, "progress", "override_by_admin INTEGER NOT NULL DEFAULT 0")
     _add_column_if_missing(cur, "progress", "updated_at TEXT")
-    cur.execute("UPDATE progress SET updated_at = COALESCE(updated_at, ?) ", (now,))
 
-    # -----------------------------
-    # ASSIGNMENTS
-    # -----------------------------
+    # ---------------- ASSIGNMENTS ----------------
     cur.execute(
         """
         CREATE TABLE IF NOT EXISTS assignments (
@@ -156,9 +148,7 @@ def init_db() -> None:
     _add_column_if_missing(cur, "assignments", "feedback TEXT")
     _add_column_if_missing(cur, "assignments", "reviewed_at TEXT")
 
-    # -----------------------------
-    # CERTIFICATES
-    # -----------------------------
+    # ---------------- CERTIFICATES ----------------
     cur.execute(
         """
         CREATE TABLE IF NOT EXISTS certificates (
@@ -170,6 +160,9 @@ def init_db() -> None:
         )
         """
     )
+
+    # Ensure default admin exists (so you can always log in)
+    _ensure_default_admin(cur)
 
     conn.commit()
     conn.close()
