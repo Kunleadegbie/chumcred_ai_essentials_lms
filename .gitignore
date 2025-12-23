@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Env
+.env
+
+# Local DB / uploads (DO NOT push student data)
+*.db
+*.sqlite
+*.sqlite3
+uploads/
+generated_certificates/
+
+# OS
+.DS_Store
+Thumbs.db
