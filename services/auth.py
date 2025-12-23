@@ -1,175 +1,137 @@
 
+
 # services/auth.py
-from __future__ import annotations
-
 import streamlit as st
-import hashlib
-from typing import Optional, Dict, List
-
+import bcrypt
 from services.db import get_conn
-from services.progress import seed_progress_for_user
 
 
-def hash_password(password: str) -> str:
-    return hashlib.sha256(password.encode("utf-8")).hexdigest()
+def hash_password(password: str) -> bytes:
+    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
 
 
-def verify_password(password: str, stored_hash: str) -> bool:
-    return hash_password(password) == stored_hash
+def _to_bytes(value) -> bytes | None:
+    if value is None:
+        return None
+    if isinstance(value, bytes):
+        return value
+    if isinstance(value, memoryview):
+        return value.tobytes()
+    if isinstance(value, str):
+        return value.encode("utf-8")
+    return None
 
 
-def _users_table_columns() -> List[str]:
-    conn = get_conn()
-    cur = conn.cursor()
-    cur.execute("PRAGMA table_info(users)")
-    cols = [r[1] for r in cur.fetchall()]
-    conn.close()
-    return cols
+def verify_password(password: str, hashed) -> bool:
+    hb = _to_bytes(hashed)
+    if not hb:
+        return False
+    try:
+        return bcrypt.checkpw(password.encode("utf-8"), hb)
+    except Exception:
+        return False
 
 
-def create_user(username: str, password: str, role: str = "student", cohort: str = "Cohort 1") -> int:
-    username = username.strip()
-    cohort = (cohort or "Cohort 1").strip()
-
-    cols = _users_table_columns()
-    use_password_hash = "password_hash" in cols
-
+def create_user(username: str, password: str, role: str = "student", cohort: str = "Cohort 1", email: str | None = None, full_name: str | None = None):
     conn = get_conn()
     cur = conn.cursor()
 
     pw_hash = hash_password(password)
 
-    if use_password_hash:
-        cur.execute(
-            """
-            INSERT INTO users (username, password_hash, role, cohort)
-            VALUES (?, ?, ?, ?)
-            """,
-            (username, pw_hash, role, cohort),
-        )
-    else:
-        # fallback older schema
-        cur.execute(
-            """
-            INSERT INTO users (username, password, role, cohort)
-            VALUES (?, ?, ?, ?)
-            """,
-            (username, pw_hash, role, cohort),
-        )
-
+    cur.execute(
+        """
+        INSERT INTO users (username, full_name, email, cohort, role, password_hash, active, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, 1, datetime('now'))
+        """,
+        (username.strip(), full_name, email, cohort, role, pw_hash),
+    )
     conn.commit()
-    user_id = cur.lastrowid
     conn.close()
 
-    if role == "student":
-        seed_progress_for_user(user_id)
 
-    return user_id
-
-
-def login_user() -> Optional[Dict]:
-    if "user" in st.session_state and st.session_state["user"]:
-        return st.session_state["user"]
-
-    st.subheader("🔐 Login")
-    username = st.text_input("Username")
-    password = st.text_input("Password", type="password")
-
-    if st.button("Login", use_container_width=True):
-        cols = _users_table_columns()
-        has_password_hash = "password_hash" in cols
-
-        conn = get_conn()
-        cur = conn.cursor()
-
-        if has_password_hash:
-            cur.execute(
-                """
-                SELECT id, username, password_hash, role, COALESCE(cohort, 'Cohort 1')
-                FROM users
-                WHERE username = ?
-                """,
-                (username.strip(),),
-            )
-        else:
-            cur.execute(
-                """
-                SELECT id, username, password, role, COALESCE(cohort, 'Cohort 1')
-                FROM users
-                WHERE username = ?
-                """,
-                (username.strip(),),
-            )
-
-        row = cur.fetchone()
-        conn.close()
-
-        if not row:
-            st.error("Invalid username or password.")
-            return None
-
-        user_id, uname, stored_hash, role, cohort = row
-
-        # If old DB stored plaintext in password, this will fail.
-        # If it fails, we prompt admin to recreate user properly.
-        if not verify_password(password, stored_hash):
-            st.error("Invalid username or password.")
-            return None
-
-        user = {"id": user_id, "username": uname, "role": role, "cohort": cohort}
-        st.session_state["user"] = user
-        st.success("Login successful.")
-        st.rerun()
-
-    return None
-
-
-def get_all_students() -> List[Dict]:
+def get_all_students():
     conn = get_conn()
     cur = conn.cursor()
     cur.execute(
         """
-        SELECT id, username, role, COALESCE(cohort, 'Cohort 1')
+        SELECT id, username, cohort, email, full_name, active, created_at
         FROM users
-        WHERE role = 'student'
-        ORDER BY username
+        WHERE role='student'
+        ORDER BY cohort, username
         """
     )
-    rows = cur.fetchall()
+    rows = [dict(r) for r in cur.fetchall()]
     conn.close()
-    return [{"id": r[0], "username": r[1], "role": r[2], "cohort": r[3]} for r in rows]
+    return rows
 
 
-def get_all_cohorts() -> List[str]:
+def get_all_cohorts():
     conn = get_conn()
     cur = conn.cursor()
     cur.execute(
         """
-        SELECT DISTINCT COALESCE(cohort, 'Cohort 1') AS cohort
+        SELECT DISTINCT COALESCE(cohort,'Cohort 1') AS cohort
         FROM users
-        WHERE role = 'student'
+        WHERE role='student'
         ORDER BY cohort
         """
     )
-    rows = cur.fetchall()
+    cohorts = [r["cohort"] for r in cur.fetchall()]
     conn.close()
-    cohorts = [r[0] for r in rows] if rows else []
-    return cohorts if cohorts else ["Cohort 1"]
+    return cohorts
 
 
-def set_student_cohort(username: str, cohort: str) -> bool:
-    cohort = (cohort or "Cohort 1").strip()
+def login_user():
+    """
+    Streamlit login form. Returns user dict if authenticated else None.
+    """
+    with st.form("login_form", clear_on_submit=False):
+        username = st.text_input("Username", placeholder="e.g. admin")
+        password = st.text_input("Password", type="password", placeholder="••••••••")
+        submitted = st.form_submit_button("Login")
+
+    if not submitted:
+        return None
+
+    if not username or not password:
+        st.error("Please enter username and password.")
+        return None
+
     conn = get_conn()
     cur = conn.cursor()
+
+    # Fetch the user
     cur.execute(
         """
-        UPDATE users
-        SET cohort = ?
-        WHERE username = ? AND role = 'student'
+        SELECT id, username, role, cohort, password_hash, active
+        FROM users
+        WHERE username = ?
         """,
-        (cohort, username),
+        (username.strip(),),
     )
-    updated = cur.rowcount > 0
-    conn.commit()
+    row = cur.fetchone()
     conn.close()
-    return updated
+
+    if not row:
+        st.error("Invalid username or password.")
+        return None
+
+    if int(row["active"]) != 1:
+        st.error("Your account is disabled. Please contact admin.")
+        return None
+
+    if not verify_password(password, row["password_hash"]):
+        st.error("Invalid username or password.")
+        return None
+
+    return {
+        "id": row["id"],
+        "username": row["username"],
+        "role": row["role"],
+        "cohort": row["cohort"],
+    }
+
+
+def logout():
+    st.session_state.user = None
+    st.rerun()

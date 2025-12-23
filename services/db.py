@@ -45,28 +45,34 @@ def _add_column_if_missing(cur: sqlite3.Cursor, table: str, col_def: str) -> Non
     if col_name not in cols:
         cur.execute(f"ALTER TABLE {table} ADD COLUMN {col_def}")
 
-
 def _ensure_default_admin(cur: sqlite3.Cursor) -> None:
     """
     Ensures at least one admin exists.
-    Uses env vars if provided; otherwise defaults to admin/admin123.
+    If ADMIN_FORCE_RESET=1, resets admin password to ADMIN_PASSWORD.
     """
-    cur.execute("SELECT COUNT(1) AS c FROM users WHERE role = 'admin'")
-    count = cur.fetchone()["c"]
-    if count and int(count) > 0:
-        return
-
     admin_username = os.getenv("ADMIN_USERNAME", "admin").strip()
     admin_password = os.getenv("ADMIN_PASSWORD", "admin123").strip()
     admin_email = os.getenv("ADMIN_EMAIL", "admin@chumcred.com").strip()
     admin_cohort = os.getenv("ADMIN_COHORT", "Staff").strip()
+    force_reset = os.getenv("ADMIN_FORCE_RESET", "0").strip() == "1"
+
+    cur.execute("SELECT id, password_hash FROM users WHERE username=? AND role='admin'", (admin_username,))
+    existing = cur.fetchone()
 
     pw_hash = bcrypt.hashpw(admin_password.encode("utf-8"), bcrypt.gensalt())
     now = datetime.utcnow().isoformat()
 
+    if existing:
+        if force_reset:
+            cur.execute(
+                "UPDATE users SET password_hash=?, email=?, cohort=?, active=1 WHERE id=?",
+                (pw_hash, admin_email, admin_cohort, existing["id"]),
+            )
+        return
+
     cur.execute(
         """
-        INSERT OR IGNORE INTO users (username, email, cohort, role, password_hash, active, created_at)
+        INSERT INTO users (username, email, cohort, role, password_hash, active, created_at)
         VALUES (?, ?, ?, 'admin', ?, 1, ?)
         """,
         (admin_username, admin_email, admin_cohort, pw_hash, now),
