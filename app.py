@@ -45,12 +45,7 @@ def _env_health_checks():
                 "If you're on Railway, ensure you mounted a Volume to /app/data "
                 "and set LMS_DB_PATH=/app/data/chumcred_lms.db"
             )
-    else:
-        # Only show as an info (not a warning) to avoid confusion locally
-        st.sidebar.info(
-            "Tip (Production): set LMS_DB_PATH to a persistent volume path on Railway "
-            "(e.g., /app/data/chumcred_lms.db)."
-        )
+    
 
 
 # 1) Ensure DB + migrations + default admin are ready BEFORE login
