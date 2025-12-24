@@ -20,8 +20,7 @@ def _logo_path():
     candidates = [
         os.path.join("assets", "logo.png"),
         "logo.png",
-        os.path.join("assets", "logo.jpg"),
-        "logo.jpg",
+        
     ]
     for p in candidates:
         if os.path.exists(p):
