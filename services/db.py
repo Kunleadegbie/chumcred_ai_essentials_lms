@@ -21,12 +21,19 @@ def _ensure_parent_dir(path: str) -> None:
     if parent and not os.path.exists(parent):
         os.makedirs(parent, exist_ok=True)
 
-
 def get_conn() -> sqlite3.Connection:
-    _ensure_parent_dir(DB_PATH)
-    conn = sqlite3.connect(DB_PATH, check_same_thread=False)
+    # 30s timeout helps when a write lock is brief
+    conn = sqlite3.connect(DB_PATH, check_same_thread=False, timeout=30)
     conn.row_factory = sqlite3.Row
+
+    # Make SQLite behave better under Streamlit concurrency
+    conn.execute("PRAGMA journal_mode=WAL;")         # Better concurrency
+    conn.execute("PRAGMA synchronous=NORMAL;")
+    conn.execute("PRAGMA temp_store=MEMORY;")
+    conn.execute("PRAGMA busy_timeout=30000;")       # Wait up to 30s if locked
+
     return conn
+
 
 
 def _get_columns(cur: sqlite3.Cursor, table: str) -> list[str]:
