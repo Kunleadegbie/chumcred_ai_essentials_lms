@@ -1,16 +1,23 @@
 
 
 # services/auth.py
+import sqlite3
+from typing import Optional, Any
+
 import streamlit as st
 import bcrypt
-from services.db import get_conn
+
+from services.db import read_conn, write_txn
 
 
+# -----------------------------
+# Password helpers (bcrypt)
+# -----------------------------
 def hash_password(password: str) -> bytes:
     return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
 
 
-def _to_bytes(value) -> bytes | None:
+def _to_bytes(value: Any) -> Optional[bytes]:
     if value is None:
         return None
     if isinstance(value, bytes):
@@ -18,11 +25,12 @@ def _to_bytes(value) -> bytes | None:
     if isinstance(value, memoryview):
         return value.tobytes()
     if isinstance(value, str):
+        # (defensive) if it ever ends up stored as text
         return value.encode("utf-8")
     return None
 
 
-def verify_password(password: str, hashed) -> bool:
+def verify_password(password: str, hashed: Any) -> bool:
     hb = _to_bytes(hashed)
     if not hb:
         return False
@@ -32,55 +40,96 @@ def verify_password(password: str, hashed) -> bool:
         return False
 
 
-def create_user(username: str, password: str, role: str = "student", cohort: str = "Cohort 1", email: str | None = None, full_name: str | None = None):
-    conn = get_conn()
-    cur = conn.cursor()
+# -----------------------------
+# User CRUD
+# -----------------------------
+def create_user(
+    username: str,
+    password: str,
+    role: str = "student",
+    cohort: str = "Cohort 1",
+    email: str | None = None,
+    full_name: str | None = None,
+) -> int:
+    """
+    Creates a user using write_txn() to prevent Railway/SQLite locking.
+    Returns new user_id.
+    """
+    uname = (username or "").strip()
+    if not uname:
+        raise ValueError("Username is required.")
+    if not password:
+        raise ValueError("Password is required.")
 
     pw_hash = hash_password(password)
 
-    cur.execute(
-        """
-        INSERT INTO users (username, full_name, email, cohort, role, password_hash, active, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, 1, datetime('now'))
-        """,
-        (username.strip(), full_name, email, cohort, role, pw_hash),
-    )
-    conn.commit()
-    conn.close()
+    try:
+        with write_txn() as conn:
+            cur = conn.cursor()
+            cur.execute(
+                """
+                INSERT INTO users (username, full_name, email, cohort, role, password_hash, active, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, 1, datetime('now'))
+                """,
+                (uname, full_name, email, (cohort or "Cohort 1").strip(), (role or "student").strip(), pw_hash),
+            )
+            return int(cur.lastrowid)
+    except sqlite3.IntegrityError as e:
+        # Most common: UNIQUE constraint failed: users.username
+        raise ValueError(f"User already exists or invalid data: {e}") from e
 
 
 def get_all_students():
-    conn = get_conn()
-    cur = conn.cursor()
-    cur.execute(
-        """
-        SELECT id, username, cohort, email, full_name, active, created_at
-        FROM users
-        WHERE role='student'
-        ORDER BY cohort, username
-        """
-    )
-    rows = [dict(r) for r in cur.fetchall()]
-    conn.close()
-    return rows
+    with read_conn() as conn:
+        cur = conn.cursor()
+        cur.execute(
+            """
+            SELECT id, username, cohort, email, full_name, active, created_at
+            FROM users
+            WHERE role='student'
+            ORDER BY cohort, username
+            """
+        )
+        return [dict(r) for r in cur.fetchall()]
 
 
 def get_all_cohorts():
-    conn = get_conn()
-    cur = conn.cursor()
-    cur.execute(
-        """
-        SELECT DISTINCT COALESCE(cohort,'Cohort 1') AS cohort
-        FROM users
-        WHERE role='student'
-        ORDER BY cohort
-        """
-    )
-    cohorts = [r["cohort"] for r in cur.fetchall()]
-    conn.close()
-    return cohorts
+    with read_conn() as conn:
+        cur = conn.cursor()
+        cur.execute(
+            """
+            SELECT DISTINCT COALESCE(cohort,'Cohort 1') AS cohort
+            FROM users
+            WHERE role='student'
+            ORDER BY cohort
+            """
+        )
+        return [r["cohort"] for r in cur.fetchall()]
 
 
+def reset_user_password(username: str, new_password: str) -> None:
+    """
+    Admin utility: resets a user's password.
+    NOTE: you cannot "fetch" existing passwords from hashes; only reset.
+    """
+    uname = (username or "").strip()
+    if not uname:
+        raise ValueError("Username is required.")
+    if not new_password:
+        raise ValueError("New password is required.")
+
+    new_hash = hash_password(new_password)
+
+    with write_txn() as conn:
+        cur = conn.cursor()
+        cur.execute("UPDATE users SET password_hash=? WHERE username=?", (new_hash, uname))
+        if cur.rowcount == 0:
+            raise ValueError("User not found.")
+
+
+# -----------------------------
+# Streamlit login/logout
+# -----------------------------
 def login_user():
     """
     Streamlit login form. Returns user dict if authenticated else None.
@@ -97,20 +146,17 @@ def login_user():
         st.error("Please enter username and password.")
         return None
 
-    conn = get_conn()
-    cur = conn.cursor()
-
-    # Fetch the user
-    cur.execute(
-        """
-        SELECT id, username, role, cohort, password_hash, active
-        FROM users
-        WHERE username = ?
-        """,
-        (username.strip(),),
-    )
-    row = cur.fetchone()
-    conn.close()
+    with read_conn() as conn:
+        cur = conn.cursor()
+        cur.execute(
+            """
+            SELECT id, username, role, COALESCE(cohort,'Cohort 1') AS cohort, password_hash, active
+            FROM users
+            WHERE username = ?
+            """,
+            (username.strip(),),
+        )
+        row = cur.fetchone()
 
     if not row:
         st.error("Invalid username or password.")
