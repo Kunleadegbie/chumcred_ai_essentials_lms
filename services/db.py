@@ -7,17 +7,23 @@ from contextlib import contextmanager
 
 import bcrypt
 
-# Add to requirements.txt on Railway:
-# filelock
+# IMPORTANT for production locking (Railway / Linux)
+# Add to requirements.txt: filelock
 try:
     from filelock import FileLock
 except Exception:
-    FileLock = None
+    FileLock = None  # app still runs, but write locking is weaker
 
 
+# -----------------------------------------
+# DB PATH (Railway-friendly)
+# -----------------------------------------
+# Set this in Railway Variables for persistence:
+# LMS_DB_PATH=/app/data/chumcred_lms.db
 DEFAULT_DB = "chumcred_lms.db"
 DB_PATH = os.getenv("LMS_DB_PATH", DEFAULT_DB)
 
+# Lock file should live beside the DB file (same volume)
 LOCK_PATH = os.getenv("LMS_DB_LOCK_PATH", f"{DB_PATH}.lock")
 _DB_LOCK = FileLock(LOCK_PATH) if FileLock else None
 
@@ -28,36 +34,22 @@ def _ensure_parent_dir(path: str) -> None:
         os.makedirs(parent, exist_ok=True)
 
 
-def _safe_set_pragmas(conn: sqlite3.Connection) -> None:
-    """
-    Pragmas for better concurrency. WAL may fail on some FS; handle safely.
-    """
-    conn.execute("PRAGMA foreign_keys=ON;")
-    conn.execute("PRAGMA busy_timeout=30000;")  # 30s
-
-    # Try WAL; if it fails, don't crash the app.
-    try:
-        conn.execute("PRAGMA journal_mode=WAL;")
-        conn.execute("PRAGMA synchronous=NORMAL;")
-    except Exception:
-        # Fallback for filesystems that don't support WAL well
-        conn.execute("PRAGMA journal_mode=DELETE;")
-        conn.execute("PRAGMA synchronous=FULL;")
-
-    try:
-        conn.execute("PRAGMA temp_store=MEMORY;")
-    except Exception:
-        pass
-
-
 def get_conn() -> sqlite3.Connection:
     """
-    Connection factory with Streamlit-safe SQLite settings.
+    Connection factory with Streamlit-safe SQLite pragmas.
+    WAL + busy_timeout reduces lock errors, plus write_txn serializes writes.
     """
     _ensure_parent_dir(DB_PATH)
+
     conn = sqlite3.connect(DB_PATH, check_same_thread=False, timeout=30)
     conn.row_factory = sqlite3.Row
-    _safe_set_pragmas(conn)
+
+    conn.execute("PRAGMA foreign_keys=ON;")
+    conn.execute("PRAGMA journal_mode=WAL;")
+    conn.execute("PRAGMA synchronous=NORMAL;")
+    conn.execute("PRAGMA temp_store=MEMORY;")
+    conn.execute("PRAGMA busy_timeout=30000;")  # 30s
+
     return conn
 
 
@@ -73,8 +65,8 @@ def read_conn():
 @contextmanager
 def write_txn():
     """
-    Serializes writes to prevent 'database is locked' on Streamlit/Railway.
-    Use this for INSERT/UPDATE/DELETE.
+    Use for ALL writes (INSERT/UPDATE/DELETE).
+    Serializes writes to prevent 'database is locked' in Streamlit.
     """
     if _DB_LOCK:
         with _DB_LOCK:
@@ -89,7 +81,6 @@ def write_txn():
             finally:
                 conn.close()
     else:
-        # Works but less safe. Install filelock in production.
         conn = get_conn()
         try:
             conn.execute("BEGIN IMMEDIATE;")
@@ -104,27 +95,30 @@ def write_txn():
 
 def _get_columns(cur: sqlite3.Cursor, table: str) -> list[str]:
     cur.execute(f"PRAGMA table_info({table})")
-    return [r["name"] for r in cur.fetchall()]
+    rows = cur.fetchall()
+    # sqlite3.Row: name at ["name"], tuple: name at [1]
+    return [(r["name"] if isinstance(r, sqlite3.Row) else r[1]) for r in rows]
 
 
 def _add_column_if_missing(cur: sqlite3.Cursor, table: str, col_def: str) -> None:
     col_name = col_def.split()[0].strip()
-    if col_name not in _get_columns(cur, table):
+    cols = _get_columns(cur, table)
+    if col_name not in cols:
         cur.execute(f"ALTER TABLE {table} ADD COLUMN {col_def}")
 
 
 def _ensure_default_admin(cur: sqlite3.Cursor) -> None:
+    """
+    Ensures at least one admin exists.
+    If ADMIN_FORCE_RESET=1, resets admin password to ADMIN_PASSWORD.
+    """
     admin_username = os.getenv("ADMIN_USERNAME", "admin").strip()
     admin_password = os.getenv("ADMIN_PASSWORD", "admin123").strip()
     admin_email = os.getenv("ADMIN_EMAIL", "admin@chumcred.com").strip()
     admin_cohort = os.getenv("ADMIN_COHORT", "Staff").strip()
     force_reset = os.getenv("ADMIN_FORCE_RESET", "0").strip() == "1"
 
-    cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='users'")
-    if not cur.fetchone():
-        return
-
-    cur.execute("SELECT id FROM users WHERE username=? AND role='admin'", (admin_username,))
+    cur.execute("SELECT id, password_hash FROM users WHERE username=? AND role='admin'", (admin_username,))
     existing = cur.fetchone()
 
     pw_hash = bcrypt.hashpw(admin_password.encode("utf-8"), bcrypt.gensalt())
@@ -149,8 +143,8 @@ def _ensure_default_admin(cur: sqlite3.Cursor) -> None:
 
 def init_db() -> None:
     """
-    Creates tables + safe migrations, plus indexes.
-    Adds Help feature support_tickets table too.
+    Creates tables + runs safe migrations (so old Railway DBs won't crash).
+    Also ensures a default admin exists.
     """
     with write_txn() as conn:
         cur = conn.cursor()
@@ -171,6 +165,7 @@ def init_db() -> None:
             )
             """
         )
+
         _add_column_if_missing(cur, "users", "full_name TEXT")
         _add_column_if_missing(cur, "users", "email TEXT")
         _add_column_if_missing(cur, "users", "cohort TEXT DEFAULT 'Cohort 1'")
@@ -206,6 +201,7 @@ def init_db() -> None:
                 user_id INTEGER NOT NULL,
                 week INTEGER NOT NULL,
                 file_path TEXT,
+                original_filename TEXT,
                 submitted_at TEXT,
                 status TEXT DEFAULT 'submitted',
                 grade INTEGER,
@@ -217,6 +213,7 @@ def init_db() -> None:
             """
         )
         _add_column_if_missing(cur, "assignments", "file_path TEXT")
+        _add_column_if_missing(cur, "assignments", "original_filename TEXT")
         _add_column_if_missing(cur, "assignments", "submitted_at TEXT")
         _add_column_if_missing(cur, "assignments", "status TEXT DEFAULT 'submitted'")
         _add_column_if_missing(cur, "assignments", "grade INTEGER")
@@ -239,6 +236,7 @@ def init_db() -> None:
         _add_column_if_missing(cur, "certificates", "certificate_path TEXT")
 
         # ---------------- SUPPORT TICKETS (HELP FEATURE) ----------------
+        # IMPORTANT: keep schema consistent with Help UI: user_id + username
         cur.execute(
             """
             CREATE TABLE IF NOT EXISTS support_tickets (
@@ -251,6 +249,7 @@ def init_db() -> None:
                 admin_reply TEXT,
                 created_at TEXT,
                 replied_at TEXT,
+                replied_by INTEGER,
                 FOREIGN KEY (user_id) REFERENCES users(id)
             )
             """
@@ -260,6 +259,7 @@ def init_db() -> None:
         _add_column_if_missing(cur, "support_tickets", "admin_reply TEXT")
         _add_column_if_missing(cur, "support_tickets", "created_at TEXT")
         _add_column_if_missing(cur, "support_tickets", "replied_at TEXT")
+        _add_column_if_missing(cur, "support_tickets", "replied_by INTEGER")
 
         # ---------------- INDEXES (performance) ----------------
         cur.execute("CREATE INDEX IF NOT EXISTS idx_progress_user_week ON progress(user_id, week)")
