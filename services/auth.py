@@ -11,7 +11,7 @@ from services.db import read_conn, write_txn
 
 
 # -----------------------------
-# Password helpers (bcrypt)
+# Password helpers (bcrypt) new
 # -----------------------------
 def hash_password(password: str) -> bytes:
     return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
