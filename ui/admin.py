@@ -1,4 +1,5 @@
 
+
 # ui/admin.py
 from __future__ import annotations
 
@@ -32,6 +33,10 @@ def _execute(sql: str, params: tuple = ()) -> int:
 
 
 def _ensure_core_tables():
+    """
+    Kept as-is (from your uploaded script) to avoid breaking existing local DBs.
+    If you're already using services/db.py init_db(), this will simply no-op for existing tables.
+    """
     conn = get_conn()
     cur = conn.cursor()
 
@@ -167,7 +172,72 @@ def _page_dashboard(admin_user: dict):
     cohorts = _get_cohorts()
     st.metric("Total Students", len(students))
     st.metric("Cohorts", len(cohorts))
-    st.info("Policy: Students do NOT access Week 2–6 until Admin unlocks them. Completion does NOT auto-unlock next week.")
+    st.info(
+        "Policy: Students do NOT access Week 2–6 until Admin unlocks them. "
+        "Completion does NOT auto-unlock next week."
+    )
+
+
+def _page_all_students():
+    """
+    NEW: All Students table/page (your requested feature).
+    Uses services.auth.get_all_students() for richer columns and reliable reading on Railway.
+    """
+    st.header("👥 All Students")
+    st.caption("View all created students. Use filters to find cohorts quickly.")
+
+    try:
+        from services.auth import get_all_students, get_all_cohorts  # type: ignore
+    except Exception as e:
+        st.error(f"All Students page unavailable (auth import error): {e}")
+        return
+
+    cohorts = ["All"] + (get_all_cohorts() or ["Cohort 1"])
+    selected_cohort = st.selectbox("Filter by cohort", cohorts, index=0)
+
+    rows = get_all_students()  # list[dict]
+    if selected_cohort != "All":
+        rows = [r for r in rows if (r.get("cohort") or "Cohort 1") == selected_cohort]
+
+    if not rows:
+        st.info("No students found for this filter.")
+        return
+
+    # Make a clean dataframe-like list with predictable column order
+    table = []
+    for r in rows:
+        table.append(
+            {
+                "ID": r.get("id"),
+                "Username": r.get("username"),
+                "Full Name": r.get("full_name") or "",
+                "Email": r.get("email") or "",
+                "Cohort": r.get("cohort") or "Cohort 1",
+                "Active": "Yes" if int(r.get("active") or 0) == 1 else "No",
+                "Created At": r.get("created_at") or "",
+            }
+        )
+
+    st.dataframe(table, use_container_width=True)
+
+    # Optional CSV export
+    try:
+        import csv
+        import io
+
+        buf = io.StringIO()
+        writer = csv.DictWriter(buf, fieldnames=list(table[0].keys()))
+        writer.writeheader()
+        writer.writerows(table)
+        st.download_button(
+            "⬇️ Download CSV",
+            data=buf.getvalue().encode("utf-8"),
+            file_name="all_students.csv",
+            mime="text/csv",
+            use_container_width=True,
+        )
+    except Exception:
+        pass
 
 
 def _page_create_student():
@@ -392,6 +462,7 @@ def admin_router(user: dict):
             "Navigate",
             [
                 "Dashboard",
+                "All Students",          # NEW
                 "Create Student",
                 "Cohort Lock/Unlock",
                 "Individual Week Control",
@@ -409,6 +480,8 @@ def admin_router(user: dict):
 
     if menu == "Dashboard":
         _page_dashboard(user)
+    elif menu == "All Students":
+        _page_all_students()
     elif menu == "Create Student":
         _page_create_student()
     elif menu == "Cohort Lock/Unlock":

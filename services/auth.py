@@ -80,6 +80,9 @@ def create_user(
 
 
 def get_all_students():
+    """
+    Used by Admin -> All Students page.
+    """
     with read_conn() as conn:
         cur = conn.cursor()
         cur.execute(
@@ -94,6 +97,9 @@ def get_all_students():
 
 
 def get_all_cohorts():
+    """
+    Used by Admin filters.
+    """
     with read_conn() as conn:
         cur = conn.cursor()
         cur.execute(
