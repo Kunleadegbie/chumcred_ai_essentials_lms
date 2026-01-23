@@ -74,6 +74,32 @@ def dashboard_view(admin_user):
             st.rerun()
 
 
+# ===============================
+# COURSE CONTENT (ADMIN VIEW)
+# ===============================
+st.divider()
+st.subheader("📘 Course Content Preview (Admin Only)")
+st.caption("Read-only preview of Week 1–6 learning materials.")
+
+CONTENT_DIR = "content"
+TOTAL_WEEKS = 6
+
+selected_week = st.selectbox(
+    "Select a week to preview",
+    options=list(range(1, TOTAL_WEEKS + 1)),
+    format_func=lambda w: f"Week {w}"
+)
+
+md_path = os.path.join(CONTENT_DIR, f"week{selected_week}.md")
+
+if not os.path.exists(md_path):
+    st.error(f"Content file for Week {selected_week} not found.")
+else:
+    with open(md_path, encoding="utf-8") as f:
+        st.markdown(f.read(), unsafe_allow_html=True)
+
+
+
 # ---------------- CREATE STUDENT ----------------
 def create_student_view():
     st.subheader("➕ Create Student")
