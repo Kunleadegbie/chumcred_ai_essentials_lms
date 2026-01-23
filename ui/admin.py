@@ -3,16 +3,29 @@
 # ui/admin.py 
 # ui/admin.py
 
-
 import os
-
 import streamlit as st
-from datetime import datetime
 
-from services.progress import unlock_week_for_user
-from services.assignments import list_all_assignments, review_assignment
-from services.broadcasts import create_broadcast
-from services.auth import create_user, get_all_students
+from services.auth import (
+    create_user,
+    get_all_students,
+)
+from services.progress import (
+    unlock_week_for_user,
+    lock_week_for_user,
+    get_progress,
+)
+from services.assignments import (
+    list_all_assignments,
+    review_assignment,
+)
+from services.broadcasts import (
+    create_broadcast,
+    get_active_broadcasts,
+)
+
+CONTENT_DIR = "content"
+TOTAL_WEEKS = 6
 
 
 def admin_router(user):
@@ -24,13 +37,14 @@ def admin_router(user):
         st.markdown("### 🛠 Admin Menu")
 
         menu = st.radio(
-            "Navigate",
+            "Navigation",
             [
                 "Dashboard",
                 "Create Student",
                 "All Students",
+                "Group Week Unlock",
                 "Assignment Review",
-                "Week Control",
+                "Broadcast Announcement",
                 "Help & Support",
             ],
         )
@@ -39,212 +53,159 @@ def admin_router(user):
             st.session_state.clear()
             st.rerun()
 
-
-
-    menu = st.radio(
-    "Admin Menu",
-    [
-        "Dashboard",
-        "Broadcast",
-        "Group Week Unlock",   # 🔴 THIS MUST RETURN
-        "Individual Week Control",
-        "Assignments Review",
-        "All Students",
-        "Help & Support",
-    ]
-  )
-
-
-    # ---------------- ROUTING ----------------
+    # =========================================================
+    # DASHBOARD
+    # =========================================================
     if menu == "Dashboard":
-        dashboard_view(user)
+        st.subheader("📢 Broadcasts")
 
-    elif menu == "Create Student":
-        create_student_view()
-
-    elif menu == "All Students":
-        all_students_view()
-
-    elif menu == "Assignment Review":
-        assignment_review_view()
-
-    elif menu == "Week Control":
-        week_control_view()
-
-    elif menu == "Help & Support":
-        from ui.help import help_router
-        help_router(user, role="admin")
-
-
-# ---------------- DASHBOARD ----------------
-def dashboard_view(admin_user):
-    st.subheader("📢 Broadcast Announcement")
-
-    with st.form("broadcast_form"):
-        title = st.text_input("Title")
-        message = st.text_area("Message")
-        send = st.form_submit_button("Send Broadcast")
-
-    if send:
-        if not title or not message:
-            st.error("Title and message required.")
+        broadcasts = get_active_broadcasts()
+        if broadcasts:
+            for b in broadcasts:
+                st.markdown(f"**{b['title']}**")
+                st.write(b["message"])
+                st.divider()
         else:
-            create_broadcast(title, message, admin_user["id"])
-            st.success("Broadcast sent to all students.")
-            st.rerun()
+            st.info("No active broadcasts.")
 
-st.divider()
-st.subheader("📘 Course Content Preview (Admin Only)")
+        st.subheader("📘 Course Content (Admin View)")
 
-CONTENT_DIR = "content"
-weeks = [0, 1, 2, 3, 4, 5, 6]
+        for week in range(0, TOTAL_WEEKS + 1):
+            label = "Orientation (Week 0)" if week == 0 else f"Week {week}"
+            md_path = os.path.join(CONTENT_DIR, f"week{week}.md")
 
-selected_week = st.selectbox(
-    "Select week to preview",
-    weeks,
-    format_func=lambda w: "Orientation (Week 0)" if w == 0 else f"Week {w}"
-)
+            with st.expander(label):
+                if os.path.exists(md_path):
+                    with open(md_path, encoding="utf-8") as f:
+                        st.markdown(f.read(), unsafe_allow_html=True)
+                else:
+                    st.warning("Content file not found.")
 
-md_path = os.path.join(CONTENT_DIR, f"week{selected_week}.md")
+    # =========================================================
+    # CREATE STUDENT
+    # =========================================================
+    elif menu == "Create Student":
+        st.subheader("➕ Create Student")
 
-if os.path.exists(md_path):
-    with open(md_path, "r", encoding="utf-8") as f:
-        st.markdown(f.read(), unsafe_allow_html=True)
-else:
-    st.warning("Content file not found.")
-
-
-
-# ===============================
-# COURSE CONTENT (ADMIN VIEW)
-# ===============================
-st.divider()
-st.subheader("📘 Course Content Preview (Admin Only)")
-st.caption("Read-only preview of Week 1–6 learning materials.")
-
-CONTENT_DIR = "content"
-TOTAL_WEEKS = 6
-
-selected_week = st.selectbox(
-    "Select a week to preview",
-    options=list(range(1, TOTAL_WEEKS + 1)),
-    format_func=lambda w: f"Week {w}"
-)
-
-md_path = os.path.join(CONTENT_DIR, f"week{selected_week}.md")
-
-if not os.path.exists(md_path):
-    st.error(f"Content file for Week {selected_week} not found.")
-else:
-    with open(md_path, encoding="utf-8") as f:
-        st.markdown(f.read(), unsafe_allow_html=True)
-
-
-
-# ---------------- CREATE STUDENT ----------------
-def create_student_view():
-    st.subheader("➕ Create Student")
-
-    with st.form("create_student_form"):
         username = st.text_input("Username")
         password = st.text_input("Password", type="password")
         cohort = st.text_input("Cohort", value="Cohort 1")
-        submit = st.form_submit_button("Create Student")
 
-    if submit:
-        if not username or not password:
-            st.error("Username and password required.")
+        if st.button("Create Student"):
+            try:
+                create_user(
+                    username=username,
+                    password=password,
+                    role="student",
+                    cohort=cohort,
+                )
+                st.success("Student created successfully.")
+            except Exception as e:
+                st.error(str(e))
+
+    # =========================================================
+    # ALL STUDENTS
+    # =========================================================
+    elif menu == "All Students":
+        st.subheader("👥 All Students")
+
+        students = get_all_students()
+        if students:
+            st.dataframe(students, use_container_width=True)
+        else:
+            st.info("No students found.")
+
+    # =========================================================
+    # GROUP WEEK UNLOCK  ✅ (FIXED)
+    # =========================================================
+    elif menu == "Group Week Unlock":
+        st.subheader("🔓 Group Week Unlock")
+
+        students = get_all_students()
+        if not students:
+            st.info("No students available.")
             return
-        try:
-            create_user(username=username, password=password, cohort=cohort)
-            st.success("Student created successfully.")
-        except Exception as e:
-            st.error(str(e))
 
+        selected_week = st.selectbox(
+            "Select Week",
+            options=list(range(1, TOTAL_WEEKS + 1)),
+        )
 
-# ---------------- ALL STUDENTS ----------------
-def all_students_view():
-    st.subheader("👥 All Students")
+        action = st.radio(
+            "Action",
+            ["Unlock Week", "Lock Week"],
+        )
 
-    students = get_all_students()
-    if not students:
-        st.info("No students found.")
-        return
+        if st.button("Apply to ALL Students"):
+            for s in students:
+                if action == "Unlock Week":
+                    unlock_week_for_user(s["id"], selected_week)
+                else:
+                    lock_week_for_user(s["id"], selected_week)
 
-    st.dataframe(students, use_container_width=True)
+            st.success(f"Week {selected_week} updated for all students.")
 
+    # =========================================================
+    # ASSIGNMENT REVIEW
+    # =========================================================
+    elif menu == "Assignment Review":
+        st.subheader("📤 Assignment Review")
 
-# ---------------- ASSIGNMENT REVIEW ----------------
-def assignment_review_view():
-    st.subheader("📤 Assignment Review")
+        assignments = list_all_assignments()
+        if not assignments:
+            st.info("No submissions yet.")
+            return
 
-    rows = list_all_assignments()
-    if not rows:
-        st.info("No assignments submitted yet.")
-        return
-
-    for r in rows:
-        st.markdown(
-            f"""
-**Student:** {r['username']}  
-**Week:** {r['week']}  
-**Submitted:** {r['submitted_at']}
+        for a in assignments:
+            st.markdown(
+                f"""
+**Student:** {a['username']}  
+**Week:** {a['week']}  
+**Submitted:** {a['submitted_at']}
 """
-        )
-
-        grade = st.number_input(
-            "Grade",
-            min_value=0,
-            max_value=100,
-            key=f"grade_{r['id']}",
-        )
-
-        feedback = st.text_area(
-            "Feedback",
-            key=f"feedback_{r['id']}",
-        )
-
-        if st.button("Approve & Grade", key=f"approve_{r['id']}"):
-            review_assignment(
-                assignment_id=r["id"],
-                grade=grade,
-                feedback=feedback,
             )
-            st.success("Assignment graded.")
+
+            st.link_button("📄 Download", a["file_path"])
+
+            grade = st.number_input(
+                "Grade",
+                min_value=0,
+                max_value=100,
+                key=f"grade_{a['id']}",
+            )
+            feedback = st.text_area(
+                "Feedback",
+                key=f"fb_{a['id']}",
+            )
+
+            if st.button("Submit Review", key=f"review_{a['id']}"):
+                review_assignment(
+                    assignment_id=a["id"],
+                    grade=grade,
+                    feedback=feedback,
+                )
+                st.success("Assignment reviewed.")
+                st.rerun()
+
+            st.divider()
+
+    # =========================================================
+    # BROADCAST
+    # =========================================================
+    elif menu == "Broadcast Announcement":
+        st.subheader("📢 Create Broadcast")
+
+        title = st.text_input("Title")
+        message = st.text_area("Message")
+
+        if st.button("Send Broadcast"):
+            create_broadcast(title, message, user["id"])
+            st.success("Broadcast sent.")
             st.rerun()
 
-        st.divider()
-
-
-# ---------------- WEEK CONTROL ----------------
-def week_control_view():
-    st.subheader("🔓 Unlock Weeks")
-
-    students = get_all_students()
-    if not students:
-        st.info("No students available.")
-        return
-
-    student = st.selectbox(
-        "Select Student",
-        students,
-        format_func=lambda x: x["username"],
-    )
-
-    week = st.selectbox("Select Week", [1, 2, 3, 4, 5, 6])
-
-    if st.button("Unlock Week"):
-        unlock_week_for_user(student["id"], week)
-        st.success(f"Week {week} unlocked for {student['username']}.")
-
-
-elif menu == "Group Week Unlock":
-    st.subheader("🔓 Group Week Unlock (By Cohort)")
-
-    cohort = st.selectbox("Select Cohort", get_all_cohorts())
-    week = st.selectbox("Week to Unlock", [1, 2, 3, 4, 5, 6])
-
-    if st.button("Unlock Week for Cohort"):
-        unlock_week_for_cohort(cohort, week)
-        st.success(f"Week {week} unlocked for {cohort}")
-
+    # =========================================================
+    # HELP & SUPPORT
+    # =========================================================
+    elif menu == "Help & Support":
+        from ui.help import help_router
+        help_router(user, role="admin")
