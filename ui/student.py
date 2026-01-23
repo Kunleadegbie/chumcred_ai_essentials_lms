@@ -4,6 +4,7 @@
 # ui/student.py
 # --------------------------------------------------
 # ui/student.py
+
 import os
 import streamlit as st
 
@@ -49,9 +50,8 @@ def student_router(user):
         help_router(user, role="student")
         return
 
-    # ---------------- BROADCAST POPUP ----------------
-    broadcasts = get_active_broadcasts()
-    for b in broadcasts:
+    # ---------------- BROADCAST POPUPS ----------------
+    for b in get_active_broadcasts():
         if not has_read(b["id"], user["id"]):
             with st.modal("📢 Announcement"):
                 st.subheader(b["title"])
@@ -63,24 +63,31 @@ def student_router(user):
 
     progress = get_progress(user["id"])
 
-    # ---------------- WEEK 0 (ORIENTATION) ----------------
+    # ===============================
+    # WEEK 0 — ORIENTATION (MANDATORY)
+    # ===============================
     if progress.get(0) != "completed":
-        st.warning("🚨 Orientation must be completed before accessing Week 1.")
+        st.warning("🚨 You must complete Orientation before accessing Week 1.")
 
-        md = os.path.join(CONTENT_DIR, "week0.md")
-        if os.path.exists(md):
-            with open(md, encoding="utf-8") as f:
+        md_path = os.path.join(CONTENT_DIR, "week0.md")
+        if os.path.exists(md_path):
+            with open(md_path, encoding="utf-8") as f:
                 st.markdown(f.read(), unsafe_allow_html=True)
+        else:
+            st.error("Orientation content not found.")
 
         if st.button("✅ Mark Orientation Completed"):
             mark_week_completed(user["id"], 0)
-            st.success("Orientation completed.")
+            st.success("Orientation completed successfully.")
             st.rerun()
 
-        return
+        return  # 🔒 HARD STOP
 
-    # ---------------- WEEK CARDS ----------------
+    # ===============================
+    # WEEK CARDS
+    # ===============================
     st.subheader("📘 Course Progress")
+
     cols = st.columns(3)
     selected_week = None
 
@@ -89,14 +96,15 @@ def student_router(user):
         col = cols[(week - 1) % 3]
 
         with col:
-            label = f"Week {week}"
             if status == "locked":
-                st.button(f"{label} 🔒", disabled=True)
+                st.button(f"Week {week} 🔒", disabled=True)
             else:
-                if st.button(f"{label} ✅" if status == "completed" else label):
+                if st.button(f"Week {week} ✔️" if status == "completed" else f"Week {week}"):
                     selected_week = week
 
-    # ---------------- WEEK CONTENT ----------------
+    # ===============================
+    # WEEK CONTENT + ASSIGNMENT
+    # ===============================
     if selected_week:
         st.header(f"📘 Week {selected_week}")
 
@@ -109,8 +117,6 @@ def student_router(user):
             st.markdown(f.read(), unsafe_allow_html=True)
 
         st.divider()
-
-        # ---------------- ASSIGNMENT ----------------
         st.subheader("📤 Assignment Submission")
 
         if has_assignment(user["id"], selected_week):
@@ -119,10 +125,12 @@ def student_router(user):
             uploaded = st.file_uploader("Upload PDF", type=["pdf"])
             if uploaded and st.button("Submit Assignment"):
                 save_assignment(user["id"], selected_week, uploaded)
-                st.success("Assignment submitted.")
+                st.success("Assignment submitted successfully.")
                 st.rerun()
 
-    # ---------------- GRADES ----------------
+    # ===============================
+    # GRADES
+    # ===============================
     st.divider()
     st.subheader("📊 Your Grades")
 
