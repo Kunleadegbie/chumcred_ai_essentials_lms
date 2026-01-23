@@ -85,3 +85,22 @@ def admin_unlock_week(user_id: int, week: int):
             """,
             (datetime.utcnow().isoformat(), user_id, week),
         )
+
+# ==========================================================
+# BACKWARD-COMPATIBILITY ALIASES (DO NOT REMOVE)
+# Keeps existing admin.py imports working
+# ==========================================================
+
+def unlock_week_for_user(user_id: int, week: int):
+    """
+    Alias for admin unlock.
+    """
+    return admin_unlock_week(user_id, week)
+
+
+def lock_week_for_user(user_id: int, week: int):
+    """
+    Alias for admin lock.
+    """
+    return admin_lock_week(user_id, week)
+
