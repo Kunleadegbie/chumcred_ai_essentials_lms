@@ -62,14 +62,21 @@ def get_progress(user_id: int) -> dict[int, str]:
 # Mark a week as completed
 # --------------------------------------------------
 def mark_week_completed(user_id: int, week: int) -> None:
-    """
-    Marks ONLY the given week as completed.
-    Does NOT auto-unlock next week (admin decides).
-    """
     now = datetime.utcnow().isoformat()
 
     with write_txn() as conn:
         cur = conn.cursor()
+
+        # Ensure row exists (critical for Week 0)
+        cur.execute(
+            """
+            INSERT OR IGNORE INTO progress (user_id, week, status, override_by_admin, updated_at)
+            VALUES (?, ?, 'completed', 0, ?)
+            """,
+            (user_id, week, now),
+        )
+
+        # Then mark completed
         cur.execute(
             """
             UPDATE progress
