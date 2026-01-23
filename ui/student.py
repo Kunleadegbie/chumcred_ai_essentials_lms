@@ -112,10 +112,7 @@ def student_router(user):
         st.info("No graded assignments yet.")
 
     # ---------------- SIDEBAR ----------------
-    with st.sidebar:
-        logo = os.path.join("assets", "logo.png")
-        if os.path.exists(logo):
-            st.image(logo, width=150)
+    
 
         completed = sum(1 for s in progress.values() if s == "completed")
         st.progress(completed / TOTAL_WEEKS)
@@ -123,3 +120,25 @@ def student_router(user):
         if st.button("🚪 Logout"):
             st.session_state.clear()
             st.rerun()
+
+with st.sidebar:
+    st.markdown("### 👩‍🎓 Student Menu")
+
+    if st.button("🏠 Dashboard"):
+        st.session_state.page = "dashboard"
+        st.rerun()
+
+    if st.session_state.get("page") == "help":
+        from ui.help import help_router
+        help_router(user, role="student")
+        return
+
+
+    if st.button("🆘 Help & Support"):
+        st.session_state.page = "help"
+        st.rerun()
+
+    if st.button("🚪 Logout"):
+        st.session_state.clear()
+        st.rerun()
+

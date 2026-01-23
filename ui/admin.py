@@ -145,3 +145,25 @@ def _week_control():
     if st.button("Unlock Week"):
         unlock_week_for_user(student["id"], week)
         st.success(f"Week {week} unlocked for {student['username']}.")
+
+   with st.sidebar:
+    st.markdown("### 🛠 Admin Menu")
+
+    if st.button("🏠 Admin Dashboard"):
+        st.session_state.page = "dashboard"
+        st.rerun()
+
+    if st.session_state.get("page") == "help":
+       from ui.help import help_router
+       help_router(user, role="admin")
+       return
+
+
+    if st.button("🆘 Help & Support"):
+        st.session_state.page = "help"
+        st.rerun()
+
+    if st.button("🚪 Logout"):
+        st.session_state.clear()
+        st.rerun()
+
