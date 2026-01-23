@@ -6,18 +6,17 @@
 # ui/student.py
 import os
 import streamlit as st
-from datetime import datetime
 
 from services.progress import get_progress, mark_week_completed
 from services.assignments import (
     save_assignment,
     has_assignment,
-    list_student_assignments
+    list_student_assignments,
 )
 from services.broadcasts import (
     get_active_broadcasts,
     has_read,
-    mark_as_read
+    mark_as_read,
 )
 
 CONTENT_DIR = "content"
@@ -27,6 +26,28 @@ TOTAL_WEEKS = 6
 def student_router(user):
     st.title("🎓 AI Essentials — Student Dashboard")
     st.caption(f"Welcome, {user['username']}")
+
+    # ---------------- SIDEBAR ----------------
+    with st.sidebar:
+        st.markdown("### 👩‍🎓 Student Menu")
+
+        if st.button("🏠 Dashboard"):
+            st.session_state.page = "dashboard"
+            st.rerun()
+
+        if st.button("🆘 Help & Support"):
+            st.session_state.page = "help"
+            st.rerun()
+
+        if st.button("🚪 Logout"):
+            st.session_state.clear()
+            st.rerun()
+
+    # ---------------- HELP ROUTING ----------------
+    if st.session_state.get("page") == "help":
+        from ui.help import help_router
+        help_router(user, role="student")
+        return
 
     # ---------------- BROADCAST POPUP ----------------
     broadcasts = get_active_broadcasts()
@@ -42,9 +63,9 @@ def student_router(user):
 
     progress = get_progress(user["id"])
 
-    # ---------------- ORIENTATION (WEEK 0) ----------------
+    # ---------------- WEEK 0 (ORIENTATION) ----------------
     if progress.get(0) != "completed":
-        st.warning("🚨 Orientation must be completed before accessing the course.")
+        st.warning("🚨 Orientation must be completed before accessing Week 1.")
 
         md = os.path.join(CONTENT_DIR, "week0.md")
         if os.path.exists(md):
@@ -78,8 +99,8 @@ def student_router(user):
     # ---------------- WEEK CONTENT ----------------
     if selected_week:
         st.header(f"📘 Week {selected_week}")
-        md = os.path.join(CONTENT_DIR, f"week{selected_week}.md")
 
+        md = os.path.join(CONTENT_DIR, f"week{selected_week}.md")
         if not os.path.exists(md):
             st.error("Week content not found.")
             return
@@ -101,44 +122,12 @@ def student_router(user):
                 st.success("Assignment submitted.")
                 st.rerun()
 
-    # ---------------- GRADES / TRANSCRIPT ----------------
+    # ---------------- GRADES ----------------
     st.divider()
     st.subheader("📊 Your Grades")
 
     rows = list_student_assignments(user["id"])
     if rows:
-        st.dataframe(rows)
+        st.dataframe(rows, use_container_width=True)
     else:
         st.info("No graded assignments yet.")
-
-    # ---------------- SIDEBAR ----------------
-    
-
-        completed = sum(1 for s in progress.values() if s == "completed")
-        st.progress(completed / TOTAL_WEEKS)
-
-        if st.button("🚪 Logout"):
-            st.session_state.clear()
-            st.rerun()
-
-with st.sidebar:
-    st.markdown("### 👩‍🎓 Student Menu")
-
-    if st.button("🏠 Dashboard"):
-        st.session_state.page = "dashboard"
-        st.rerun()
-
-    if st.session_state.get("page") == "help":
-        from ui.help import help_router
-        help_router(user, role="student")
-        return
-
-
-    if st.button("🆘 Help & Support"):
-        st.session_state.page = "help"
-        st.rerun()
-
-    if st.button("🚪 Logout"):
-        st.session_state.clear()
-        st.rerun()
-

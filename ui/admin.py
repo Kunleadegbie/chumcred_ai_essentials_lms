@@ -1,12 +1,10 @@
 
 
 # ui/admin.py 
-# new additions
 # ui/admin.py
 import streamlit as st
 from datetime import datetime
 
-from services.db import read_conn, write_txn
 from services.progress import unlock_week_for_user
 from services.assignments import list_all_assignments, review_assignment
 from services.broadcasts import create_broadcast
@@ -17,35 +15,50 @@ def admin_router(user):
     st.title("🛠 Admin Dashboard")
     st.caption(f"Welcome, {user['username']}")
 
-    menu = st.sidebar.radio(
-        "Admin Menu",
-        [
-            "Dashboard",
-            "Create Student",
-            "All Students",
-            "Assignment Review",
-            "Week Control",
-        ]
-    )
+    # ---------------- SIDEBAR ----------------
+    with st.sidebar:
+        st.markdown("### 🛠 Admin Menu")
 
+        menu = st.radio(
+            "Navigate",
+            [
+                "Dashboard",
+                "Create Student",
+                "All Students",
+                "Assignment Review",
+                "Week Control",
+                "Help & Support",
+            ],
+        )
+
+        if st.button("🚪 Logout"):
+            st.session_state.clear()
+            st.rerun()
+
+    # ---------------- ROUTING ----------------
     if menu == "Dashboard":
-        _dashboard(user)
+        dashboard_view(user)
 
     elif menu == "Create Student":
-        _create_student()
+        create_student_view()
 
     elif menu == "All Students":
-        _all_students()
+        all_students_view()
 
     elif menu == "Assignment Review":
-        _assignment_review()
+        assignment_review_view()
 
     elif menu == "Week Control":
-        _week_control()
+        week_control_view()
+
+    elif menu == "Help & Support":
+        from ui.help import help_router
+        help_router(user, role="admin")
 
 
-def _dashboard(admin_user):
-    st.subheader("📢 Send Broadcast Message")
+# ---------------- DASHBOARD ----------------
+def dashboard_view(admin_user):
+    st.subheader("📢 Broadcast Announcement")
 
     with st.form("broadcast_form"):
         title = st.text_input("Title")
@@ -57,14 +70,15 @@ def _dashboard(admin_user):
             st.error("Title and message required.")
         else:
             create_broadcast(title, message, admin_user["id"])
-            st.success("Broadcast sent.")
+            st.success("Broadcast sent to all students.")
             st.rerun()
 
 
-def _create_student():
+# ---------------- CREATE STUDENT ----------------
+def create_student_view():
     st.subheader("➕ Create Student")
 
-    with st.form("create_student"):
+    with st.form("create_student_form"):
         username = st.text_input("Username")
         password = st.text_input("Password", type="password")
         cohort = st.text_input("Cohort", value="Cohort 1")
@@ -76,23 +90,25 @@ def _create_student():
             return
         try:
             create_user(username=username, password=password, cohort=cohort)
-            st.success("Student created.")
+            st.success("Student created successfully.")
         except Exception as e:
             st.error(str(e))
 
 
-def _all_students():
+# ---------------- ALL STUDENTS ----------------
+def all_students_view():
     st.subheader("👥 All Students")
-    students = get_all_students()
 
+    students = get_all_students()
     if not students:
         st.info("No students found.")
         return
 
-    st.dataframe(students)
+    st.dataframe(students, use_container_width=True)
 
 
-def _assignment_review():
+# ---------------- ASSIGNMENT REVIEW ----------------
+def assignment_review_view():
     st.subheader("📤 Assignment Review")
 
     rows = list_all_assignments()
@@ -101,29 +117,31 @@ def _assignment_review():
         return
 
     for r in rows:
-        st.markdown(f"""
+        st.markdown(
+            f"""
 **Student:** {r['username']}  
 **Week:** {r['week']}  
 **Submitted:** {r['submitted_at']}
-""")
+"""
+        )
 
         grade = st.number_input(
-            f"Grade (Week {r['week']} — {r['username']})",
+            "Grade",
             min_value=0,
             max_value=100,
-            key=f"grade_{r['id']}"
+            key=f"grade_{r['id']}",
         )
 
         feedback = st.text_area(
             "Feedback",
-            key=f"feedback_{r['id']}"
+            key=f"feedback_{r['id']}",
         )
 
         if st.button("Approve & Grade", key=f"approve_{r['id']}"):
             review_assignment(
                 assignment_id=r["id"],
                 grade=grade,
-                feedback=feedback
+                feedback=feedback,
             )
             st.success("Assignment graded.")
             st.rerun()
@@ -131,39 +149,23 @@ def _assignment_review():
         st.divider()
 
 
-def _week_control():
-    st.subheader("🔓 Unlock Weeks for Students")
+# ---------------- WEEK CONTROL ----------------
+def week_control_view():
+    st.subheader("🔓 Unlock Weeks")
 
     students = get_all_students()
     if not students:
         st.info("No students available.")
         return
 
-    student = st.selectbox("Select Student", students, format_func=lambda x: x["username"])
+    student = st.selectbox(
+        "Select Student",
+        students,
+        format_func=lambda x: x["username"],
+    )
+
     week = st.selectbox("Select Week", [1, 2, 3, 4, 5, 6])
 
     if st.button("Unlock Week"):
         unlock_week_for_user(student["id"], week)
         st.success(f"Week {week} unlocked for {student['username']}.")
-
-   with st.sidebar:
-    st.markdown("### 🛠 Admin Menu")
-
-    if st.button("🏠 Admin Dashboard"):
-        st.session_state.page = "dashboard"
-        st.rerun()
-
-    if st.session_state.get("page") == "help":
-       from ui.help import help_router
-       help_router(user, role="admin")
-       return
-
-
-    if st.button("🆘 Help & Support"):
-        st.session_state.page = "help"
-        st.rerun()
-
-    if st.button("🚪 Logout"):
-        st.session_state.clear()
-        st.rerun()
-
