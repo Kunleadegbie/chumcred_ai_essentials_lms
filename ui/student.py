@@ -8,16 +8,14 @@
 import os
 import streamlit as st
 
-from services.progress import get_progress, mark_week_completed
+from services.progress import (
+    get_progress,
+    mark_week_completed,
+)
+
 from services.assignments import (
     save_assignment,
     has_assignment,
-    list_student_assignments,
-)
-from services.broadcasts import (
-    get_active_broadcasts,
-    has_read,
-    mark_as_read,
 )
 
 CONTENT_DIR = "content"
@@ -28,124 +26,94 @@ def student_router(user):
     st.title("🎓 AI Essentials — Student Dashboard")
     st.caption(f"Welcome, {user['username']}")
 
-    # ---------------- SIDEBAR ----------------
-    with st.sidebar:
-        st.markdown("### 👩‍🎓 Student Menu")
-
-        if st.button("🏠 Dashboard"):
-            st.session_state.page = "dashboard"
-            st.rerun()
-
-        if st.button("🆘 Help & Support"):
-            st.session_state.page = "help"
-            st.rerun()
-
-        if st.button("🚪 Logout"):
-            st.session_state.clear()
-            st.rerun()
-
-    # ---------------- HELP ROUTING ----------------
-    if st.session_state.get("page") == "help":
-        from ui.help import help_router
-        help_router(user, role="student")
-        return
-
-    # ---------------- BROADCAST POPUPS ----------------
-    for b in get_active_broadcasts():
-        if not has_read(b["id"], user["id"]):
-            with st.modal("📢 Announcement"):
-                st.subheader(b["title"])
-                st.write(b["message"])
-                if st.button("Got it"):
-                    mark_as_read(b["id"], user["id"])
-                    st.rerun()
-            st.stop()
-
     progress = get_progress(user["id"])
+    selected_week = None
 
-    # ===============================
-    # WEEK 0 — ORIENTATION (MANDATORY)
-    # ===============================
-    if progress.get(0) != "completed":
-        st.warning("🚨 You must complete Orientation before accessing Week 1.")
-
-        md_path = os.path.join(CONTENT_DIR, "week0.md")
-        if os.path.exists(md_path):
-            with open(md_path, encoding="utf-8") as f:
-                st.markdown(f.read(), unsafe_allow_html=True)
-        else:
-            st.error("Orientation content not found.")
-
-        if st.button("✅ Mark Orientation Completed"):
-            mark_week_completed(user["id"], 0)
-            st.success("Orientation completed successfully.")
-            st.rerun()
-
-        return  # ⛔ HARD STOP
-
-    # ===============================
-    # WEEK CARDS (0–6)
-    # ===============================
+    st.divider()
     st.subheader("📘 Course Progress")
 
     cols = st.columns(3)
-    selected_week = None
 
-    for idx, week in enumerate(range(0, TOTAL_WEEKS + 1)):
-        col = cols[idx % 3]
+    # -----------------------------
+    # WEEK CARDS (INCLUDING WEEK 0)
+    # -----------------------------
+    for week in range(0, TOTAL_WEEKS + 1):
         status = progress.get(week, "locked")
-        label = "Orientation" if week == 0 else f"Week {week}"
+        col = cols[week % 3]
+
+        label = "Orientation (Week 0)" if week == 0 else f"Week {week}"
 
         with col:
-            if status == "locked":
-                st.button(f"{label} 🔒", disabled=True)
-            else:
+            if status in ("unlocked", "completed"):
                 if st.button(
-                    f"{label} ✔️" if status == "completed" else label,
+                    f"{label} {'✔️' if status == 'completed' else '➡️'}",
                     key=f"week_{week}",
                 ):
                     selected_week = week
+            else:
+                st.button(f"{label} 🔒", disabled=True)
 
-    # ===============================
-    # WEEK CONTENT + ASSIGNMENT
-    # ===============================
+    st.divider()
+
+    # -----------------------------
+    # WEEK CONTENT
+    # -----------------------------
     if selected_week is not None:
-        st.header("📘 Orientation" if selected_week == 0 else f"📘 Week {selected_week}")
+        st.header("📖 Orientation" if selected_week == 0 else f"📘 Week {selected_week}")
 
-        md = os.path.join(CONTENT_DIR, f"week{selected_week}.md")
-        if not os.path.exists(md):
-            st.error("Week content not found.")
+        md_path = os.path.join(CONTENT_DIR, f"week{selected_week}.md")
+
+        if not os.path.exists(md_path):
+            st.error("Content not found.")
             return
 
-        with open(md, encoding="utf-8") as f:
+        with open(md_path, encoding="utf-8") as f:
             st.markdown(f.read(), unsafe_allow_html=True)
 
-        # No assignment for Week 0
-        if selected_week != 0:
-            st.divider()
+        st.divider()
+
+        # -----------------------------
+        # WEEK 0 COMPLETION GATE
+        # -----------------------------
+        if selected_week == 0:
+            if progress.get(0) != "completed":
+                if st.button("✅ Mark Orientation Completed"):
+                    mark_week_completed(user["id"], 0)
+                    st.success("Orientation completed. You may proceed once Week 1 is unlocked by admin.")
+                    st.rerun()
+            else:
+                st.success("Orientation already completed.")
+
+        # -----------------------------
+        # ASSIGNMENTS (WEEK 1–6 ONLY)
+        # -----------------------------
+        elif selected_week >= 1:
             st.subheader("📤 Assignment Submission")
 
             if has_assignment(user["id"], selected_week):
                 st.success("Assignment already submitted.")
             else:
                 uploaded = st.file_uploader(
-                    "Upload PDF",
+                    "Upload assignment (PDF only)",
                     type=["pdf"],
-                    key=f"upload_week_{selected_week}",
+                    key=f"upload_{selected_week}",
                 )
+
                 if uploaded and st.button("Submit Assignment"):
                     save_assignment(user["id"], selected_week, uploaded)
-                    st.success("Assignment submitted successfully.")
+                    st.success("Assignment submitted.")
                     st.rerun()
 
-    # ===============================
-    # GRADES
-    # ===============================
-    st.divider()
-    st.subheader("📊 Your Grades")
+    # -----------------------------
+    # SIDEBAR
+    # -----------------------------
+    with st.sidebar:
+        st.markdown("### 👩‍🎓 Student Menu")
+        st.markdown(f"**User:** {user['username']}")
 
-    rows = list_student_assignments(user["id"])
-    if rows:
-        st.dataframe(rows, use_container_width=True)
-    else:
-        st.info("No graded assignments yet.")
+        completed = sum(1 for s in progress.values() if s == "completed")
+        st.progress(completed / (TOTAL_WEEKS + 1))
+
+        if st.button("🚪 Logout"):
+            st.session_state.clear()
+            st.rerun()
