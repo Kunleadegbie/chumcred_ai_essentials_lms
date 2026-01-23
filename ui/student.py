@@ -81,32 +81,36 @@ def student_router(user):
             st.success("Orientation completed successfully.")
             st.rerun()
 
-        return  # 🔒 HARD STOP
+        return  # ⛔ HARD STOP
 
     # ===============================
-    # WEEK CARDS
+    # WEEK CARDS (0–6)
     # ===============================
     st.subheader("📘 Course Progress")
 
     cols = st.columns(3)
     selected_week = None
 
-    for week in range(1, TOTAL_WEEKS + 1):
+    for idx, week in enumerate(range(0, TOTAL_WEEKS + 1)):
+        col = cols[idx % 3]
         status = progress.get(week, "locked")
-        col = cols[(week - 1) % 3]
+        label = "Orientation" if week == 0 else f"Week {week}"
 
         with col:
             if status == "locked":
-                st.button(f"Week {week} 🔒", disabled=True)
+                st.button(f"{label} 🔒", disabled=True)
             else:
-                if st.button(f"Week {week} ✔️" if status == "completed" else f"Week {week}"):
+                if st.button(
+                    f"{label} ✔️" if status == "completed" else label,
+                    key=f"week_{week}",
+                ):
                     selected_week = week
 
     # ===============================
     # WEEK CONTENT + ASSIGNMENT
     # ===============================
-    if selected_week:
-        st.header(f"📘 Week {selected_week}")
+    if selected_week is not None:
+        st.header("📘 Orientation" if selected_week == 0 else f"📘 Week {selected_week}")
 
         md = os.path.join(CONTENT_DIR, f"week{selected_week}.md")
         if not os.path.exists(md):
@@ -116,17 +120,23 @@ def student_router(user):
         with open(md, encoding="utf-8") as f:
             st.markdown(f.read(), unsafe_allow_html=True)
 
-        st.divider()
-        st.subheader("📤 Assignment Submission")
+        # No assignment for Week 0
+        if selected_week != 0:
+            st.divider()
+            st.subheader("📤 Assignment Submission")
 
-        if has_assignment(user["id"], selected_week):
-            st.success("Assignment already submitted.")
-        else:
-            uploaded = st.file_uploader("Upload PDF", type=["pdf"])
-            if uploaded and st.button("Submit Assignment"):
-                save_assignment(user["id"], selected_week, uploaded)
-                st.success("Assignment submitted successfully.")
-                st.rerun()
+            if has_assignment(user["id"], selected_week):
+                st.success("Assignment already submitted.")
+            else:
+                uploaded = st.file_uploader(
+                    "Upload PDF",
+                    type=["pdf"],
+                    key=f"upload_week_{selected_week}",
+                )
+                if uploaded and st.button("Submit Assignment"):
+                    save_assignment(user["id"], selected_week, uploaded)
+                    st.success("Assignment submitted successfully.")
+                    st.rerun()
 
     # ===============================
     # GRADES

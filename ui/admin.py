@@ -5,6 +5,7 @@
 
 
 import os
+
 import streamlit as st
 from datetime import datetime
 
@@ -37,6 +38,22 @@ def admin_router(user):
         if st.button("🚪 Logout"):
             st.session_state.clear()
             st.rerun()
+
+
+
+    menu = st.radio(
+    "Admin Menu",
+    [
+        "Dashboard",
+        "Broadcast",
+        "Group Week Unlock",   # 🔴 THIS MUST RETURN
+        "Individual Week Control",
+        "Assignments Review",
+        "All Students",
+        "Help & Support",
+    ]
+  )
+
 
     # ---------------- ROUTING ----------------
     if menu == "Dashboard":
@@ -75,6 +92,27 @@ def dashboard_view(admin_user):
             create_broadcast(title, message, admin_user["id"])
             st.success("Broadcast sent to all students.")
             st.rerun()
+
+st.divider()
+st.subheader("📘 Course Content Preview (Admin Only)")
+
+CONTENT_DIR = "content"
+weeks = [0, 1, 2, 3, 4, 5, 6]
+
+selected_week = st.selectbox(
+    "Select week to preview",
+    weeks,
+    format_func=lambda w: "Orientation (Week 0)" if w == 0 else f"Week {w}"
+)
+
+md_path = os.path.join(CONTENT_DIR, f"week{selected_week}.md")
+
+if os.path.exists(md_path):
+    with open(md_path, "r", encoding="utf-8") as f:
+        st.markdown(f.read(), unsafe_allow_html=True)
+else:
+    st.warning("Content file not found.")
+
 
 
 # ===============================
@@ -198,3 +236,15 @@ def week_control_view():
     if st.button("Unlock Week"):
         unlock_week_for_user(student["id"], week)
         st.success(f"Week {week} unlocked for {student['username']}.")
+
+
+elif menu == "Group Week Unlock":
+    st.subheader("🔓 Group Week Unlock (By Cohort)")
+
+    cohort = st.selectbox("Select Cohort", get_all_cohorts())
+    week = st.selectbox("Week to Unlock", [1, 2, 3, 4, 5, 6])
+
+    if st.button("Unlock Week for Cohort"):
+        unlock_week_for_cohort(cohort, week)
+        st.success(f"Week {week} unlocked for {cohort}")
+
