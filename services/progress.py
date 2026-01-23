@@ -11,6 +11,12 @@ from services.db import write_txn, read_conn
 
 TOTAL_WEEKS = 6
 
+def unlock_week_for_user(user_id: int, week: int):
+    """
+    Backward-compatible alias for admin week unlock.
+    Keeps existing admin.py imports working without changes.
+    """
+    return admin_unlock_week(user_id, week)
 
 def seed_progress_for_user(user_id: int):
     """
