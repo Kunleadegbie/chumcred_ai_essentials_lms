@@ -4,9 +4,26 @@ import streamlit as st
 from datetime import datetime
 from services.db import read_conn, write_txn
 
+
+
 # --------------------------------------------------
 # DB Helpers
 # --------------------------------------------------
+
+def list_active_broadcasts():
+    from services.db import read_conn
+
+    with read_conn() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT id, subject, message, created_at
+            FROM support_tickets
+            WHERE is_broadcast = 1
+            ORDER BY created_at DESC
+        """)
+        return cur.fetchall()
+
+
 def create_ticket(user, subject, message):
     with write_txn() as conn:
         conn.execute(
@@ -23,6 +40,9 @@ def create_ticket(user, subject, message):
                 datetime.utcnow().isoformat(),
             ),
         )
+
+
+
 
 
 def list_student_tickets(user_id):

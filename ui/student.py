@@ -12,6 +12,8 @@ import streamlit as st
 from services.progress import get_progress, mark_week_completed, is_week_unlocked
 from services.assignments import save_assignment, has_assignment
 from ui.help import help_router  # assumes you already have ui/help.py
+from services.help import list_active_broadcasts
+
 
 CONTENT_DIR = "content"
 TOTAL_WEEKS = 6
@@ -79,6 +81,33 @@ def student_router(user):
     st.caption(f"Welcome, {user.get('username','')}")
 
     st.divider()
+
+    
+
+    # ===============================
+    # 📢 BROADCAST POPUP (ADMIN → ALL STUDENTS)
+    # ===============================
+    broadcasts = list_active_broadcasts()
+
+     if broadcasts:
+     latest = broadcasts[0]  # most recent broadcast
+
+     dismiss_key = f"broadcast_dismissed_{latest['id']}"
+
+     if not st.session_state.get(dismiss_key, False):
+             with st.container():
+             st.warning(f"""
+### 📢 Announcement from Admin
+
+**{latest['subject'] or 'Important Notice'}**
+
+{latest['message']}
+""")
+
+            if st.button("Got it", key=f"dismiss_{latest['id']}"):
+                st.session_state[dismiss_key] = True
+                st.rerun()
+
 
     # ===============================
     # FORCE LANDING ON WEEK 0 UNTIL COMPLETED
