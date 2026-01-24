@@ -1,7 +1,9 @@
 # --------------------------------------------------
 # ui/student.py
 # --------------------------------------------------
+# --------------------------------------------------
 # ui/student.py
+# --------------------------------------------------
 import os
 import streamlit as st
 
@@ -11,30 +13,28 @@ from services.progress import (
     is_orientation_completed,
     mark_orientation_completed,
 )
+
 from services.assignments import (
     save_assignment,
     has_assignment,
     get_week_grade,
     get_grade_summary,
+    get_student_grade_summary,
 )
+
 from services.help import list_active_broadcasts
 
 CONTENT_DIR = "content"
 TOTAL_WEEKS = 6
 
 
-# -------------------------------------------------
-# FORCE WEEK 0 (ORIENTATION) LANDING
-# -------------------------------------------------
-from services.progress import is_orientation_completed, mark_orientation_completed
-
 def student_router(user):
     st.title("🎓 AI Essentials — Student Dashboard")
     st.caption(f"Welcome, {user['username']}")
 
-    # ---------------------------------------------
-    # FORCE WEEK 0 (ORIENTATION) — MANDATORY
-    # ---------------------------------------------
+    # =================================================
+    # WEEK 0 (ORIENTATION) — MANDATORY LANDING
+    # =================================================
     if not is_orientation_completed(user["id"]):
         st.header("🧭 Orientation (Week 0)")
 
@@ -50,89 +50,42 @@ def student_router(user):
             st.success("Orientation completed. Week 1 is now unlocked.")
             st.rerun()
 
-        # ⛔ STOP rendering anything else
+        # ⛔ Stop here until orientation is completed
         return
 
-
-    # -------------------------------------------------
-    # Broadcast (popup style)
-    # -------------------------------------------------
+    # =================================================
+    # BROADCAST POPUP (Dashboard)
+    # =================================================
     broadcasts = list_active_broadcasts(limit=1) or []
     if broadcasts:
         b = broadcasts[0]
-        subject = b["subject"] if "subject" in b.keys() else None
-        message = b["message"] if "message" in b.keys() else ""
-        st.warning(f"📢 **{subject or 'Announcement'}**\n\n{message}")
+        subject = b["subject"] if "subject" in b.keys() else "Announcement"
+        message = b["message"]
+        st.warning(f"📢 **{subject}**\n\n{message}")
 
-    # -------------------------------------------------
-    # Progress
-    # -------------------------------------------------
+    # =================================================
+    # LOAD PROGRESS
+    # =================================================
     progress = get_progress(user["id"])
 
+    # =================================================
+    # DASHBOARD GRADE SUMMARY (Option #2)
+    # =================================================
+    summary = get_student_grade_summary(user["id"])
 
-# -------------------------------------------------
-# DASHBOARD GRADE SUMMARY
-# -------------------------------------------------
-from services.assignments import get_student_grade_summary
-
-summary = get_student_grade_summary(user["id"])
-
-col1, col2, col3 = st.columns(3)
-
-with col1:
-    st.metric("✅ Weeks Passed", summary["passed"])
-
-with col2:
-    st.metric("🏅 Merit", summary["merit"])
-
-with col3:
-    st.metric("🏆 Distinction", summary["distinction"])
-
-
-
-    # -------------------------------------------------
-    # WEEK 0 — ORIENTATION (MANDATORY CLICK-THROUGH)
-    # -------------------------------------------------
-    if not is_orientation_completed(user["id"]):
-        st.header("📘 Week 0 — Orientation")
-
-        md_path = os.path.join(CONTENT_DIR, "week0.md")
-        if os.path.exists(md_path):
-            with open(md_path, "r", encoding="utf-8") as f:
-                st.markdown(f.read(), unsafe_allow_html=True)
-        else:
-            st.info("Orientation content (week0.md) not found in content/ folder.")
-
-        if st.button("✅ Mark Orientation Completed"):
-            mark_orientation_completed(user["id"])
-            st.success("Orientation completed. You may now proceed to Week 1.")
-            st.rerun()
-        return
-
-    # -------------------------------------------------
-    # Dashboard Grade Summary Tiles (Option #2)
-    # -------------------------------------------------
-    summary = get_grade_summary(user["id"])
-    completed_weeks = sum(1 for s in progress.values() if s == "completed")
-
-    c1, c2, c3, c4 = st.columns(4)
+    c1, c2, c3 = st.columns(3)
     with c1:
-        st.metric("Completed Weeks", f"{completed_weeks}/{TOTAL_WEEKS}")
+        st.metric("✅ Weeks Passed", summary["passed"])
     with c2:
-        avg = summary["avg_grade"]
-        st.metric("Average Grade", "-" if avg is None else f"{avg:.1f}%")
+        st.metric("🏅 Merit", summary["merit"])
     with c3:
-        st.metric("Best Badge", summary["best_badge"] or "-")
-    with c4:
-        latest = summary["latest_grade"]
-        latest_badge = summary["latest_badge"]
-        st.metric("Latest Result", "-" if latest is None else f"{latest}% ({latest_badge})")
+        st.metric("🏆 Distinction", summary["distinction"])
 
     st.divider()
 
-    # -------------------------------------------------
-    # Week Cards
-    # -------------------------------------------------
+    # =================================================
+    # COURSE WEEK CARDS
+    # =================================================
     st.subheader("📘 Course Progress")
     cols = st.columns(3)
     selected_week = None
@@ -150,10 +103,9 @@ with col3:
             else:
                 label += " 🔒"
 
-            # show grade badge on card (if available)
-            g, badge = get_week_grade(user["id"], week)
-            if g is not None and badge is not None:
-                st.caption(f"🏅 {g}% — {badge}")
+            grade, badge = get_week_grade(user["id"], week)
+            if grade is not None:
+                st.caption(f"🏅 {grade}% — {badge}")
 
             if status != "locked":
                 if st.button(label, key=f"w_{week}"):
@@ -161,9 +113,9 @@ with col3:
             else:
                 st.button(label, disabled=True)
 
-    # -------------------------------------------------
-    # Week Content + Grade + Assignment
-    # -------------------------------------------------
+    # =================================================
+    # WEEK CONTENT + ASSIGNMENT + GRADE
+    # =================================================
     if selected_week:
         st.divider()
         st.header(f"📘 Week {selected_week}")
@@ -178,14 +130,12 @@ with col3:
 
         st.divider()
 
-        # Grade display (inside week)
         grade, badge = get_week_grade(user["id"], selected_week)
         if grade is not None:
             st.success(f"🏅 **Grade:** {grade}% — **{badge}**")
         else:
-            st.info("No grade yet for this week (admin will grade after review).")
+            st.info("No grade yet for this week (awaiting admin review).")
 
-        # Assignment submission
         st.subheader("📤 Assignment Submission")
 
         if has_assignment(user["id"], selected_week):
@@ -202,9 +152,9 @@ with col3:
                 st.success("Assignment submitted successfully.")
                 st.rerun()
 
-    # -------------------------------------------------
-    # Sidebar
-    # -------------------------------------------------
+    # =================================================
+    # SIDEBAR
+    # =================================================
     with st.sidebar:
         st.markdown("### 👩‍🎓 Student Menu")
         st.markdown(f"**User:** {user['username']}")
