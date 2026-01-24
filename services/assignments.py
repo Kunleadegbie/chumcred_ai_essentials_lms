@@ -243,3 +243,34 @@ def review_assignment(assignment_id: int, grade: int, feedback: str = "", status
             """,
             (grade_int, feedback, status, _utcnow_iso(), int(assignment_id)),
         )
+
+# --------------------------------------------------
+# CERTIFICATE ELIGIBILITY CHECK
+# --------------------------------------------------
+def can_issue_certificate(user_id: int) -> bool:
+    """
+    Certificate can only be issued when:
+    - All weeks (1–6) have assignments
+    - All assignments are graded
+    - No grade is NULL
+    """
+    from services.db import read_conn
+
+    with read_conn() as conn:
+        cur = conn.cursor()
+        cur.execute(
+            """
+            SELECT COUNT(*) AS total,
+                   SUM(CASE WHEN grade IS NOT NULL THEN 1 ELSE 0 END) AS graded
+            FROM assignments
+            WHERE user_id = ?
+            """,
+            (user_id,),
+        )
+        row = cur.fetchone()
+
+    if not row:
+        return False
+
+    return row["total"] == 6 and row["graded"] == 6
+
