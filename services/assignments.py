@@ -141,3 +141,30 @@ def review_assignment(assignment_id: int, grade: int, feedback: str | None = Non
             """,
             (grade, feedback, now, assignment_id),
         )
+
+
+from services.db import read_conn
+
+
+def get_week_grade(user_id: int, week: int):
+    """
+    Returns the grade for a specific user's assignment for a given week.
+    Used by Student Dashboard to display grades.
+    """
+
+    with read_conn() as conn:
+        cur = conn.cursor()
+        cur.execute(
+            """
+            SELECT grade
+            FROM assignments
+            WHERE user_id = ? AND week = ?
+            """,
+            (user_id, week),
+        )
+        row = cur.fetchone()
+
+    if not row:
+        return None
+
+    return row["grade"]
