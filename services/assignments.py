@@ -69,6 +69,35 @@ def get_assignment_for_week(user_id: int, week: int):
         return cur.fetchone()
 
 
+def get_student_grade_summary(user_id: int) -> dict:
+    from services.db import read_conn
+
+    summary = {"passed": 0, "merit": 0, "distinction": 0}
+
+    with read_conn() as conn:
+        cur = conn.cursor()
+        cur.execute(
+            """
+            SELECT grade
+            FROM assignments
+            WHERE user_id = ? AND status = 'approved'
+            """,
+            (user_id,),
+        )
+        rows = cur.fetchall()
+
+    for r in rows:
+        if r["grade"] == "Pass":
+            summary["passed"] += 1
+        elif r["grade"] == "Merit":
+            summary["merit"] += 1
+        elif r["grade"] == "Distinction":
+            summary["distinction"] += 1
+
+    return summary
+
+
+
 def get_week_grade(user_id: int, week: int) -> Tuple[Optional[int], Optional[str]]:
     """
     Returns: (grade_percent, badge_label)

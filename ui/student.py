@@ -23,6 +23,32 @@ CONTENT_DIR = "content"
 TOTAL_WEEKS = 6
 
 
+# -------------------------------------------------
+# FORCE WEEK 0 (ORIENTATION) LANDING
+# -------------------------------------------------
+from services.progress import is_orientation_completed, mark_orientation_completed
+
+st.subheader("🧭 Orientation (Week 0)")
+
+if not is_orientation_completed(user["id"]):
+    md_path = os.path.join(CONTENT_DIR, "week0.md")
+
+    if os.path.exists(md_path):
+        with open(md_path, "r", encoding="utf-8") as f:
+            st.markdown(f.read(), unsafe_allow_html=True)
+
+        if st.button("✅ I have read and understood the Orientation"):
+            mark_orientation_completed(user["id"])
+            st.success("Orientation completed. Week 1 is now unlocked.")
+            st.rerun()
+
+    else:
+        st.warning("Orientation content not found. Please contact admin.")
+
+    # ⛔ STOP HERE — do not render other weeks yet
+    return
+
+
 def student_router(user):
     st.title("🎓 AI Essentials — Student Dashboard")
     st.caption(f"Welcome, {user['username']}")
