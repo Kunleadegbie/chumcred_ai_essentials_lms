@@ -97,3 +97,21 @@ def init_db():
             created_at TEXT
         )
         """)
+
+# ---------------- BROADCASTS ----------------
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS broadcasts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            subject TEXT,
+            message TEXT NOT NULL,
+            active INTEGER DEFAULT 1,
+            created_at TEXT
+       )
+       """)
+
+        # Defensive migration (Railway-safe)
+        cur.execute("PRAGMA table_info(broadcasts)")
+        cols = [row[1] for row in cur.fetchall()]
+        if "subject" not in cols:
+            cur.execute("ALTER TABLE broadcasts ADD COLUMN subject TEXT")
+

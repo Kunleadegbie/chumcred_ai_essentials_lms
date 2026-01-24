@@ -3,6 +3,9 @@
 # services/help.py
 
 # services/help.py
+import os
+st.write("DB PATH IN USE:", os.getenv("LMS_DB_PATH"))
+
 from services.db import read_conn
 
 
