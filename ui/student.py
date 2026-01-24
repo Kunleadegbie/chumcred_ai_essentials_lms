@@ -15,6 +15,7 @@ from services.assignments import (
     save_assignment,
     has_assignment,
     get_week_grade,
+    get_grade_summary,
 )
 from services.help import list_active_broadcasts
 
@@ -32,7 +33,9 @@ def student_router(user):
     broadcasts = list_active_broadcasts(limit=1) or []
     if broadcasts:
         b = broadcasts[0]
-        st.warning(f"📢 **{b['subject'] or 'Announcement'}**\n\n{b['message']}")
+        subject = b["subject"] if "subject" in b.keys() else None
+        message = b["message"] if "message" in b.keys() else ""
+        st.warning(f"📢 **{subject or 'Announcement'}**\n\n{message}")
 
     # -------------------------------------------------
     # Progress
@@ -40,7 +43,7 @@ def student_router(user):
     progress = get_progress(user["id"])
 
     # -------------------------------------------------
-    # WEEK 0 — ORIENTATION (MANDATORY)
+    # WEEK 0 — ORIENTATION (MANDATORY CLICK-THROUGH)
     # -------------------------------------------------
     if not is_orientation_completed(user["id"]):
         st.header("📘 Week 0 — Orientation")
@@ -49,12 +52,35 @@ def student_router(user):
         if os.path.exists(md_path):
             with open(md_path, "r", encoding="utf-8") as f:
                 st.markdown(f.read(), unsafe_allow_html=True)
+        else:
+            st.info("Orientation content (week0.md) not found in content/ folder.")
 
         if st.button("✅ Mark Orientation Completed"):
             mark_orientation_completed(user["id"])
             st.success("Orientation completed. You may now proceed to Week 1.")
             st.rerun()
         return
+
+    # -------------------------------------------------
+    # Dashboard Grade Summary Tiles (Option #2)
+    # -------------------------------------------------
+    summary = get_grade_summary(user["id"])
+    completed_weeks = sum(1 for s in progress.values() if s == "completed")
+
+    c1, c2, c3, c4 = st.columns(4)
+    with c1:
+        st.metric("Completed Weeks", f"{completed_weeks}/{TOTAL_WEEKS}")
+    with c2:
+        avg = summary["avg_grade"]
+        st.metric("Average Grade", "-" if avg is None else f"{avg:.1f}%")
+    with c3:
+        st.metric("Best Badge", summary["best_badge"] or "-")
+    with c4:
+        latest = summary["latest_grade"]
+        latest_badge = summary["latest_badge"]
+        st.metric("Latest Result", "-" if latest is None else f"{latest}% ({latest_badge})")
+
+    st.divider()
 
     # -------------------------------------------------
     # Week Cards
@@ -76,6 +102,11 @@ def student_router(user):
             else:
                 label += " 🔒"
 
+            # show grade badge on card (if available)
+            g, badge = get_week_grade(user["id"], week)
+            if g is not None and badge is not None:
+                st.caption(f"🏅 {g}% — {badge}")
+
             if status != "locked":
                 if st.button(label, key=f"w_{week}"):
                     selected_week = week
@@ -83,7 +114,7 @@ def student_router(user):
                 st.button(label, disabled=True)
 
     # -------------------------------------------------
-    # Week Content
+    # Week Content + Grade + Assignment
     # -------------------------------------------------
     if selected_week:
         st.divider()
@@ -93,21 +124,24 @@ def student_router(user):
         if os.path.exists(md_path):
             with open(md_path, "r", encoding="utf-8") as f:
                 st.markdown(f.read(), unsafe_allow_html=True)
+        else:
+            st.error("Week content not found. Please contact admin.")
+            return
 
-        # -----------------------------
-        # Grade display
-        # -----------------------------
+        st.divider()
+
+        # Grade display (inside week)
         grade, badge = get_week_grade(user["id"], selected_week)
         if grade is not None:
             st.success(f"🏅 **Grade:** {grade}% — **{badge}**")
+        else:
+            st.info("No grade yet for this week (admin will grade after review).")
 
-        # -----------------------------
-        # Assignment
-        # -----------------------------
+        # Assignment submission
         st.subheader("📤 Assignment Submission")
 
         if has_assignment(user["id"], selected_week):
-            st.info("Assignment submitted.")
+            st.info("✅ Assignment submitted.")
         else:
             file = st.file_uploader(
                 "Upload assignment (PDF only)",
