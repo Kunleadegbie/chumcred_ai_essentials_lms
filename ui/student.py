@@ -112,12 +112,12 @@ def student_router(user):
                 f"""
 ### 📢 Announcement from Admin
 
-**{latest.get('subject') or 'Important Notice'}**
+**{latest('subject') or 'Important Notice'}**
 
-{latest.get('message')}
+{latest('message')}
 """
             )
-            if st.button("Got it"):
+            if st.tton("Got it"):
                 st.session_state[dismiss_key] = True
                 st.rerun()
 
