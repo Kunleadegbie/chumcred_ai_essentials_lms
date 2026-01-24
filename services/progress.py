@@ -212,3 +212,66 @@ def unlock_week_for_user(user_id: int, week: int):
 
 def lock_week_for_user(user_id: int, week: int):
     return admin_lock_week(user_id, week)
+
+
+# -------------------------------------------------
+# WEEK 0 (ORIENTATION) HELPERS
+# -------------------------------------------------
+
+def is_orientation_completed(user_id: int) -> bool:
+    """
+    Returns True if Week 0 is completed.
+    Week 0 is stored as week = 0 in progress table.
+    """
+    from services.db import read_conn
+
+    with read_conn() as conn:
+        cur = conn.cursor()
+        cur.execute(
+            """
+            SELECT status
+            FROM progress
+            WHERE user_id = ? AND week = 0
+            """,
+            (user_id,),
+        )
+        row = cur.fetchone()
+        return row is not None and row["status"] == "completed"
+
+
+def mark_orientation_completed(user_id: int) -> None:
+    """
+    Marks Week 0 as completed and unlocks Week 1.
+    """
+    from services.db import write_txn
+    from datetime import datetime
+
+    now = datetime.utcnow().isoformat()
+
+    with write_txn() as conn:
+        cur = conn.cursor()
+
+        # Mark Week 0 completed
+        cur.execute(
+            """
+            INSERT INTO progress (user_id, week, status, updated_at)
+            VALUES (?, 0, 'completed', ?)
+            ON CONFLICT(user_id, week) DO UPDATE SET
+                status = 'completed',
+                updated_at = excluded.updated_at
+            """,
+            (user_id, now),
+        )
+
+        # Unlock Week 1 (but NOT auto-complete it)
+        cur.execute(
+            """
+            INSERT INTO progress (user_id, week, status, updated_at)
+            VALUES (?, 1, 'unlocked', ?)
+            ON CONFLICT(user_id, week) DO UPDATE SET
+                status = 'unlocked',
+                updated_at = excluded.updated_at
+            """,
+            (user_id, now),
+        )
+
