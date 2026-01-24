@@ -18,11 +18,12 @@ from services.assignments import (
     save_assignment,
     has_assignment,
     get_week_grade,
-    get_grade_summary,
     get_student_grade_summary,
+    can_issue_certificate,
 )
 
 from services.help import list_active_broadcasts
+from services.certificates import has_certificate, issue_certificate
 
 CONTENT_DIR = "content"
 TOTAL_WEEKS = 6
@@ -50,7 +51,7 @@ def student_router(user):
             st.success("Orientation completed. Week 1 is now unlocked.")
             st.rerun()
 
-        # ⛔ Stop here until orientation is completed
+        # ⛔ HARD STOP until Week 0 is completed
         return
 
     # =================================================
@@ -64,24 +65,30 @@ def student_router(user):
         st.warning(f"📢 **{subject}**\n\n{message}")
 
     # =================================================
+    # DASHBOARD GRADE TILES
+    # =================================================
+    st.subheader("📊 Your Grades")
+
+    summary = get_student_grade_summary(user["id"])
+
+    cols = st.columns(3)
+    for i, item in enumerate(summary):
+        with cols[i % 3]:
+            if item["status"] == "graded":
+                st.metric(
+                    f"Week {item['week']}",
+                    f"{item['grade']}%",
+                    item["badge"],
+                )
+            else:
+                st.metric(f"Week {item['week']}", "Pending")
+
+    st.divider()
+
+    # =================================================
     # LOAD PROGRESS
     # =================================================
     progress = get_progress(user["id"])
-
-    # =================================================
-    # DASHBOARD GRADE SUMMARY (Option #2)
-    # =================================================
-    summary = get_student_grade_summary(user["id"])
-
-    c1, c2, c3 = st.columns(3)
-    with c1:
-        st.metric("✅ Weeks Passed", summary["passed"])
-    with c2:
-        st.metric("🏅 Merit", summary["merit"])
-    with c3:
-        st.metric("🏆 Distinction", summary["distinction"])
-
-    st.divider()
 
     # =================================================
     # COURSE WEEK CARDS
@@ -151,6 +158,25 @@ def student_router(user):
                 mark_week_completed(user["id"], selected_week)
                 st.success("Assignment submitted successfully.")
                 st.rerun()
+
+    # =================================================
+    # CERTIFICATE (STRICTLY AFTER ALL GRADES APPROVED)
+    # =================================================
+    st.divider()
+    st.subheader("🎖 Certificate")
+
+    if has_certificate(user["id"]):
+        st.success("Certificate issued 🎉")
+    else:
+        if can_issue_certificate(user["id"]):
+            st.info("All grades approved. Certificate ready.")
+            if st.button("Generate Certificate"):
+                issue_certificate(user["id"])
+                st.rerun()
+        else:
+            st.warning(
+                "Complete and pass all graded assignments to unlock certificate."
+            )
 
     # =================================================
     # SIDEBAR
