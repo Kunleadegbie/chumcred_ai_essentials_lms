@@ -85,6 +85,43 @@ def is_week_unlocked(user_id: int, week: int) -> bool:
     prog = get_progress(user_id)
     return prog.get(week, "locked") in ("unlocked", "completed")
 
+from datetime import datetime
+from services.db import write_txn
+
+
+def mark_orientation_completed(user_id: int):
+    """
+    Marks Week 0 as completed and unlocks Week 1.
+    This is REQUIRED before Week 1 becomes accessible.
+    """
+
+    now = datetime.utcnow().isoformat()
+
+    with write_txn() as conn:
+        cur = conn.cursor()
+
+        # 1️⃣ Mark Week 0 completed
+        cur.execute(
+            """
+            UPDATE progress
+            SET status = 'completed', updated_at = ?
+            WHERE user_id = ? AND week = 0
+            """,
+            (now, user_id),
+        )
+
+        # 2️⃣ Unlock Week 1 (ONLY if not admin-locked)
+        cur.execute(
+            """
+            UPDATE progress
+            SET status = 'unlocked', updated_at = ?
+            WHERE user_id = ? AND week = 1
+              AND override_by_admin = 0
+            """,
+            (now, user_id),
+        )
+
+
 
 def admin_unlock_week(user_id: int, week: int) -> None:
     now = datetime.utcnow().isoformat()
