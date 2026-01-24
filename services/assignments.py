@@ -35,7 +35,6 @@ def save_assignment(user_id: int, week: int, uploaded_file):
 
     with write_txn() as conn:
         cur = conn.cursor()
-
         cur.execute(
             """
             INSERT INTO assignments (user_id, week, file_path, submitted_at, status)
@@ -84,35 +83,27 @@ def list_student_assignments(user_id: int) -> List[dict]:
             """,
             (user_id,),
         )
-
         rows = cur.fetchall()
         return [dict(r) for r in rows]
 
 
-# =========================================================
-# STUDENT ASSIGNMENTS
-# =========================================================
-
-def get_assignment_for_week(user_id: int, week: int):
+def get_assignment_for_week(user_id: int, week: int) -> dict | None:
     """
-    Returns a single assignment row for a user & week, or None.
-    Used by student dashboard to show status, grade, feedback.
+    Returns a single assignment row as dict for a user & week.
+    Used by student dashboard.
     """
-    from services.db import read_conn
-
     with read_conn() as conn:
         cur = conn.cursor()
         cur.execute(
             """
             SELECT *
             FROM assignments
-            WHERE user_id = ? AND week = ?
+            WHERE user_id=? AND week=?
             """,
             (user_id, week),
         )
         row = cur.fetchone()
-        return row
-
+        return dict(row) if row else None
 
 
 # =========================================================
@@ -142,7 +133,6 @@ def list_all_assignments() -> List[dict]:
             ORDER BY a.submitted_at DESC
             """
         )
-
         rows = cur.fetchall()
         return [dict(r) for r in rows]
 
@@ -169,28 +159,48 @@ def review_assignment(assignment_id: int, grade: int, feedback: str | None = Non
         )
 
 
-from services.db import read_conn
-
-
-def get_week_grade(user_id: int, week: int):
+def get_week_grade(user_id: int, week: int) -> int | None:
     """
-    Returns the grade for a specific user's assignment for a given week.
-    Used by Student Dashboard to display grades.
+    Returns numeric grade for a specific week.
     """
-
     with read_conn() as conn:
         cur = conn.cursor()
         cur.execute(
             """
             SELECT grade
             FROM assignments
-            WHERE user_id = ? AND week = ?
+            WHERE user_id=? AND week=?
             """,
             (user_id, week),
         )
         row = cur.fetchone()
 
-    if not row:
-        return None
+    return row["grade"] if row and row["grade"] is not None else None
 
-    return row["grade"]
+
+# =========================================================
+# GRADE BADGE (SINGLE SOURCE OF TRUTH)
+# =========================================================
+
+def get_grade_badge(score: int | None):
+    """
+    Convert numeric score into grade badge.
+    Option #2: Pass / Merit / Distinction.
+    """
+
+    if score is None:
+        return {"label": "Pending", "color": "gray", "passed": False}
+
+    try:
+        score = int(score)
+    except (ValueError, TypeError):
+        return {"label": "Invalid", "color": "gray", "passed": False}
+
+    if score >= 70:
+        return {"label": "Distinction", "color": "purple", "passed": True}
+    elif score >= 60:
+        return {"label": "Merit", "color": "blue", "passed": True}
+    elif score >= 50:
+        return {"label": "Pass", "color": "green", "passed": True}
+    else:
+        return {"label": "Fail", "color": "red", "passed": False}
