@@ -28,30 +28,31 @@ TOTAL_WEEKS = 6
 # -------------------------------------------------
 from services.progress import is_orientation_completed, mark_orientation_completed
 
-st.subheader("🧭 Orientation (Week 0)")
+def student_router(user):
+    st.title("🎓 AI Essentials — Student Dashboard")
+    st.caption(f"Welcome, {user['username']}")
 
-if not is_orientation_completed(user["id"]):
-    md_path = os.path.join(CONTENT_DIR, "week0.md")
+    # ---------------------------------------------
+    # FORCE WEEK 0 (ORIENTATION) — MANDATORY
+    # ---------------------------------------------
+    if not is_orientation_completed(user["id"]):
+        st.header("🧭 Orientation (Week 0)")
 
-    if os.path.exists(md_path):
-        with open(md_path, "r", encoding="utf-8") as f:
-            st.markdown(f.read(), unsafe_allow_html=True)
+        md_path = os.path.join(CONTENT_DIR, "week0.md")
+        if os.path.exists(md_path):
+            with open(md_path, "r", encoding="utf-8") as f:
+                st.markdown(f.read(), unsafe_allow_html=True)
+        else:
+            st.warning("Orientation content not found. Please contact admin.")
 
         if st.button("✅ I have read and understood the Orientation"):
             mark_orientation_completed(user["id"])
             st.success("Orientation completed. Week 1 is now unlocked.")
             st.rerun()
 
-    else:
-        st.warning("Orientation content not found. Please contact admin.")
+        # ⛔ STOP rendering anything else
+        return
 
-    # ⛔ STOP HERE — do not render other weeks yet
-    return
-
-
-def student_router(user):
-    st.title("🎓 AI Essentials — Student Dashboard")
-    st.caption(f"Welcome, {user['username']}")
 
     # -------------------------------------------------
     # Broadcast (popup style)
@@ -67,6 +68,27 @@ def student_router(user):
     # Progress
     # -------------------------------------------------
     progress = get_progress(user["id"])
+
+
+# -------------------------------------------------
+# DASHBOARD GRADE SUMMARY
+# -------------------------------------------------
+from services.assignments import get_student_grade_summary
+
+summary = get_student_grade_summary(user["id"])
+
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    st.metric("✅ Weeks Passed", summary["passed"])
+
+with col2:
+    st.metric("🏅 Merit", summary["merit"])
+
+with col3:
+    st.metric("🏆 Distinction", summary["distinction"])
+
+
 
     # -------------------------------------------------
     # WEEK 0 — ORIENTATION (MANDATORY CLICK-THROUGH)
