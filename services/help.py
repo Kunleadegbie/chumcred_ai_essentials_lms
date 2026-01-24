@@ -4,25 +4,21 @@
 from services.db import read_conn
 
 
-def list_active_broadcasts(limit: int = 1):
-    """
-    Returns the most recent active broadcast messages.
-    Used on student dashboard popup.
-    """
+def list_active_broadcasts(limit: int = 5):
     with read_conn() as conn:
         cur = conn.cursor()
-        cur.execute(
-            """
-            SELECT id, subject, message, created_at
+
+        limit = int(limit)  # safety
+
+        cur.execute(f"""
+            SELECT id, message, created_at
             FROM broadcasts
-            WHERE status = 'active'
+            WHERE active = 1
             ORDER BY created_at DESC
-            LIMIT ?
-            """,
-            (limit,),
-        )
-        rows = cur.fetchall()
-        return [dict(r) for r in rows]
+            LIMIT {limit}
+        """)
+
+        return cur.fetchall()
 
 
 def list_all_broadcasts():

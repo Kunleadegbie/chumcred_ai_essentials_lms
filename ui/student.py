@@ -23,18 +23,6 @@ TOTAL_WEEKS = 6
 ORIENTATION_WEEK = 0
 
 
-# -------------------------------------------------
-# Helpers
-# -------------------------------------------------
-def _logo_path():
-    candidates = [
-        os.path.join("assets", "logo.png"),
-        "logo.png",
-    ]
-    for p in candidates:
-        if os.path.exists(p):
-            return p
-    return None
 
 
 def _read_md(path: str) -> str:
