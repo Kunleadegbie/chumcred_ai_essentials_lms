@@ -90,6 +90,32 @@ def list_student_assignments(user_id: int) -> List[dict]:
 
 
 # =========================================================
+# STUDENT ASSIGNMENTS
+# =========================================================
+
+def get_assignment_for_week(user_id: int, week: int):
+    """
+    Returns a single assignment row for a user & week, or None.
+    Used by student dashboard to show status, grade, feedback.
+    """
+    from services.db import read_conn
+
+    with read_conn() as conn:
+        cur = conn.cursor()
+        cur.execute(
+            """
+            SELECT *
+            FROM assignments
+            WHERE user_id = ? AND week = ?
+            """,
+            (user_id, week),
+        )
+        row = cur.fetchone()
+        return row
+
+
+
+# =========================================================
 # ADMIN FUNCTIONS
 # =========================================================
 
