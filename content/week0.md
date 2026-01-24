@@ -1,14 +1,3 @@
-Perfect 👍
-Below is a **FULL, LMS-READY `Week 0 – Orientation` script** you can **copy and paste directly** into:
-
-```
-content/week0.md
-```
-
-This is written in **clear, professional, international LMS tone**, and is designed specifically to support a **mandatory click-through model** before Week 1 unlocks.
-
----
-
 # 🎓 AI ESSENTIALS
 
 ## **WEEK 0 — PROGRAM ORIENTATION (MANDATORY)**
