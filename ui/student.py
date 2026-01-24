@@ -51,7 +51,7 @@ def student_router(user):
             st.success("Orientation completed. Week 1 is now unlocked.")
             st.rerun()
 
-        # ⛔ HARD STOP until Week 0 is completed
+        # HARD STOP until orientation is completed
         return
 
     # =================================================
@@ -65,23 +65,32 @@ def student_router(user):
         st.warning(f"📢 **{subject}**\n\n{message}")
 
     # =================================================
-    # DASHBOARD GRADE TILES
+    # DASHBOARD GRADE TILES (FIXED)
     # =================================================
     st.subheader("📊 Your Grades")
 
-    summary = get_student_grade_summary(user["id"])
-
+    summary = get_student_grade_summary(user["id"]) or []
     cols = st.columns(3)
+
     for i, item in enumerate(summary):
+        # SAFETY: ensure row-like access
+        try:
+            week = item["week"]
+            status = item["status"]
+            grade = item["grade"]
+            badge = item["badge"]
+        except Exception:
+            continue
+
         with cols[i % 3]:
-            if item["status"] == "graded":
+            if status == "graded":
                 st.metric(
-                    f"Week {item['week']}",
-                    f"{item['grade']}%",
-                    item["badge"],
+                    f"Week {week}",
+                    f"{grade}%",
+                    badge,
                 )
             else:
-                st.metric(f"Week {item['week']}", "Pending")
+                st.metric(f"Week {week}", "Pending")
 
     st.divider()
 
