@@ -1,5 +1,3 @@
-
-
 # --------------------------------------------------
 # ui/student.py
 # --------------------------------------------------
@@ -18,6 +16,7 @@ from services.assignments import (
     save_assignment,
     has_assignment,
     list_student_assignments,
+    get_assignment_for_week,
     get_week_grade,
 )
 
@@ -35,6 +34,17 @@ def student_router(user):
         st.markdown("### 👩‍🎓 Student Menu")
         menu = st.radio("Navigate", ["Dashboard", "Help & Support"])
 
+        st.divider()
+        st.markdown("### 📊 My Grades")
+        rows = list_student_assignments(user["id"])
+        if rows:
+            for r in rows:
+                grade = r["grade"] if r["grade"] is not None else "Pending"
+                st.write(f"Week {r['week']} — {grade}")
+        else:
+            st.caption("No graded assignments yet.")
+
+        st.divider()
         if st.button("🚪 Logout"):
             st.session_state.clear()
             st.rerun()
@@ -62,7 +72,7 @@ def student_router(user):
 
     st.divider()
 
-    # ---------------- WEEK SELECT ----------------
+    # ---------------- WEEK SELECTION ----------------
     if "selected_week" not in st.session_state:
         st.session_state.selected_week = ORIENTATION_WEEK
 
@@ -78,7 +88,7 @@ def student_router(user):
 
         with cols[i % 3]:
             if week == 0 or status in ("unlocked", "completed"):
-                if st.button(label):
+                if st.button(label, key=f"week_{week}"):
                     st.session_state.selected_week = week
             else:
                 st.button(f"{label} 🔒", disabled=True)
@@ -88,6 +98,7 @@ def student_router(user):
     wk = st.session_state.selected_week
     st.header("Orientation" if wk == 0 else f"Week {wk}")
 
+    # ---------------- CONTENT ----------------
     path = os.path.join(CONTENT_DIR, "week0.md" if wk == 0 else f"week{wk}.md")
     if not os.path.exists(path):
         st.error("Content not found.")
@@ -101,7 +112,7 @@ def student_router(user):
     # ---------------- ORIENTATION COMPLETION ----------------
     if wk == 0:
         if progress.get(0) == "completed":
-            st.success("Orientation completed.")
+            st.success("✅ Orientation completed.")
         else:
             if st.button("✅ Mark Orientation Completed"):
                 mark_orientation_completed(user["id"])
@@ -111,11 +122,21 @@ def student_router(user):
 
     # ---------------- ASSIGNMENT ----------------
     if progress.get(wk) != "unlocked":
-        st.info("This week is locked by admin.")
+        st.info("🔒 This week is locked by admin.")
         return
 
-    if has_assignment(user["id"], wk):
-        st.success("Assignment already submitted.")
+    assignment = get_assignment_for_week(user["id"], wk)
+
+    if assignment:
+        st.subheader("📤 Assignment Status")
+        if assignment["status"] == "reviewed":
+            st.success("✅ Reviewed")
+            st.markdown(f"**Grade:** {assignment['grade']} / 100")
+            if assignment["feedback"]:
+                st.markdown(f"**Feedback:** {assignment['feedback']}")
+            st.caption(f"Reviewed on: {assignment['reviewed_at']}")
+        else:
+            st.info("⏳ Submitted — awaiting review")
     else:
         file = st.file_uploader("Upload assignment (PDF)", type=["pdf"])
         if file and st.button("Submit Assignment"):
@@ -124,19 +145,7 @@ def student_router(user):
             st.success("Assignment submitted.")
             st.rerun()
 
-    st.divider()
-
-    # ---------------- GRADES ----------------
-    rows = list_student_assignments(user["id"])
-    if rows:
-        st.dataframe([
-            {
-                "Week": r["week"],
-                "Status": r["status"],
-                "Grade": r["grade"]
-            } for r in rows
-        ])
-
+    # ---------------- WEEK GRADE SUMMARY ----------------
     grade = get_week_grade(user["id"], wk)
     if grade is not None:
-        st.success(f"Your grade for Week {wk}: {grade}")
+        st.success(f"🏅 Your grade for Week {wk}: {grade}")
