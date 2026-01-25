@@ -6,6 +6,8 @@ import sqlite3
 from contextlib import contextmanager
 
 DB_PATH = os.getenv("LMS_DB_PATH", "chumcred_lms.db")
+print("USING DB:", DB_PATH)
+
 
 
 def get_conn():
