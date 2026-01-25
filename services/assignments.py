@@ -166,32 +166,75 @@ def get_grade_summary(user_id: int) -> dict:
 # -------------------------------------------------
 # Submission
 # -------------------------------------------------
-def save_assignment(user_id: int, week: int, uploaded_file) -> str:
-    """
-    Saves file and upserts assignment row.
-    Returns saved file_path.
-    """
-    _ensure_upload_dir()
+def save_assignment(user_id, week, file):
 
-    file_path = os.path.join(UPLOAD_DIR, f"{user_id}_week{week}.pdf")
-    with open(file_path, "wb") as f:
-        f.write(uploaded_file.getbuffer())
+    import os
+    import uuid
+    from datetime import datetime
 
-    with write_txn() as conn:
-        cur = conn.cursor()
+    conn = write_txn()
+    cur = conn.cursor()
+
+    # ===============================
+    # Ensure upload directory exists
+    # ===============================
+    UPLOAD_DIR = "uploads/assignments"
+
+    os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+    # ===============================
+    # Generate safe filename
+    # ===============================
+    ext = os.path.splitext(file.name)[1]
+
+    filename = f"{user_id}_week{week}_{uuid.uuid4().hex}{ext}"
+
+    file_path = os.path.join(UPLOAD_DIR, filename)
+
+    # ===============================
+    # Save file to disk
+    # ===============================
+    try:
+        with open(file_path, "wb") as f:
+            f.write(file.getbuffer())
+
+    except Exception as e:
+        raise Exception(f"File save failed: {e}")
+
+    # ===============================
+    # Save to database
+    # ===============================
+    now = datetime.utcnow().isoformat()
+
+    try:
         cur.execute(
             """
-            INSERT INTO assignments (user_id, week, file_path, submitted_at, status)
-            VALUES (?, ?, ?, ?, 'submitted')
-            ON CONFLICT(user_id, week) DO UPDATE SET
-                file_path=excluded.file_path,
-                submitted_at=excluded.submitted_at,
-                status='submitted'
+            INSERT INTO assignments (
+                user_id,
+                week,
+                file_path,
+                status,
+                submitted_at
+            )
+            VALUES (?, ?, ?, ?, ?)
             """,
-            (user_id, week, file_path, _utcnow_iso()),
+            (
+                user_id,
+                week,
+                file_path,
+                "submitted",
+                now,
+            ),
         )
 
-    return file_path
+        conn.commit()
+
+    except Exception as e:
+        conn.rollback()
+        raise Exception(f"DB insert failed: {e}")
+
+    finally:
+        conn.close()
 
 
 # -------------------------------------------------
