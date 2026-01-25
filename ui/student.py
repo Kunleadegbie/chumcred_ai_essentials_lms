@@ -171,48 +171,42 @@ def student_router(user):
         else:
             st.info("No grade yet (awaiting review).")
 
-        st.subheader("📤 Assignment Submission")
 
-
-
-        # ------------------------------
+         # ------------------------------
         # UPLOAD HANDLING (STABLE FORM)
         # ------------------------------
+        st.subheader("📤 Assignment Submission")
 
         if has_assignment(user["id"], selected_week):
-
-            st.info("✅ Assignment submitted.")
-
+            st.success("✅ Assignment already submitted.")
         else:
+            with st.form(f"upload_form_{selected_week}"):
 
-            with st.form(key=f"upload_form_{selected_week}"):
-
-                uploaded_file = st.file_uploader(
-                    "Upload assignment (PDF only)",
+                file = st.file_uploader(
+                    "Upload your assignment (PDF only)",
                     type=["pdf"],
-                )
+                    key=f"file_{selected_week}",
+               )
 
-                submit_btn = st.form_submit_button("📤 Submit Assignment")
+               submit = st.form_submit_button("📨 Submit Assignment")
 
-                if submit_btn:
+               if submit:
 
-                    if not uploaded_file:
-                        st.error("Please upload a PDF file first.")
+                   if file is None:
+                       st.error("Please upload a PDF file before submitting.")
+                   else:
+                       try:
+                          save_assignment(user["id"], selected_week, file)
+                          mark_week_completed(user["id"], selected_week)
 
-                    else:
+                          st.success("🎉 Assignment submitted successfully!")
+                          st.rerun()
 
-                        save_assignment(
-                            user["id"],
-                            selected_week,
-                            uploaded_file,
-                        )
+                      except Exception as e:
+                          st.error(f"Upload failed: {e}")
 
-                        mark_week_completed(user["id"], selected_week)
-
-                        st.success("Assignment submitted successfully.")
-                        st.rerun()
-
-        
+    
+       
     # =================================================
     # CERTIFICATE
     # =================================================
