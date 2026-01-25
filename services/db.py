@@ -8,6 +8,9 @@ from contextlib import contextmanager
 DB_PATH = os.getenv("LMS_DB_PATH", "chumcred_lms.db")
 
 print("USING DATABASE:", DB_PATH)
+import streamlit as st
+st.write("📌 DB IN USE:", DB_PATH)
+
 
 
 def get_conn():
