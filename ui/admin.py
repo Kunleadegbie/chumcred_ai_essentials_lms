@@ -6,14 +6,6 @@
 import os
 import streamlit as st
 
-
-from services.db import DB_PATH
-
-st.info("🔍 DATABASE DEBUG")
-st.write("DB_PATH from code:", DB_PATH)
-st.write("LMS_DB_PATH env:", os.getenv("LMS_DB_PATH"))
-
-
 from services.auth import (
     create_user,
     get_all_students,
