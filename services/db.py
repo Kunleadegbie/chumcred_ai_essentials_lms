@@ -38,6 +38,12 @@ def write_txn():
         conn.close()
 
 
+def _column_exists(cur, table, column):
+    cur.execute(f"PRAGMA table_info({table})")
+    cols = [r[1] for r in cur.fetchall()]
+    return column in cols
+
+
 def init_db():
     with write_txn() as conn:
         cur = conn.cursor()
@@ -52,13 +58,23 @@ def init_db():
         )
         """)
 
-        # ---- FORCE ADD cohort COLUMN (Railway Fix) ----
-        try:
-            cur.execute(
-                "ALTER TABLE users ADD COLUMN cohort TEXT DEFAULT 'Cohort 1'"
-            )
-        except Exception:
-            pass
+        # ---- MIGRATIONS (SAFE) ----
+
+        if not _column_exists(cur, "users", "cohort"):
+            try:
+                cur.execute(
+                    "ALTER TABLE users ADD COLUMN cohort TEXT DEFAULT 'Cohort 1'"
+                )
+            except Exception:
+                pass
+
+        if not _column_exists(cur, "users", "active"):
+            try:
+                cur.execute(
+                    "ALTER TABLE users ADD COLUMN active INTEGER DEFAULT 1"
+                )
+            except Exception:
+                pass
 
 
         # ================= PROGRESS =================
@@ -86,7 +102,7 @@ def init_db():
         """)
 
 
-        # ================= SUPPORT / HELP =================
+        # ================= SUPPORT =================
         cur.execute("""
         CREATE TABLE IF NOT EXISTS support_tickets (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -100,7 +116,7 @@ def init_db():
         """)
 
 
-        # ================= BROADCASTS =================
+        # ================= BROADCAST =================
         cur.execute("""
         CREATE TABLE IF NOT EXISTS broadcasts (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -111,12 +127,7 @@ def init_db():
         )
         """)
 
-
-        # Defensive migration (Railway-safe)
-        cur.execute("PRAGMA table_info(broadcasts)")
-        cols = [row[1] for row in cur.fetchall()]
-
-        if "subject" not in cols:
+        if not _column_exists(cur, "broadcasts", "subject"):
             try:
                 cur.execute(
                     "ALTER TABLE broadcasts ADD COLUMN subject TEXT"
@@ -131,7 +142,6 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id INTEGER NOT NULL,
             issued_at TEXT,
-            certificate_path TEXT,
-            FOREIGN KEY (user_id) REFERENCES users(id)
+            certificate_path TEXT
         )
         """)
