@@ -6,7 +6,8 @@ import sqlite3
 from contextlib import contextmanager
 
 DB_PATH = os.getenv("LMS_DB_PATH", "chumcred_lms.db")
-print("USING DB:", DB_PATH)
+
+print("USING DATABASE:", DB_PATH)
 
 
 def get_conn():
@@ -38,46 +39,60 @@ def write_txn():
         conn.close()
 
 
+# ------------------------------------------------
+# HELPERS
+# ------------------------------------------------
+
 def _column_exists(cur, table, column):
     cur.execute(f"PRAGMA table_info({table})")
-    cols = [r[1] for r in cur.fetchall()]
-    return column in cols
+    return column in [r[1] for r in cur.fetchall()]
 
+
+def _safe_add_column(cur, table, col_def):
+    col = col_def.split()[0]
+
+    if not _column_exists(cur, table, col):
+        try:
+            cur.execute(f"ALTER TABLE {table} ADD COLUMN {col_def}")
+        except Exception:
+            pass
+
+
+# ------------------------------------------------
+# INIT / MIGRATION
+# ------------------------------------------------
 
 def init_db():
+
     with write_txn() as conn:
         cur = conn.cursor()
 
         # ================= USERS =================
+
         cur.execute("""
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE,
+            username TEXT UNIQUE NOT NULL,
+            email TEXT,
             password_hash BLOB,
-            role TEXT DEFAULT 'student'
+            role TEXT DEFAULT 'student',
+            cohort TEXT DEFAULT 'Cohort 1',
+            active INTEGER DEFAULT 1,
+            created_at TEXT
         )
         """)
 
-        # ---- MIGRATIONS (SAFE) ----
-
-        if not _column_exists(cur, "users", "cohort"):
-            try:
-                cur.execute(
-                    "ALTER TABLE users ADD COLUMN cohort TEXT DEFAULT 'Cohort 1'"
-                )
-            except Exception:
-                pass
-
-        if not _column_exists(cur, "users", "active"):
-            try:
-                cur.execute(
-                    "ALTER TABLE users ADD COLUMN active INTEGER DEFAULT 1"
-                )
-            except Exception:
-                pass
+        # Safe migrations
+        _safe_add_column(cur, "users", "email TEXT")
+        _safe_add_column(cur, "users", "password_hash BLOB")
+        _safe_add_column(cur, "users", "role TEXT DEFAULT 'student'")
+        _safe_add_column(cur, "users", "cohort TEXT DEFAULT 'Cohort 1'")
+        _safe_add_column(cur, "users", "active INTEGER DEFAULT 1")
+        _safe_add_column(cur, "users", "created_at TEXT")
 
 
         # ================= PROGRESS =================
+
         cur.execute("""
         CREATE TABLE IF NOT EXISTS progress (
             user_id INTEGER,
@@ -89,6 +104,7 @@ def init_db():
 
 
         # ================= ASSIGNMENTS =================
+
         cur.execute("""
         CREATE TABLE IF NOT EXISTS assignments (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -97,12 +113,18 @@ def init_db():
             file_path TEXT,
             status TEXT DEFAULT 'submitted',
             grade INTEGER,
-            submitted_at TEXT
+            feedback TEXT,
+            submitted_at TEXT,
+            reviewed_at TEXT
         )
         """)
 
+        _safe_add_column(cur, "assignments", "feedback TEXT")
+        _safe_add_column(cur, "assignments", "reviewed_at TEXT")
+
 
         # ================= SUPPORT =================
+
         cur.execute("""
         CREATE TABLE IF NOT EXISTS support_tickets (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -111,12 +133,18 @@ def init_db():
             message TEXT,
             admin_reply TEXT,
             status TEXT DEFAULT 'open',
-            created_at TEXT
+            created_at TEXT,
+            replied_at TEXT
         )
         """)
 
+        _safe_add_column(cur, "support_tickets", "subject TEXT")
+        _safe_add_column(cur, "support_tickets", "admin_reply TEXT")
+        _safe_add_column(cur, "support_tickets", "replied_at TEXT")
+
 
         # ================= BROADCAST =================
+
         cur.execute("""
         CREATE TABLE IF NOT EXISTS broadcasts (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -127,20 +155,16 @@ def init_db():
         )
         """)
 
-        if not _column_exists(cur, "broadcasts", "subject"):
-            try:
-                cur.execute(
-                    "ALTER TABLE broadcasts ADD COLUMN subject TEXT"
-                )
-            except Exception:
-                pass
+        _safe_add_column(cur, "broadcasts", "subject TEXT")
+        _safe_add_column(cur, "broadcasts", "active INTEGER DEFAULT 1")
 
 
         # ================= CERTIFICATES =================
+
         cur.execute("""
         CREATE TABLE IF NOT EXISTS certificates (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
+            user_id INTEGER,
             issued_at TEXT,
             certificate_path TEXT
         )
