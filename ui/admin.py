@@ -158,37 +158,37 @@ def admin_router(user):
     # ASSIGNMENT REVIEW
     # =========================================================
     elif menu == "Assignment Review":
-    st.subheader("📤 Assignment Review")
+        st.subheader("📤 Assignment Review")
 
-    assignments = list_all_assignments()
-    if not assignments:
-        st.info("No submissions yet.")
-        return
+        assignments = list_all_assignments()
+        if not assignments:
+            st.info("No submissions yet.")
+            return
 
-    for a in assignments:
-        st.markdown(
-            f"""
+        for a in assignments:
+            st.markdown(
+                f"""
 **Student:** {a['username']}  
 **Week:** {a['week']}  
 **Submitted:** {a['submitted_at']}
 """
-        )
+           )
 
-        st.link_button("📄 Download", a["file_path"])
+           st.link_button("📄 Download", a["file_path"])
 
-        grade = st.number_input(
-            "Grade (%)",
-            min_value=0,
-            max_value=100,
-            value=a.get("grade") or 0,
-            key=f"grade_{a['id']}",
-        )
+           grade = st.number_input(
+               "Grade (%)",
+               min_value=0,
+               max_value=100,
+               value=a.get("grade") or 0,
+               key=f"grade_{a['id']}",
+          )
 
-        feedback = st.text_area(
-            "Feedback",
-            value=a.get("feedback") or "",
-            key=f"fb_{a['id']}",
-        )
+          feedback = st.text_area(
+              "Feedback",
+              value=a.get("feedback") or "",
+              key=f"fb_{a['id']}",
+         )
 
         if st.button("✅ Submit Review", key=f"review_{a['id']}"):
 
