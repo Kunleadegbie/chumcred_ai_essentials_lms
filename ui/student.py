@@ -173,14 +173,11 @@ def student_router(user):
 
         st.subheader("📤 Assignment Submission")
 
-        # ------------------------------
-        # UPLOAD HANDLING
-        # ------------------------------
 
-        upload_key = f"upload_{selected_week}"
 
-        if upload_key not in st.session_state:
-            st.session_state[upload_key] = None
+        # ------------------------------
+        # UPLOAD HANDLING (STABLE FORM)
+        # ------------------------------
 
         if has_assignment(user["id"], selected_week):
 
@@ -188,39 +185,34 @@ def student_router(user):
 
         else:
 
-            uploaded_file = st.file_uploader(
-                "Upload assignment (PDF only)",
-                type=["pdf"],
-                key=f"file_{selected_week}",
-            )
+            with st.form(key=f"upload_form_{selected_week}"):
 
-            if uploaded_file:
-                st.session_state[upload_key] = uploaded_file
-
-            if st.session_state[upload_key]:
-
-                st.success(
-                    f"Selected: {st.session_state[upload_key].name}"
+                uploaded_file = st.file_uploader(
+                    "Upload assignment (PDF only)",
+                    type=["pdf"],
                 )
 
-                if st.button(
-                    "📤 Submit Assignment",
-                    key=f"submit_{selected_week}",
-                ):
+                submit_btn = st.form_submit_button("📤 Submit Assignment")
 
-                    save_assignment(
-                        user["id"],
-                        selected_week,
-                        st.session_state[upload_key],
-                    )
+                if submit_btn:
 
-                    mark_week_completed(user["id"], selected_week)
+                    if not uploaded_file:
+                        st.error("Please upload a PDF file first.")
 
-                    st.session_state[upload_key] = None
+                    else:
 
-                    st.success("Assignment submitted successfully.")
-                    st.rerun()
+                        save_assignment(
+                            user["id"],
+                            selected_week,
+                            uploaded_file,
+                        )
 
+                        mark_week_completed(user["id"], selected_week)
+
+                        st.success("Assignment submitted successfully.")
+                        st.rerun()
+
+        
     # =================================================
     # CERTIFICATE
     # =================================================
