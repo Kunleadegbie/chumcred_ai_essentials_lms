@@ -124,7 +124,7 @@ def admin_router(user):
             st.info("No students found.")
 
     # =========================================================
-    # GROUP WEEK UNLOCK  ✅ (FIXED)
+    # GROUP WEEK UNLOCK
     # =========================================================
     elif menu == "Group Week Unlock":
         st.subheader("🔓 Group Week Unlock")
@@ -153,9 +153,8 @@ def admin_router(user):
 
             st.success(f"Week {selected_week} updated for all students.")
 
-
     # =========================================================
-    # ASSIGNMENT REVIEW
+    # ASSIGNMENT REVIEW  ✅ FIXED
     # =========================================================
     elif menu == "Assignment Review":
         st.subheader("📤 Assignment Review")
@@ -166,47 +165,45 @@ def admin_router(user):
             return
 
         for a in assignments:
+
             st.markdown(
                 f"""
 **Student:** {a['username']}  
 **Week:** {a['week']}  
 **Submitted:** {a['submitted_at']}
 """
-           )
-
-           st.link_button("📄 Download", a["file_path"])
-
-           grade = st.number_input(
-               "Grade (%)",
-               min_value=0,
-               max_value=100,
-               value=a.get("grade") or 0,
-               key=f"grade_{a['id']}",
-          )
-
-          feedback = st.text_area(
-              "Feedback",
-              value=a.get("feedback") or "",
-              key=f"fb_{a['id']}",
-         )
-
-        if st.button("✅ Submit Review", key=f"review_{a['id']}"):
-
-            review_assignment(
-                assignment_id=a["id"],
-                grade=grade,
-                feedback=feedback,
-                status="graded",     # ✅ VERY IMPORTANT
             )
 
-            st.success("Assignment graded successfully.")
-            st.rerun()
+            st.link_button("📄 Download", a["file_path"])
 
-        st.divider()
+            grade = st.number_input(
+                "Grade (%)",
+                min_value=0,
+                max_value=100,
+                value=a.get("grade") or 0,
+                key=f"grade_{a['id']}",
+            )
 
+            feedback = st.text_area(
+                "Feedback",
+                value=a.get("feedback") or "",
+                key=f"fb_{a['id']}",
+            )
 
+            if st.button("✅ Submit Review", key=f"review_{a['id']}"):
 
-    
+                review_assignment(
+                    assignment_id=a["id"],
+                    grade=grade,
+                    feedback=feedback,
+                    status="graded",     # ✅ VERY IMPORTANT
+                )
+
+                st.success("Assignment graded successfully.")
+                st.rerun()
+
+            st.divider()
+
     # =========================================================
     # BROADCAST
     # =========================================================
