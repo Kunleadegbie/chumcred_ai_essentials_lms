@@ -6,6 +6,14 @@
 import os
 import streamlit as st
 
+
+from services.db import DB_PATH
+
+st.info("🔍 DATABASE DEBUG")
+st.write("DB_PATH from code:", DB_PATH)
+st.write("LMS_DB_PATH env:", os.getenv("LMS_DB_PATH"))
+
+
 from services.auth import (
     create_user,
     get_all_students,
@@ -145,50 +153,60 @@ def admin_router(user):
 
             st.success(f"Week {selected_week} updated for all students.")
 
+
     # =========================================================
     # ASSIGNMENT REVIEW
     # =========================================================
     elif menu == "Assignment Review":
-        st.subheader("📤 Assignment Review")
+    st.subheader("📤 Assignment Review")
 
-        assignments = list_all_assignments()
-        if not assignments:
-            st.info("No submissions yet.")
-            return
+    assignments = list_all_assignments()
+    if not assignments:
+        st.info("No submissions yet.")
+        return
 
-        for a in assignments:
-            st.markdown(
-                f"""
+    for a in assignments:
+        st.markdown(
+            f"""
 **Student:** {a['username']}  
 **Week:** {a['week']}  
 **Submitted:** {a['submitted_at']}
 """
+        )
+
+        st.link_button("📄 Download", a["file_path"])
+
+        grade = st.number_input(
+            "Grade (%)",
+            min_value=0,
+            max_value=100,
+            value=a.get("grade") or 0,
+            key=f"grade_{a['id']}",
+        )
+
+        feedback = st.text_area(
+            "Feedback",
+            value=a.get("feedback") or "",
+            key=f"fb_{a['id']}",
+        )
+
+        if st.button("✅ Submit Review", key=f"review_{a['id']}"):
+
+            review_assignment(
+                assignment_id=a["id"],
+                grade=grade,
+                feedback=feedback,
+                status="graded",     # ✅ VERY IMPORTANT
             )
 
-            st.link_button("📄 Download", a["file_path"])
+            st.success("Assignment graded successfully.")
+            st.rerun()
 
-            grade = st.number_input(
-                "Grade",
-                min_value=0,
-                max_value=100,
-                key=f"grade_{a['id']}",
-            )
-            feedback = st.text_area(
-                "Feedback",
-                key=f"fb_{a['id']}",
-            )
+        st.divider()
 
-            if st.button("Submit Review", key=f"review_{a['id']}"):
-                review_assignment(
-                    assignment_id=a["id"],
-                    grade=grade,
-                    feedback=feedback,
-                )
-                st.success("Assignment reviewed.")
-                st.rerun()
 
-            st.divider()
 
+    
     # =========================================================
     # BROADCAST
     # =========================================================

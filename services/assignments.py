@@ -249,28 +249,27 @@ def review_assignment(assignment_id: int, grade: int, feedback: str = "", status
 # --------------------------------------------------
 def can_issue_certificate(user_id: int) -> bool:
     """
-    Certificate can only be issued when:
-    - All weeks (1–6) have assignments
-    - All assignments are graded
-    - No grade is NULL
+    Returns True only if ALL weeks (1–6) are graded.
     """
+
     from services.db import read_conn
+
+    TOTAL_WEEKS = 6
 
     with read_conn() as conn:
         cur = conn.cursor()
+
         cur.execute(
             """
-            SELECT COUNT(*) AS total,
-                   SUM(CASE WHEN grade IS NOT NULL THEN 1 ELSE 0 END) AS graded
+            SELECT COUNT(*) AS graded_count
             FROM assignments
             WHERE user_id = ?
+              AND status = 'graded'
             """,
             (user_id,),
         )
+
         row = cur.fetchone()
+        graded = row["graded_count"] if row else 0
 
-    if not row:
-        return False
-
-    return row["total"] == 6 and row["graded"] == 6
-
+    return graded >= TOTAL_WEEKS
