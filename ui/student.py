@@ -12,6 +12,7 @@ from services.progress import (
     mark_week_completed,
     is_orientation_completed,
     mark_orientation_completed,
+    sync_user_progress,
 )
 
 from services.assignments import (
@@ -28,8 +29,11 @@ from services.certificates import has_certificate, issue_certificate
 CONTENT_DIR = "content"
 TOTAL_WEEKS = 6
 
-
 def student_router(user):
+
+    # Ensure DB progress is synced
+    sync_user_progress(user["id"])
+
     st.title("🎓 AI Essentials — Student Dashboard")
     st.caption(f"Welcome, {user['username']}")
 

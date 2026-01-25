@@ -250,3 +250,54 @@ def unlock_week_for_user(user_id: int, week: int):
 
 def lock_week_for_user(user_id: int, week: int):
     return admin_lock_week(user_id, week)
+
+
+def sync_user_progress(user_id: int, total_weeks: int = 6):
+    """
+    Ensure a user has progress rows for Week 0 - Week N.
+    Safe: does not overwrite existing records.
+    """
+
+    from services.db import write_txn
+    from datetime import datetime
+
+    now = datetime.utcnow().isoformat()
+
+    with write_txn() as conn:
+        cur = conn.cursor()
+
+        # Get existing weeks
+        cur.execute(
+            "SELECT week FROM progress WHERE user_id=?",
+            (user_id,),
+        )
+
+        existing = {row["week"] for row in cur.fetchall()}
+
+        # Week 0 (Orientation)
+        if 0 not in existing:
+            cur.execute(
+                """
+                INSERT INTO progress (user_id, week, status)
+                VALUES (?, 0, 'unlocked')
+                """,
+                (user_id,),
+            )
+
+        # Weeks 1..N
+        for week in range(1, total_weeks + 1):
+
+            if week not in existing:
+
+                status = "locked"
+                if week == 1:
+                    status = "unlocked"
+
+                cur.execute(
+                    """
+                    INSERT INTO progress (user_id, week, status)
+                    VALUES (?, ?, ?)
+                    """,
+                    (user_id, week, status),
+                )
+
