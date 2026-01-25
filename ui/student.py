@@ -151,9 +151,7 @@ def student_router(user):
         st.divider()
         st.header(f"📘 Week {selected_week}")
 
-        md_path = os.path.join(
-            CONTENT_DIR, f"week{selected_week}.md"
-        )
+        md_path = os.path.join(CONTENT_DIR, f"week{selected_week}.md")
 
         if os.path.exists(md_path):
             with open(md_path, "r", encoding="utf-8") as f:
@@ -171,8 +169,7 @@ def student_router(user):
         else:
             st.info("No grade yet (awaiting review).")
 
-
-         # ------------------------------
+        # ------------------------------
         # UPLOAD HANDLING (STABLE FORM)
         # ------------------------------
         st.subheader("📤 Assignment Submission")
@@ -186,27 +183,25 @@ def student_router(user):
                     "Upload your assignment (PDF only)",
                     type=["pdf"],
                     key=f"file_{selected_week}",
-               )
+                )
 
-               submit = st.form_submit_button("📨 Submit Assignment")
+                submit = st.form_submit_button("📨 Submit Assignment")
 
-               if submit:
+                if submit:
 
-                   if file is None:
-                       st.error("Please upload a PDF file before submitting.")
-                   else:
-                       try:
-                          save_assignment(user["id"], selected_week, file)
-                          mark_week_completed(user["id"], selected_week)
+                    if file is None:
+                        st.error("Please upload a PDF file before submitting.")
+                    else:
+                        try:
+                            save_assignment(user["id"], selected_week, file)
+                            mark_week_completed(user["id"], selected_week)
 
-                          st.success("🎉 Assignment submitted successfully!")
-                          st.rerun()
+                            st.success("🎉 Assignment submitted successfully!")
+                            st.rerun()
 
-                      except Exception as e:
-                          st.error(f"Upload failed: {e}")
+                        except Exception as e:
+                            st.error(f"Upload failed: {e}")
 
-    
-       
     # =================================================
     # CERTIFICATE
     # =================================================
