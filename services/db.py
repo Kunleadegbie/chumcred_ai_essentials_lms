@@ -115,3 +115,18 @@ def init_db():
         if "subject" not in cols:
             cur.execute("ALTER TABLE broadcasts ADD COLUMN subject TEXT")
 
+      
+
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS certificates (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            issued_at TEXT,
+            certificate_path TEXT,
+            FOREIGN KEY (user_id) REFERENCES users(id)
+        )
+        """)
+
+
+
+
