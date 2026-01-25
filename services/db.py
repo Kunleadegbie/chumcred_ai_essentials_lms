@@ -9,7 +9,6 @@ DB_PATH = os.getenv("LMS_DB_PATH", "chumcred_lms.db")
 print("USING DB:", DB_PATH)
 
 
-
 def get_conn():
     conn = sqlite3.connect(DB_PATH, check_same_thread=False)
     conn.row_factory = sqlite3.Row
@@ -43,7 +42,7 @@ def init_db():
     with write_txn() as conn:
         cur = conn.cursor()
 
-        # USERS
+        # ================= USERS =================
         cur.execute("""
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -53,14 +52,16 @@ def init_db():
         )
         """)
 
-       # ---- FORCE ADD cohort COLUMN (Railway Fix) ----
-       try:
-          cur.execute("ALTER TABLE users ADD COLUMN cohort TEXT DEFAULT 'Cohort 1'")
-       except Exception:
-           pass
+        # ---- FORCE ADD cohort COLUMN (Railway Fix) ----
+        try:
+            cur.execute(
+                "ALTER TABLE users ADD COLUMN cohort TEXT DEFAULT 'Cohort 1'"
+            )
+        except Exception:
+            pass
 
 
-        # PROGRESS (Week 0 included)
+        # ================= PROGRESS =================
         cur.execute("""
         CREATE TABLE IF NOT EXISTS progress (
             user_id INTEGER,
@@ -70,7 +71,8 @@ def init_db():
         )
         """)
 
-        # ASSIGNMENTS
+
+        # ================= ASSIGNMENTS =================
         cur.execute("""
         CREATE TABLE IF NOT EXISTS assignments (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -83,7 +85,8 @@ def init_db():
         )
         """)
 
-        # SUPPORT / HELP
+
+        # ================= SUPPORT / HELP =================
         cur.execute("""
         CREATE TABLE IF NOT EXISTS support_tickets (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -96,18 +99,8 @@ def init_db():
         )
         """)
 
-        # BROADCASTS
-        cur.execute("""
-        CREATE TABLE IF NOT EXISTS broadcasts (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            subject TEXT,
-            message TEXT,
-            active INTEGER DEFAULT 1,
-            created_at TEXT
-        )
-        """)
 
-# ---------------- BROADCASTS ----------------
+        # ================= BROADCASTS =================
         cur.execute("""
         CREATE TABLE IF NOT EXISTS broadcasts (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -115,17 +108,24 @@ def init_db():
             message TEXT NOT NULL,
             active INTEGER DEFAULT 1,
             created_at TEXT
-       )
-       """)
+        )
+        """)
+
 
         # Defensive migration (Railway-safe)
         cur.execute("PRAGMA table_info(broadcasts)")
         cols = [row[1] for row in cur.fetchall()]
+
         if "subject" not in cols:
-            cur.execute("ALTER TABLE broadcasts ADD COLUMN subject TEXT")
+            try:
+                cur.execute(
+                    "ALTER TABLE broadcasts ADD COLUMN subject TEXT"
+                )
+            except Exception:
+                pass
 
-      
 
+        # ================= CERTIFICATES =================
         cur.execute("""
         CREATE TABLE IF NOT EXISTS certificates (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -135,7 +135,3 @@ def init_db():
             FOREIGN KEY (user_id) REFERENCES users(id)
         )
         """)
-
-
-
-
