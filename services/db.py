@@ -53,6 +53,13 @@ def init_db():
         )
         """)
 
+       # ---- FORCE ADD cohort COLUMN (Railway Fix) ----
+       try:
+          cur.execute("ALTER TABLE users ADD COLUMN cohort TEXT DEFAULT 'Cohort 1'")
+       except Exception:
+           pass
+
+
         # PROGRESS (Week 0 included)
         cur.execute("""
         CREATE TABLE IF NOT EXISTS progress (
