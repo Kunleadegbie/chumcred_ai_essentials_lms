@@ -264,7 +264,7 @@ def can_issue_certificate(user_id: int) -> bool:
             SELECT COUNT(*) AS graded_count
             FROM assignments
             WHERE user_id = ?
-              AND status = 'graded'
+              AND status = 'approved'
             """,
             (user_id,),
         )
