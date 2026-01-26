@@ -5,16 +5,18 @@
 # --------------------------------------------------
 
 import os
-print("📌 ASSIGNMENTS DB:", os.getenv("LMS_DB_PATH"))
-print("📌 ASSIGNMENTS UPLOAD:", os.getenv("LMS_UPLOAD_DIR"))
-
-import os
 import sqlite3
 from datetime import datetime
 
 from services.db import read_conn, write_txn
 
 
+# ==================================================
+# DEBUG
+# ==================================================
+
+print("📌 ASSIGNMENTS DB:", os.getenv("LMS_DB_PATH"))
+print("📌 ASSIGNMENTS UPLOAD:", os.getenv("LMS_UPLOAD_DIR"))
 
 
 # ==================================================
@@ -43,19 +45,25 @@ def save_assignment(user_id: int, week: int, file_obj):
     filename = f"user{user_id}_week{week}_{timestamp}.pdf"
     filepath = os.path.join(UPLOAD_DIR, filename)
 
-    # Save file
+    # -----------------------------
+    # Save File
+    # -----------------------------
+
     with open(filepath, "wb") as f:
         f.write(file_obj.read())
 
     now = datetime.utcnow().isoformat()
 
-    # Save DB record
+    # -----------------------------
+    # Save DB Record
+    # -----------------------------
+
     with write_txn() as conn:
         cur = conn.cursor()
 
         cur.execute(
             """
-            INSERT OR REPLACE INTO assignments (
+            INSERT INTO assignments (
                 user_id,
                 week,
                 file_path,
@@ -111,7 +119,9 @@ def list_all_assignments():
             """
         )
 
-        return [dict(r) for r in cur.fetchall()]
+        rows = cur.fetchall()
+
+        return [dict(r) for r in rows]
 
 
 # ==================================================
@@ -152,7 +162,9 @@ def get_week_grade(user_id: int, week: int):
             """
             SELECT grade
             FROM assignments
-            WHERE user_id=? AND week=? AND status='graded'
+            WHERE user_id=?
+              AND week=?
+              AND status='graded'
             LIMIT 1
             """,
             (user_id, week),
@@ -181,7 +193,10 @@ def get_student_grade_summary(user_id: int):
 
         cur.execute(
             """
-            SELECT week, status, grade
+            SELECT
+                week,
+                status,
+                grade
             FROM assignments
             WHERE user_id=?
             ORDER BY week
@@ -194,18 +209,21 @@ def get_student_grade_summary(user_id: int):
         results = []
 
         for r in rows:
+
             grade = r["grade"]
 
             badge = None
             if grade is not None:
                 badge = _grade_to_badge(int(grade))
 
-            results.append({
-                "week": r["week"],
-                "status": r["status"],
-                "grade": grade,
-                "badge": badge,
-            })
+            results.append(
+                {
+                    "week": r["week"],
+                    "status": r["status"],
+                    "grade": grade,
+                    "badge": badge,
+                }
+            )
 
         return results
 
@@ -223,7 +241,8 @@ def can_issue_certificate(user_id: int) -> bool:
             """
             SELECT COUNT(*)
             FROM assignments
-            WHERE user_id=? AND status='graded'
+            WHERE user_id=?
+              AND status='graded'
             """,
             (user_id,),
         )
