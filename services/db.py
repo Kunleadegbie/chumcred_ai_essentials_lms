@@ -73,10 +73,38 @@ def _safe_add_column(cur, table, col_def):
             pass
 
 
+def _ensure_default_admin(cur):
+    username = "superadmin"
+    password = "Chumcred@2026"
+    email = "admin@chumcred.com"
+
+    import bcrypt
+    from datetime import datetime
+
+    cur.execute(
+        "SELECT id FROM users WHERE username=?",
+        (username,)
+    )
+
+    if cur.fetchone():
+        return
+
+    pw_hash = bcrypt.hashpw(password.encode(), bcrypt.gensalt())
+
+    cur.execute("""
+        INSERT INTO users
+        (username, email, role, password_hash, active, created_at)
+        VALUES (?, ?, 'admin', ?, 1, ?)
+    """, (
+        username,
+        email,
+        pw_hash,
+        datetime.utcnow().isoformat()
+    ))
+
 # --------------------------------------------
 # INIT / MIGRATIONS
 # --------------------------------------------
-
 def init_db():
 
     with write_txn() as conn:
@@ -215,3 +243,6 @@ def init_db():
 
 
         print("✅ Database initialized and migrated successfully.")
+
+        _ensure_default_admin(cur)
+
