@@ -6,11 +6,11 @@
 # --------------------------------------------------
 
 import os
-import streamlit as st
-
-
 print("📌 STUDENT DB:", os.getenv("LMS_DB_PATH"))
 
+
+import os
+import streamlit as st
 
 
 from services.progress import (
