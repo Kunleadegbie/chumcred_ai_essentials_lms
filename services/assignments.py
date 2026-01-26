@@ -49,7 +49,7 @@ def save_assignment(user_id: int, week: int, file_obj):
 
         cur.execute(
             """
-            INSERT INTO assignments (
+            INSERT OR REPLACE INTO assignments (
                 user_id,
                 week,
                 file_path,
@@ -69,19 +69,19 @@ def save_assignment(user_id: int, week: int, file_obj):
 def has_assignment(user_id: int, week: int) -> bool:
 
     with read_conn() as conn:
-    cur = conn.cursor()
+        cur = conn.cursor()
 
-    cur.execute(
-        """
-        SELECT 1
-        FROM assignments
-        WHERE user_id=? AND week=?
-        LIMIT 1
-        """,
-        (user_id, week),
-    )
+        cur.execute(
+            """
+            SELECT 1
+            FROM assignments
+            WHERE user_id=? AND week=?
+            LIMIT 1
+            """,
+            (user_id, week),
+        )
 
-    return cur.fetchone() is not None
+        return cur.fetchone() is not None
 
 
 # ==================================================
@@ -90,22 +90,22 @@ def has_assignment(user_id: int, week: int) -> bool:
 
 def list_all_assignments():
 
-    conn = read_conn()
-    conn.row_factory = sqlite3.Row
-    cur = conn.cursor()
+    with read_conn() as conn:
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
 
-    cur.execute(
-        """
-        SELECT
-            a.*,
-            u.username
-        FROM assignments a
-        JOIN users u ON u.id = a.user_id
-        ORDER BY a.submitted_at DESC
-        """
-    )
+        cur.execute(
+            """
+            SELECT
+                a.*,
+                u.username
+            FROM assignments a
+            JOIN users u ON u.id = a.user_id
+            ORDER BY a.submitted_at DESC
+            """
+        )
 
-    return [dict(r) for r in cur.fetchall()]
+        return [dict(r) for r in cur.fetchall()]
 
 
 # ==================================================
@@ -139,57 +139,66 @@ def review_assignment(assignment_id: int, grade: int, feedback: str):
 
 def get_week_grade(user_id: int, week: int):
 
-    conn = read_conn()
-    cur = conn.cursor()
+    with read_conn() as conn:
+        cur = conn.cursor()
 
-    cur.execute(
-        """
-        SELECT grade
-        FROM assignments
-        WHERE user_id=? AND week=? AND status='graded'
-        LIMIT 1
-        """,
-        (user_id, week),
-    )
+        cur.execute(
+            """
+            SELECT grade
+            FROM assignments
+            WHERE user_id=? AND week=? AND status='graded'
+            LIMIT 1
+            """,
+            (user_id, week),
+        )
 
-    row = cur.fetchone()
+        row = cur.fetchone()
 
-    if not row:
-        return None, None
+        if not row:
+            return None, None
 
-    grade = int(row[0])
-    badge = _grade_to_badge(grade)
+        grade = int(row[0])
+        badge = _grade_to_badge(grade)
 
-    return grade, badge
+        return grade, badge
 
 
 # ==================================================
 # GRADE SUMMARY
 # ==================================================
 
-def get_student_grade_summary(user_id):
-    from services.db import read_conn
+def get_student_grade_summary(user_id: int):
 
     with read_conn() as conn:
+        conn.row_factory = sqlite3.Row
         cur = conn.cursor()
 
-        cur.execute("""
-            SELECT week, status, grade, badge
+        cur.execute(
+            """
+            SELECT week, status, grade
             FROM assignments
             WHERE user_id=?
             ORDER BY week
-        """, (user_id,))
+            """,
+            (user_id,),
+        )
 
         rows = cur.fetchall()
 
         results = []
 
         for r in rows:
+            grade = r["grade"]
+
+            badge = None
+            if grade is not None:
+                badge = _grade_to_badge(int(grade))
+
             results.append({
                 "week": r["week"],
                 "status": r["status"],
-                "grade": r["grade"],
-                "badge": r["badge"],
+                "grade": grade,
+                "badge": badge,
             })
 
         return results
@@ -201,22 +210,22 @@ def get_student_grade_summary(user_id):
 
 def can_issue_certificate(user_id: int) -> bool:
 
-    conn = read_conn()
-    cur = conn.cursor()
+    with read_conn() as conn:
+        cur = conn.cursor()
 
-    cur.execute(
-        """
-        SELECT COUNT(*)
-        FROM assignments
-        WHERE user_id=? AND status='graded'
-        """,
-        (user_id,),
-    )
+        cur.execute(
+            """
+            SELECT COUNT(*)
+            FROM assignments
+            WHERE user_id=? AND status='graded'
+            """,
+            (user_id,),
+        )
 
-    graded = cur.fetchone()[0]
+        graded = cur.fetchone()[0]
 
-    # Must complete all 6 weeks
-    return graded >= 6
+        # Must complete all 6 weeks
+        return graded >= 6
 
 
 # ==================================================
