@@ -9,6 +9,10 @@ import os
 import streamlit as st
 
 
+print("📌 STUDENT DB:", os.getenv("LMS_DB_PATH"))
+
+
+
 from services.progress import (
     get_progress,
     mark_week_completed,

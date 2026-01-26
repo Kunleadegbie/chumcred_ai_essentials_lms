@@ -10,6 +10,10 @@ from datetime import datetime
 
 from services.db import read_conn, write_txn
 
+print("📌 ASSIGNMENTS DB:", os.getenv("LMS_DB_PATH"))
+print("📌 ASSIGNMENTS UPLOAD:", os.getenv("LMS_UPLOAD_DIR"))
+
+
 
 # ==================================================
 # CONFIG
