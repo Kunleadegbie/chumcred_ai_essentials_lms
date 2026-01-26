@@ -68,7 +68,7 @@ def save_assignment(user_id: int, week: int, file_obj):
 
 def has_assignment(user_id: int, week: int) -> bool:
 
-    conn = read_conn()
+    with read_conn() as conn:
     cur = conn.cursor()
 
     cur.execute(
@@ -167,44 +167,32 @@ def get_week_grade(user_id: int, week: int):
 # GRADE SUMMARY
 # ==================================================
 
-def get_student_grade_summary(user_id: int):
+def get_student_grade_summary(user_id):
+    from services.db import read_conn
 
-    conn = read_conn()
-    conn.row_factory = sqlite3.Row
-    cur = conn.cursor()
+    with read_conn() as conn:
+        cur = conn.cursor()
 
-    cur.execute(
-        """
-        SELECT
-            week,
-            status,
-            grade
-        FROM assignments
-        WHERE user_id=?
-        ORDER BY week
-        """,
-        (user_id,),
-    )
+        cur.execute("""
+            SELECT week, status, grade, badge
+            FROM assignments
+            WHERE user_id=?
+            ORDER BY week
+        """, (user_id,))
 
-    rows = cur.fetchall()
+        rows = cur.fetchall()
 
-    result = []
+        results = []
 
-    for r in rows:
+        for r in rows:
+            results.append({
+                "week": r["week"],
+                "status": r["status"],
+                "grade": r["grade"],
+                "badge": r["badge"],
+            })
 
-        if r["status"] == "graded":
-            badge = _grade_to_badge(int(r["grade"]))
-        else:
-            badge = None
-
-        result.append({
-            "week": r["week"],
-            "status": r["status"],
-            "grade": r["grade"],
-            "badge": badge,
-        })
-
-    return result
+        return results
 
 
 # ==================================================
