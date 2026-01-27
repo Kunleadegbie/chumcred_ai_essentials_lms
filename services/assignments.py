@@ -89,7 +89,7 @@ def has_assignment(user_id: int, week: int) -> bool:
             """
             SELECT 1
             FROM assignments
-            WHERE user_id=? AND week=?
+            WHERE user_id=? AND week=? AND file_path IS NOT NULL
             LIMIT 1
             """,
             (user_id, week),
@@ -249,7 +249,7 @@ def can_issue_certificate(user_id: int) -> bool:
 
         graded = cur.fetchone()[0]
 
-        # Must complete all 6 weeks
+        # Must complete all 6 weekswhere
         return graded >= 6
 
 

@@ -207,22 +207,20 @@ def student_router(user):
             st.info("Awaiting admin review.")
 
 
-        # =============================================
-        # ASSIGNMENT UPLOAD
-        # =============================================
 
+        # =================================================
+        # ASSIGNMENT SUBMISSION (SAFE FORM MODE)
+        # =================================================
         st.subheader("📤 Assignment Submission")
 
-        if has_assignment(user_id, selected_week):
-
-            st.success("✅ Assignment submitted.")
-
+        if has_assignment(user["id"], selected_week):
+            st.success("✅ Assignment already submitted.")
         else:
 
             with st.form(f"upload_form_{selected_week}"):
 
-                file = st.file_uploader(
-                    "Upload PDF",
+                uploaded_file = st.file_uploader(
+                    "Upload assignment (PDF only)",
                     type=["pdf"],
                     key=f"file_{selected_week}",
                 )
@@ -231,25 +229,21 @@ def student_router(user):
 
                 if submit:
 
-                    if not file:
-                        st.error("Please upload a PDF.")
-                    else:
+                    if not uploaded_file:
+                        st.error("Please upload a PDF file before submitting.")
+                        st.stop()
 
-                        save_assignment(
-                            user_id,
-                            selected_week,
-                            file,
-                        )
+                    try:
+                       save_assignment(user["id"], selected_week, uploaded_file)
+                       mark_week_completed(user["id"], selected_week)
 
-                        mark_week_completed(
-                            user_id,
-                            selected_week,
-                        )
+                       st.success("✅ Assignment submitted successfully.")
+                       st.rerun()
 
-                        st.success("Submitted successfully.")
-                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Upload failed: {e}")
 
-
+        
     # =================================================
     # CERTIFICATE
     # =================================================
