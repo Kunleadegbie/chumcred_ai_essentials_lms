@@ -13,6 +13,9 @@ from contextlib import contextmanager
 DB_PATH = os.getenv("LMS_DB_PATH", "chumcred_lms.db")
 
 print("📌 USING DATABASE:", DB_PATH)
+print("DB FILE EXISTS:", os.path.exists(DB_PATH))
+print("DB PATH:", DB_PATH)
+
 
 
 # --------------------------------------------
