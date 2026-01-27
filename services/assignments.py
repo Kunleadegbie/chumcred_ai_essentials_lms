@@ -9,6 +9,8 @@ import sqlite3
 from datetime import datetime
 
 from services.db import read_conn, write_txn
+from services.db import UPLOAD_DIR
+
 
 
 # ==================================================

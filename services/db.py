@@ -4,6 +4,7 @@
 
 import os
 import sqlite3
+import glob
 from contextlib import contextmanager
 
 
@@ -16,9 +17,33 @@ print("📌 USING DATABASE:", DB_PATH)
 print("DB FILE EXISTS:", os.path.exists(DB_PATH))
 print("DB PATH:", DB_PATH)
 print("DB EXISTS:", os.path.exists(DB_PATH))
-print("DB DIR CONTENTS:", os.listdir(os.path.dirname(DB_PATH)))
+
+db_dir = os.path.dirname(DB_PATH) or "."
+print("DB DIR CONTENTS:", os.listdir(db_dir))
+
+# -----------------------------------------
+# AUTO-DETECT RAILWAY VOLUME
+# -----------------------------------------
+
+DEFAULT_DB = "chumcred_lms.db"
+
+# Try to detect Railway mounted volume
+def _detect_railway_volume():
+    paths = glob.glob("/var/lib/containers/railwayapp/bind-mounts/*/vol_*")
+    if paths:
+        return paths[0]
+    return None
 
 
+RAILWAY_VOLUME = _detect_railway_volume()
+
+if RAILWAY_VOLUME:
+    DATA_DIR = RAILWAY_VOLUME
+else:
+    DATA_DIR = os.getenv("LMS_DB_PATH", ".")
+
+DB_PATH = os.path.join(DATA_DIR, DEFAULT_DB)
+UPLOAD_DIR = os.path.join(DATA_DIR, "uploads")
 
 
 # --------------------------------------------
@@ -58,6 +83,12 @@ def write_txn():
         raise
     finally:
         conn.close()
+
+
+
+def ensure_dirs():
+    os.makedirs(DATA_DIR, exist_ok=True)
+    os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 
 # --------------------------------------------
@@ -111,6 +142,8 @@ def _ensure_default_admin(cur):
 # --------------------------------------------
 # INIT / MIGRATIONS
 # --------------------------------------------
+ensure_dirs()
+
 def init_db():
 
     with write_txn() as conn:
