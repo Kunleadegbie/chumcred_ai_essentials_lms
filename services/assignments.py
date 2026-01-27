@@ -69,11 +69,19 @@ def save_assignment(user_id: int, week: int, file_obj):
                 file_path,
                 status,
                 submitted_at
-            )
-            VALUES (?, ?, ?, 'submitted', ?)
-            """,
-            (user_id, week, filepath, now),
-        )
+           )
+           VALUES (?, ?, ?, 'submitted', ?)
+           ON CONFLICT(user_id, week)
+           DO UPDATE SET
+               file_path=excluded.file_path,
+               status='submitted',
+               submitted_at=excluded.submitted_at
+          """,
+          (user_id, week, filepath, now),
+       )
+
+
+        
 
 
 # ==================================================
