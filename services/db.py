@@ -15,6 +15,9 @@ DB_PATH = os.getenv("LMS_DB_PATH", "chumcred_lms.db")
 print("📌 USING DATABASE:", DB_PATH)
 print("DB FILE EXISTS:", os.path.exists(DB_PATH))
 print("DB PATH:", DB_PATH)
+print("DB EXISTS:", os.path.exists(DB_PATH))
+print("DB DIR CONTENTS:", os.listdir(os.path.dirname(DB_PATH)))
+
 
 
 
