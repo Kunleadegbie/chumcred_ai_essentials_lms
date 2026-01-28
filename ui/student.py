@@ -1,13 +1,9 @@
 # --------------------------------------------------
 # ui/student.py
 # --------------------------------------------------
-# --------------------------------------------------
+# ==================================================
 # ui/student.py
-# --------------------------------------------------
-
-import os
-print("📌 STUDENT DB:", os.getenv("LMS_DB_PATH"))
-
+# ==================================================
 
 import os
 import streamlit as st
@@ -32,24 +28,20 @@ from services.help import list_active_broadcasts
 from services.certificates import has_certificate, issue_certificate
 
 
-# ==================================================
-# CONFIG
-# ==================================================
-
 CONTENT_DIR = "content"
 TOTAL_WEEKS = 6
 
 
 # ==================================================
-# STUDENT ROUTER
+# ROUTER
 # ==================================================
 
 def student_router(user):
 
+    user_id = user["id"]
+
     st.title("🎓 AI Essentials — Student Dashboard")
     st.caption(f"Welcome, {user['username']}")
-
-    user_id = user["id"]
 
 
     # =================================================
@@ -66,11 +58,11 @@ def student_router(user):
             with open(md_path, "r", encoding="utf-8") as f:
                 st.markdown(f.read(), unsafe_allow_html=True)
         else:
-            st.warning("Orientation content missing.")
+            st.warning("Orientation content not found.")
 
         if st.button(
             "✅ I have read and understood",
-            key="orientation_done",
+            key="orientation_done_btn"
         ):
             mark_orientation_completed(user_id)
             st.success("Orientation completed.")
@@ -80,7 +72,7 @@ def student_router(user):
 
 
     # =================================================
-    # BROADCAST POPUP
+    # BROADCAST
     # =================================================
 
     broadcasts = list_active_broadcasts(limit=1) or []
@@ -88,59 +80,54 @@ def student_router(user):
     if broadcasts:
         b = broadcasts[0]
 
-        subject = b.get("subject", "Announcement")
-        message = b.get("message", "")
+        subject = b.get("subject") or "Announcement"
+        message = b.get("message") or ""
 
         st.warning(f"📢 **{subject}**\n\n{message}")
 
 
     # =================================================
-    # GRADE DASHBOARD
+    # GRADE SUMMARY
     # =================================================
 
     st.subheader("📊 Your Grades")
 
     summary = get_student_grade_summary(user_id)
 
-    if summary:
+    cols = st.columns(3)
 
-        cols = st.columns(3)
+    for i, item in enumerate(summary):
 
-        for i, item in enumerate(summary):
+        with cols[i % 3]:
 
-            with cols[i % 3]:
+            if item["status"] == "graded":
 
-                if item["status"] == "graded":
-
-                    st.metric(
-                        f"Week {item['week']}",
-                        f"{item['grade']}%",
-                        item["badge"],
-                    )
-                else:
-                    st.metric(f"Week {item['week']}", "Pending")
-
-    else:
-        st.info("No grades yet.")
-
+                st.metric(
+                    f"Week {item['week']}",
+                    f"{item['grade']}%",
+                    item["badge"],
+                )
+            else:
+                st.metric(f"Week {item['week']}", "Pending")
 
     st.divider()
 
 
     # =================================================
-    # LOAD PROGRESS
+    # PROGRESS
     # =================================================
 
     progress = get_progress(user_id)
 
 
     # =================================================
-    # COURSE WEEKS
+    # WEEK CARDS
     # =================================================
 
     st.subheader("📘 Course Progress")
 
     cols = st.columns(3)
+
     selected_week = None
 
     for week in range(1, TOTAL_WEEKS + 1):
@@ -166,10 +153,12 @@ def student_router(user):
                 st.caption(f"🏅 {grade}% — {badge}")
 
             if status != "locked":
-                if st.button(label, key=f"open_{week}"):
+
+                if st.button(label, key=f"week_btn_{week}"):
                     selected_week = week
+
             else:
-                st.button(label, disabled=True, key=f"lock_{week}")
+                st.button(label, disabled=True)
 
 
     # =================================================
@@ -179,6 +168,7 @@ def student_router(user):
     if selected_week:
 
         st.divider()
+
         st.header(f"📘 Week {selected_week}")
 
         md_path = os.path.join(
@@ -187,10 +177,8 @@ def student_router(user):
         )
 
         if os.path.exists(md_path):
-
             with open(md_path, "r", encoding="utf-8") as f:
                 st.markdown(f.read(), unsafe_allow_html=True)
-
         else:
             st.error("Content not found.")
             return
@@ -198,57 +186,68 @@ def student_router(user):
 
         st.divider()
 
-
         grade, badge = get_week_grade(user_id, selected_week)
 
         if grade is not None:
-            st.success(f"🏅 {grade}% — {badge}")
+            st.success(f"🏅 Grade: {grade}% — {badge}")
         else:
-            st.info("Awaiting admin review.")
+            st.info("Awaiting grading.")
 
 
+        # =============================================
+        # ASSIGNMENT FORM
+        # =============================================
 
-        # =================================================
-        # ASSIGNMENT SUBMISSION (SAFE FORM MODE)
-        # =================================================
         st.subheader("📤 Assignment Submission")
 
-        if has_assignment(user["id"], selected_week):
+        if has_assignment(user_id, selected_week):
+
             st.success("✅ Assignment already submitted.")
+
         else:
 
-            with st.form(f"upload_form_{selected_week}"):
+            with st.form(
+                key=f"assign_form_{selected_week}",
+                clear_on_submit=True,
+            ):
 
                 uploaded_file = st.file_uploader(
-                    "Upload assignment (PDF only)",
+                    "Upload PDF",
                     type=["pdf"],
                     key=f"file_{selected_week}",
                 )
 
-                submit = st.form_submit_button("📨 Submit Assignment")
+                submit = st.form_submit_button(
+                    "📨 Submit Assignment"
+                )
 
                 if submit:
 
                     if not uploaded_file:
-                        st.error("Please upload a PDF file before submitting.")
+                        st.error("Please upload a PDF file.")
                         st.stop()
 
-                    try:
-                       save_assignment(user["id"], selected_week, uploaded_file)
-                       mark_week_completed(user["id"], selected_week)
+                    save_assignment(
+                        user_id,
+                        selected_week,
+                        uploaded_file,
+                    )
 
-                       st.success("✅ Assignment submitted successfully.")
-                       st.rerun()
+                    mark_week_completed(
+                        user_id,
+                        selected_week
+                    )
 
-                    except Exception as e:
-                        st.error(f"Upload failed: {e}")
+                    st.success("Submitted successfully.")
+                    st.rerun()
 
-        
+
     # =================================================
     # CERTIFICATE
     # =================================================
 
     st.divider()
+
     st.subheader("🎖 Certificate")
 
     if has_certificate(user_id):
@@ -261,16 +260,15 @@ def student_router(user):
 
             st.info("All grades approved.")
 
-            if st.button("Generate Certificate", key="gen_cert"):
-
+            if st.button(
+                "Generate Certificate",
+                key="cert_btn"
+            ):
                 issue_certificate(user_id)
                 st.rerun()
 
         else:
-
-            st.warning(
-                "Complete and pass all weeks first."
-            )
+            st.warning("Complete all weeks first.")
 
 
     # =================================================
@@ -289,9 +287,15 @@ def student_router(user):
 
         st.progress(completed / TOTAL_WEEKS)
 
-        if st.button("🆘 Help & Support", key="help_btn"):
+        if st.button(
+            "🆘 Help & Support",
+            key="help_btn"
+        ):
             st.session_state["support_open"] = True
 
-        if st.button("🚪 Logout", key="logout_btn"):
+        if st.button(
+            "🚪 Logout",
+            key="logout_btn"
+        ):
             st.session_state.clear()
             st.rerun()

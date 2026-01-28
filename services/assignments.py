@@ -1,120 +1,98 @@
 
 # services/assignments.py
-# --------------------------------------------------
+# ==================================================
 # services/assignments.py
-# --------------------------------------------------
+# ==================================================
 
 import os
-import sqlite3
+import uuid
+import shutil
 from datetime import datetime
 
 from services.db import read_conn, write_txn
 
 
 # ==================================================
-# DEBUG
-# ==================================================
-
-print("📌 ASSIGNMENTS DB:", os.getenv("LMS_DB_PATH"))
-print("📌 ASSIGNMENTS UPLOAD:", os.getenv("LMS_UPLOAD_PATH"))
-
-
-# ==================================================
 # CONFIG
 # ==================================================
 
-UPLOAD_ROOT = os.getenv(
-    "LMS_UPLOAD_PATH",
-    "/app/data/uploads"
-)
-
+UPLOAD_ROOT = os.getenv("LMS_UPLOAD_PATH", "/app/data/uploads")
 ASSIGNMENT_DIR = os.path.join(UPLOAD_ROOT, "assignments")
+
+
+# ==================================================
+# HELPERS
+# ==================================================
+
+def _ensure_dir(path: str):
+    os.makedirs(path, exist_ok=True)
 
 
 # ==================================================
 # SAVE ASSIGNMENT
 # ==================================================
-def save_assignment(user_id: int, week: int, file):
-    """
-    Save uploaded assignment file and store correct Railway path in DB
-    """
 
-    from services.db import write_txn
-    import os
-    from datetime import datetime
+def save_assignment(user_id: int, week: int, uploaded_file):
 
-    # Root upload folder (from env or default)
-    UPLOAD_ROOT = os.getenv("LMS_UPLOAD_PATH", "/app/data/uploads")
-    ASSIGNMENT_DIR = os.path.join(UPLOAD_ROOT, "assignments")
+    # Ensure root folders
+    _ensure_dir(ASSIGNMENT_DIR)
 
-    # Create user folder
     user_dir = os.path.join(ASSIGNMENT_DIR, str(user_id))
-    os.makedirs(user_dir, exist_ok=True)
+    _ensure_dir(user_dir)
 
-    # Final file path (Linux-safe)
-    filename = f"week_{week}.pdf"
-    file_path = os.path.join(user_dir, filename)
+    # Build safe filename
+    ext = os.path.splitext(uploaded_file.name)[1]
+    filename = f"week_{week}_{uuid.uuid4().hex}{ext}"
 
-    # Save file to disk
-    with open(file_path, "wb") as f:
-        f.write(file.getbuffer())
+    # Relative path (PORTABLE)
+    relative_path = os.path.join(
+        "assignments",
+        str(user_id),
+        filename
+    )
+
+    # Absolute path
+    full_path = os.path.join(UPLOAD_ROOT, relative_path)
+
+    # Save file
+    with open(full_path, "wb") as f:
+        shutil.copyfileobj(uploaded_file, f)
 
     now = datetime.utcnow().isoformat()
 
-    # Save record in DB
+    # Save to DB
     with write_txn() as conn:
         cur = conn.cursor()
 
-        # Prevent duplicates
         cur.execute(
             """
-            DELETE FROM assignments
-            WHERE user_id=? AND week=?
-            """,
-            (user_id, week),
-        )
-
-        cur.execute(
-            """
-            INSERT INTO assignments
-            (
-                user_id,
-                week,
-                file_path,
-                original_filename,
-                submitted_at,
-                status
-            )
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT OR REPLACE INTO assignments
+            (user_id, week, file_path, submitted_at, original_filename, status)
+            VALUES (?, ?, ?, ?, ?, 'submitted')
             """,
             (
                 user_id,
                 week,
-                file_path,
-                file.name,
+                relative_path,
                 now,
-                "submitted",
+                uploaded_file.name,
             ),
         )
 
+
 # ==================================================
-# CHECK IF ASSIGNMENT EXISTS
+# CHECK IF SUBMITTED
 # ==================================================
 
 def has_assignment(user_id: int, week: int) -> bool:
 
     with read_conn() as conn:
-        conn.row_factory = sqlite3.Row
         cur = conn.cursor()
 
         cur.execute(
             """
-            SELECT 1
-            FROM assignments
-            WHERE user_id = ?
-              AND week = ?
-              AND file_path IS NOT NULL
-            LIMIT 1
+            SELECT 1 FROM assignments
+            WHERE user_id=? AND week=?
             """,
             (user_id, week),
         )
@@ -123,44 +101,50 @@ def has_assignment(user_id: int, week: int) -> bool:
 
 
 # ==================================================
-# ADMIN: LIST ALL ASSIGNMENTS
+# LIST ALL (ADMIN)
 # ==================================================
 
 def list_all_assignments():
 
+    upload_root = os.getenv("LMS_UPLOAD_PATH", "/app/data/uploads")
+
     with read_conn() as conn:
-        conn.row_factory = sqlite3.Row
         cur = conn.cursor()
 
         cur.execute(
             """
             SELECT
-                a.id,
-                a.user_id,
-                a.week,
-                a.file_path,
-                a.status,
-                a.grade,
-                a.feedback,
-                a.submitted_at,
-                a.graded_at,
+                a.*,
                 u.username
             FROM assignments a
-            JOIN users u ON u.id = a.user_id
+            JOIN users u ON a.user_id = u.id
             ORDER BY a.submitted_at DESC
             """
         )
 
         rows = cur.fetchall()
 
-        return [dict(r) for r in rows]
+    results = []
+
+    for r in rows:
+        item = dict(r)
+
+        # Rebuild full file path
+        item["file_path"] = os.path.join(
+            upload_root,
+            item["file_path"]
+        )
+
+        results.append(item)
+
+    return results
 
 
 # ==================================================
-# ADMIN: REVIEW ASSIGNMENT
+# REVIEW / GRADE
 # ==================================================
 
-def review_assignment(assignment_id: int, grade: int, feedback: str):
+def review_assignment(assignment_id, grade, feedback):
 
     now = datetime.utcnow().isoformat()
 
@@ -171,20 +155,18 @@ def review_assignment(assignment_id: int, grade: int, feedback: str):
             """
             UPDATE assignments
             SET
-                grade = ?,
-                feedback = ?,
-                status = 'graded',
-                graded_at = ?
-            WHERE id = ?
+                grade=?,
+                feedback=?,
+                status='graded',
+                reviewed_at=?
+            WHERE id=?
             """,
             (grade, feedback, now, assignment_id),
         )
 
-        conn.commit()
-
 
 # ==================================================
-# GET WEEK GRADE
+# WEEK GRADE
 # ==================================================
 
 def get_week_grade(user_id: int, week: int):
@@ -196,33 +178,37 @@ def get_week_grade(user_id: int, week: int):
             """
             SELECT grade
             FROM assignments
-            WHERE user_id = ?
-              AND week = ?
-              AND status = 'graded'
-            LIMIT 1
+            WHERE user_id=? AND week=? AND status='graded'
             """,
             (user_id, week),
         )
 
         row = cur.fetchone()
 
-        if not row:
-            return None, None
+    if not row:
+        return None, None
 
-        grade = int(row[0])
-        badge = _grade_to_badge(grade)
+    grade = row["grade"]
 
-        return grade, badge
+    if grade >= 70:
+        badge = "Distinction"
+    elif grade >= 50:
+        badge = "Merit"
+    elif grade >= 40:
+        badge = "Pass"
+    else:
+        badge = "Fail"
+
+    return grade, badge
 
 
 # ==================================================
-# GRADE SUMMARY
+# DASHBOARD SUMMARY
 # ==================================================
 
 def get_student_grade_summary(user_id: int):
 
     with read_conn() as conn:
-        conn.row_factory = sqlite3.Row
         cur = conn.cursor()
 
         cur.execute(
@@ -232,7 +218,7 @@ def get_student_grade_summary(user_id: int):
                 status,
                 grade
             FROM assignments
-            WHERE user_id = ?
+            WHERE user_id=?
             ORDER BY week
             """,
             (user_id,),
@@ -240,30 +226,34 @@ def get_student_grade_summary(user_id: int):
 
         rows = cur.fetchall()
 
-        results = []
+    summary = []
 
-        for r in rows:
+    for r in rows:
+        item = dict(r)
 
-            grade = r["grade"]
+        if item["status"] == "graded":
+            g = item["grade"]
 
-            badge = None
-            if grade is not None:
-                badge = _grade_to_badge(int(grade))
+            if g >= 70:
+                badge = "Distinction"
+            elif g >= 50:
+                badge = "Merit"
+            elif g >= 40:
+                badge = "Pass"
+            else:
+                badge = "Fail"
 
-            results.append(
-                {
-                    "week": r["week"],
-                    "status": r["status"],
-                    "grade": grade,
-                    "badge": badge,
-                }
-            )
+            item["badge"] = badge
+        else:
+            item["badge"] = None
 
-        return results
+        summary.append(item)
+
+    return summary
 
 
 # ==================================================
-# CERTIFICATE ELIGIBILITY
+# CERTIFICATE CHECK
 # ==================================================
 
 def can_issue_certificate(user_id: int) -> bool:
@@ -273,31 +263,13 @@ def can_issue_certificate(user_id: int) -> bool:
 
         cur.execute(
             """
-            SELECT COUNT(*)
+            SELECT COUNT(*) AS cnt
             FROM assignments
-            WHERE user_id = ?
-              AND status = 'graded'
+            WHERE user_id=? AND status='graded'
             """,
             (user_id,),
         )
 
-        graded = cur.fetchone()[0]
+        graded = cur.fetchone()["cnt"]
 
-        # Must complete all 6 weeks
-        return graded >= 6
-
-
-# ==================================================
-# INTERNAL: GRADE → BADGE
-# ==================================================
-
-def _grade_to_badge(score: int) -> str:
-
-    if score >= 80:
-        return "Distinction"
-    elif score >= 65:
-        return "Merit"
-    elif score >= 50:
-        return "Pass"
-    else:
-        return "Fail"
+    return graded >= 6
