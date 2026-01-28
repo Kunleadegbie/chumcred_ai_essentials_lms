@@ -8,6 +8,25 @@ import glob
 from contextlib import contextmanager
 
 
+
+def ensure_data_dirs():
+    """
+    Ensure Railway volume folders exist before DB opens
+    """
+    import os
+
+    base = os.getenv("LMS_DB_PATH", "/app/data/chumcred_lms.db")
+    db_dir = os.path.dirname(base)
+
+    upload_root = os.getenv("LMS_UPLOAD_PATH", "/app/data/uploads")
+
+    if db_dir and not os.path.exists(db_dir):
+        os.makedirs(db_dir, exist_ok=True)
+
+    if upload_root and not os.path.exists(upload_root):
+        os.makedirs(upload_root, exist_ok=True)
+
+
 # --------------------------------------------
 # DATABASE PATH
 # --------------------------------------------
@@ -51,8 +70,14 @@ UPLOAD_DIR = os.path.join(DATA_DIR, "uploads")
 # --------------------------------------------
 
 def get_conn():
-    conn = sqlite3.connect(DB_PATH, check_same_thread=False, timeout=30)
-    conn.row_factory = sqlite3.Row
+    ensure_data_dirs()
+
+    conn = sqlite3.connect(
+        DB_PATH,
+        check_same_thread=False,
+        timeout=30
+    )
+
 
     # Safety
     conn.execute("PRAGMA foreign_keys = ON;")
@@ -151,6 +176,10 @@ def _ensure_default_admin(cur):
         pw_hash,
         datetime.utcnow().isoformat()
     ))
+
+
+from services.db import ensure_data_dirs
+ensure_data_dirs()
 
 # --------------------------------------------
 # INIT / MIGRATIONS
