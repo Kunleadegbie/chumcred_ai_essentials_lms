@@ -4,73 +4,59 @@
 
 import os
 import sqlite3
-import glob
 from contextlib import contextmanager
+from datetime import datetime
+import bcrypt
 
 
+# ==================================================
+# PATH CONFIG
+# ==================================================
 
-def ensure_data_dirs():
-    """
-    Ensure Railway volume folders exist before DB opens
-    """
-    import os
+# Main DB path (from Railway or fallback)
+DB_PATH = os.getenv(
+    "LMS_DB_PATH",
+    "/app/data/chumcred_lms.db"
+)
 
-    base = os.getenv("LMS_DB_PATH", "/app/data/chumcred_lms.db")
-    db_dir = os.path.dirname(base)
+# Upload root
+UPLOAD_ROOT = os.getenv(
+    "LMS_UPLOAD_PATH",
+    "/app/data/uploads"
+)
 
-    upload_root = os.getenv("LMS_UPLOAD_PATH", "/app/data/uploads")
+
+print("📌 USING DATABASE:", DB_PATH)
+print("📌 UPLOAD ROOT:", UPLOAD_ROOT)
+
+
+# ==================================================
+# ENSURE DIRECTORIES
+# ==================================================
+
+def ensure_dirs():
+    """Ensure DB + upload folders exist"""
+
+    db_dir = os.path.dirname(DB_PATH)
 
     if db_dir and not os.path.exists(db_dir):
         os.makedirs(db_dir, exist_ok=True)
 
-    if upload_root and not os.path.exists(upload_root):
-        os.makedirs(upload_root, exist_ok=True)
+    if UPLOAD_ROOT and not os.path.exists(UPLOAD_ROOT):
+        os.makedirs(UPLOAD_ROOT, exist_ok=True)
 
 
-# --------------------------------------------
-# DATABASE PATH
-# --------------------------------------------
-DB_PATH = os.getenv("LMS_DB_PATH", "chumcred_lms.db")
-
-print("📌 USING DATABASE:", DB_PATH)
-print("DB FILE EXISTS:", os.path.exists(DB_PATH))
-print("DB PATH:", DB_PATH)
-print("DB EXISTS:", os.path.exists(DB_PATH))
-
-db_dir = os.path.dirname(DB_PATH) or "."
-print("DB DIR CONTENTS:", os.listdir(db_dir))
-
-# -----------------------------------------
-# AUTO-DETECT RAILWAY VOLUME
-# -----------------------------------------
-
-DEFAULT_DB = "chumcred_lms.db"
-
-# Try to detect Railway mounted volume
-def _detect_railway_volume():
-    paths = glob.glob("/var/lib/containers/railwayapp/bind-mounts/*/vol_*")
-    if paths:
-        return paths[0]
-    return None
+ensure_dirs()
 
 
-RAILWAY_VOLUME = _detect_railway_volume()
-
-if RAILWAY_VOLUME:
-    DATA_DIR = RAILWAY_VOLUME
-else:
-    DATA_DIR = os.getenv("LMS_DB_PATH", ".")
-
-DB_PATH = os.path.join(DATA_DIR, DEFAULT_DB)
-UPLOAD_DIR = os.path.join(DATA_DIR, "uploads")
-
-
-# --------------------------------------------
+# ==================================================
 # CONNECTION
-# --------------------------------------------
+# ==================================================
 
 def get_conn():
-    ensure_data_dirs()
+    """Open SQLite connection safely"""
+
+    ensure_dirs()
 
     conn = sqlite3.connect(
         DB_PATH,
@@ -78,6 +64,7 @@ def get_conn():
         timeout=30
     )
 
+    conn.row_factory = sqlite3.Row
 
     # Safety
     conn.execute("PRAGMA foreign_keys = ON;")
@@ -110,28 +97,9 @@ def write_txn():
         conn.close()
 
 
-def ensure_dirs():
-
-    # DB PATH
-    db_path = os.getenv("LMS_DB_PATH", "chumcred_lms.db")
-
-    # Parent folder for DB
-    data_dir = os.path.dirname(db_path)
-
-    # Ensure /app/data exists
-    if data_dir and not os.path.exists(data_dir):
-        os.makedirs(data_dir, exist_ok=True)
-
-    # Upload folder
-    uploads_dir = os.getenv("LMS_UPLOAD_PATH", "/app/data/uploads")
-
-    if not os.path.exists(uploads_dir):
-        os.makedirs(uploads_dir, exist_ok=True)
-
-
-# --------------------------------------------
+# ==================================================
 # MIGRATION HELPERS
-# --------------------------------------------
+# ==================================================
 
 def _column_exists(cur, table, column):
     cur.execute(f"PRAGMA table_info({table})")
@@ -139,6 +107,7 @@ def _column_exists(cur, table, column):
 
 
 def _safe_add_column(cur, table, col_def):
+
     col = col_def.split()[0]
 
     if not _column_exists(cur, table, col):
@@ -148,13 +117,15 @@ def _safe_add_column(cur, table, col_def):
             pass
 
 
-def _ensure_default_admin(cur):
-    username = "superadmin"
-    password = "Chumcred@2026"
-    email = "admin@chumcred.com"
+# ==================================================
+# DEFAULT ADMIN
+# ==================================================
 
-    import bcrypt
-    from datetime import datetime
+def _ensure_default_admin(cur):
+
+    username = os.getenv("ADMIN_USERNAME", "superadmin")
+    password = os.getenv("ADMIN_PASSWORD", "Chumcred@2026")
+    email = "admin@chumcred.com"
 
     cur.execute(
         "SELECT id FROM users WHERE username=?",
@@ -177,23 +148,21 @@ def _ensure_default_admin(cur):
         datetime.utcnow().isoformat()
     ))
 
+    print("✅ Default admin created")
 
-from services.db import ensure_data_dirs
-ensure_data_dirs()
 
-# --------------------------------------------
-# INIT / MIGRATIONS
-# --------------------------------------------
-ensure_dirs()
+# ==================================================
+# INIT DATABASE
+# ==================================================
 
 def init_db():
 
     with write_txn() as conn:
+
         cur = conn.cursor()
 
-        # ==================================================
-        # USERS
-        # ==================================================
+
+        # ================= USERS =================
 
         cur.execute("""
         CREATE TABLE IF NOT EXISTS users (
@@ -209,7 +178,6 @@ def init_db():
         )
         """)
 
-        # Safe migrations
         _safe_add_column(cur, "users", "full_name TEXT")
         _safe_add_column(cur, "users", "email TEXT")
         _safe_add_column(cur, "users", "password_hash BLOB")
@@ -219,9 +187,7 @@ def init_db():
         _safe_add_column(cur, "users", "created_at TEXT")
 
 
-        # ==================================================
-        # PROGRESS
-        # ==================================================
+        # ================= PROGRESS =================
 
         cur.execute("""
         CREATE TABLE IF NOT EXISTS progress (
@@ -229,17 +195,17 @@ def init_db():
             week INTEGER,
             status TEXT DEFAULT 'locked',
             orientation_done INTEGER DEFAULT 0,
+            updated_at TEXT,
             UNIQUE(user_id, week)
         )
         """)
 
         _safe_add_column(cur, "progress", "status TEXT DEFAULT 'locked'")
         _safe_add_column(cur, "progress", "orientation_done INTEGER DEFAULT 0")
+        _safe_add_column(cur, "progress", "updated_at TEXT")
 
 
-        # ==================================================
-        # ASSIGNMENTS
-        # ==================================================
+        # ================= ASSIGNMENTS =================
 
         cur.execute("""
         CREATE TABLE IF NOT EXISTS assignments (
@@ -247,25 +213,27 @@ def init_db():
             user_id INTEGER,
             week INTEGER,
             file_path TEXT,
+            original_filename TEXT,
             status TEXT DEFAULT 'submitted',
-            grade INTEGER,
+            grade REAL,
             feedback TEXT,
             submitted_at TEXT,
-            reviewed_at TEXT
+            reviewed_at TEXT,
+            reviewed_by INTEGER
         )
         """)
 
         _safe_add_column(cur, "assignments", "file_path TEXT")
+        _safe_add_column(cur, "assignments", "original_filename TEXT")
         _safe_add_column(cur, "assignments", "status TEXT DEFAULT 'submitted'")
-        _safe_add_column(cur, "assignments", "grade INTEGER")
+        _safe_add_column(cur, "assignments", "grade REAL")
         _safe_add_column(cur, "assignments", "feedback TEXT")
         _safe_add_column(cur, "assignments", "submitted_at TEXT")
         _safe_add_column(cur, "assignments", "reviewed_at TEXT")
+        _safe_add_column(cur, "assignments", "reviewed_by INTEGER")
 
 
-        # ==================================================
-        # SUPPORT / HELP
-        # ==================================================
+        # ================= SUPPORT =================
 
         cur.execute("""
         CREATE TABLE IF NOT EXISTS support_tickets (
@@ -280,16 +248,8 @@ def init_db():
         )
         """)
 
-        _safe_add_column(cur, "support_tickets", "subject TEXT")
-        _safe_add_column(cur, "support_tickets", "admin_reply TEXT")
-        _safe_add_column(cur, "support_tickets", "status TEXT DEFAULT 'open'")
-        _safe_add_column(cur, "support_tickets", "created_at TEXT")
-        _safe_add_column(cur, "support_tickets", "replied_at TEXT")
 
-
-        # ==================================================
-        # BROADCASTS
-        # ==================================================
+        # ================= BROADCAST =================
 
         cur.execute("""
         CREATE TABLE IF NOT EXISTS broadcasts (
@@ -301,14 +261,8 @@ def init_db():
         )
         """)
 
-        _safe_add_column(cur, "broadcasts", "subject TEXT")
-        _safe_add_column(cur, "broadcasts", "active INTEGER DEFAULT 1")
-        _safe_add_column(cur, "broadcasts", "created_at TEXT")
 
-
-        # ==================================================
-        # CERTIFICATES
-        # ==================================================
+        # ================= CERTIFICATES =================
 
         cur.execute("""
         CREATE TABLE IF NOT EXISTS certificates (
@@ -319,11 +273,8 @@ def init_db():
         )
         """)
 
-        _safe_add_column(cur, "certificates", "issued_at TEXT")
-        _safe_add_column(cur, "certificates", "certificate_path TEXT")
 
-
-        print("✅ Database initialized and migrated successfully.")
-
+        # Ensure admin
         _ensure_default_admin(cur)
 
+        print("✅ Database initialized successfully")
