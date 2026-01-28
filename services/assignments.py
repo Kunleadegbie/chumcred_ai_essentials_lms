@@ -9,8 +9,6 @@ import sqlite3
 from datetime import datetime
 
 from services.db import read_conn, write_txn
-from services.db import UPLOAD_DIR
-
 
 
 # ==================================================
@@ -18,48 +16,47 @@ from services.db import UPLOAD_DIR
 # ==================================================
 
 print("📌 ASSIGNMENTS DB:", os.getenv("LMS_DB_PATH"))
-print("📌 ASSIGNMENTS UPLOAD:", os.getenv("LMS_UPLOAD_DIR"))
+print("📌 ASSIGNMENTS UPLOAD:", os.getenv("LMS_UPLOAD_PATH"))
 
 
 # ==================================================
 # CONFIG
 # ==================================================
 
-UPLOAD_DIR = os.getenv(
-    "LMS_UPLOAD_DIR",
-    "/app/data/uploads/assignments"
+UPLOAD_ROOT = os.getenv(
+    "LMS_UPLOAD_PATH",
+    "/app/data/uploads"
 )
 
-os.makedirs(UPLOAD_DIR, exist_ok=True)
+ASSIGNMENT_DIR = os.path.join(UPLOAD_ROOT, "assignments")
 
 
 # ==================================================
 # SAVE ASSIGNMENT
 # ==================================================
 
-def save_assignment(user_id: int, week: int, file_obj):
-    """
-    Save assignment file and DB record
-    """
+def save_assignment(user_id, week, uploaded_file):
 
-    timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S")
+    # Ensure folders exist
+    os.makedirs(ASSIGNMENT_DIR, exist_ok=True)
 
-    filename = f"user{user_id}_week{week}_{timestamp}.pdf"
-    filepath = os.path.join(UPLOAD_DIR, filename)
+    user_dir = os.path.join(ASSIGNMENT_DIR, str(user_id))
+    os.makedirs(user_dir, exist_ok=True)
+
+    # File path
+    file_path = os.path.join(user_dir, f"week_{week}.pdf")
 
     # -----------------------------
     # Save File
     # -----------------------------
-
-    with open(filepath, "wb") as f:
-        f.write(file_obj.read())
+    with open(file_path, "wb") as f:
+        f.write(uploaded_file.getbuffer())
 
     now = datetime.utcnow().isoformat()
 
     # -----------------------------
     # Save DB Record
     # -----------------------------
-
     with write_txn() as conn:
         cur = conn.cursor()
 
@@ -71,19 +68,16 @@ def save_assignment(user_id: int, week: int, file_obj):
                 file_path,
                 status,
                 submitted_at
-           )
-           VALUES (?, ?, ?, 'submitted', ?)
-           ON CONFLICT(user_id, week)
-           DO UPDATE SET
-               file_path=excluded.file_path,
-               status='submitted',
-               submitted_at=excluded.submitted_at
-          """,
-          (user_id, week, filepath, now),
-       )
-
-
-        
+            )
+            VALUES (?, ?, ?, 'submitted', ?)
+            ON CONFLICT(user_id, week)
+            DO UPDATE SET
+                file_path=excluded.file_path,
+                status='submitted',
+                submitted_at=excluded.submitted_at
+            """,
+            (user_id, week, file_path, now),
+        )
 
 
 # ==================================================
@@ -259,7 +253,7 @@ def can_issue_certificate(user_id: int) -> bool:
 
         graded = cur.fetchone()[0]
 
-        # Must complete all 6 weekswhere
+        # Must complete all 6 weeks
         return graded >= 6
 
 
