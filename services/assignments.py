@@ -34,53 +34,68 @@ ASSIGNMENT_DIR = os.path.join(UPLOAD_ROOT, "assignments")
 # ==================================================
 # SAVE ASSIGNMENT
 # ==================================================
+def save_assignment(user_id: int, week: int, file):
+    """
+    Save uploaded assignment file and store correct Railway path in DB
+    """
 
-def save_assignment(user_id: int, week: int, uploaded_file):
+    from services.db import write_txn
+    import os
+    from datetime import datetime
 
-    # Ensure base folders exist
-    os.makedirs(ASSIGNMENT_DIR, exist_ok=True)
+    # Root upload folder (from env or default)
+    UPLOAD_ROOT = os.getenv("LMS_UPLOAD_PATH", "/app/data/uploads")
+    ASSIGNMENT_DIR = os.path.join(UPLOAD_ROOT, "assignments")
 
+    # Create user folder
     user_dir = os.path.join(ASSIGNMENT_DIR, str(user_id))
     os.makedirs(user_dir, exist_ok=True)
 
-    # File path
-    file_path = os.path.join(user_dir, f"week_{week}.pdf")
+    # Final file path (Linux-safe)
+    filename = f"week_{week}.pdf"
+    file_path = os.path.join(user_dir, filename)
 
-    # -----------------------------
-    # Save File
-    # -----------------------------
+    # Save file to disk
     with open(file_path, "wb") as f:
-        f.write(uploaded_file.getbuffer())
+        f.write(file.getbuffer())
 
     now = datetime.utcnow().isoformat()
 
-    # -----------------------------
-    # Save DB Record
-    # -----------------------------
+    # Save record in DB
     with write_txn() as conn:
         cur = conn.cursor()
 
+        # Prevent duplicates
         cur.execute(
             """
-            INSERT INTO assignments (
+            DELETE FROM assignments
+            WHERE user_id=? AND week=?
+            """,
+            (user_id, week),
+        )
+
+        cur.execute(
+            """
+            INSERT INTO assignments
+            (
                 user_id,
                 week,
                 file_path,
-                status,
-                submitted_at
+                original_filename,
+                submitted_at,
+                status
             )
-            VALUES (?, ?, ?, 'submitted', ?)
-            ON CONFLICT(user_id, week)
-            DO UPDATE SET
-                file_path = excluded.file_path,
-                status = 'submitted',
-                submitted_at = excluded.submitted_at
+            VALUES (?, ?, ?, ?, ?, ?)
             """,
-            (user_id, week, file_path, now),
+            (
+                user_id,
+                week,
+                file_path,
+                file.name,
+                now,
+                "submitted",
+            ),
         )
-
-        conn.commit()
-
 
 # ==================================================
 # CHECK IF ASSIGNMENT EXISTS
