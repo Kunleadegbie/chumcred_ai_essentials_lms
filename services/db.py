@@ -84,8 +84,6 @@ def write_txn():
     finally:
         conn.close()
 
-
-
 def ensure_dirs():
 
     db_path = os.getenv("LMS_DB_PATH", "chumcred_lms.db")
@@ -99,7 +97,7 @@ def ensure_dirs():
 
     uploads_dir = os.getenv("LMS_UPLOAD_PATH", "/app/data/uploads")
 
-    os.makedirs(uploads_dir
+    os.makedirs(uploads_dir, exist_ok=True)
 
 
 # --------------------------------------------
