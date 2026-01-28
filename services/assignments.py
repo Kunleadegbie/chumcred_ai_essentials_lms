@@ -35,9 +35,9 @@ ASSIGNMENT_DIR = os.path.join(UPLOAD_ROOT, "assignments")
 # SAVE ASSIGNMENT
 # ==================================================
 
-def save_assignment(user_id, week, uploaded_file):
+def save_assignment(user_id: int, week: int, uploaded_file):
 
-    # Ensure folders exist
+    # Ensure base folders exist
     os.makedirs(ASSIGNMENT_DIR, exist_ok=True)
 
     user_dir = os.path.join(ASSIGNMENT_DIR, str(user_id))
@@ -72,12 +72,14 @@ def save_assignment(user_id, week, uploaded_file):
             VALUES (?, ?, ?, 'submitted', ?)
             ON CONFLICT(user_id, week)
             DO UPDATE SET
-                file_path=excluded.file_path,
-                status='submitted',
-                submitted_at=excluded.submitted_at
+                file_path = excluded.file_path,
+                status = 'submitted',
+                submitted_at = excluded.submitted_at
             """,
             (user_id, week, file_path, now),
         )
+
+        conn.commit()
 
 
 # ==================================================
@@ -87,13 +89,16 @@ def save_assignment(user_id, week, uploaded_file):
 def has_assignment(user_id: int, week: int) -> bool:
 
     with read_conn() as conn:
+        conn.row_factory = sqlite3.Row
         cur = conn.cursor()
 
         cur.execute(
             """
             SELECT 1
             FROM assignments
-            WHERE user_id=? AND week=? AND file_path IS NOT NULL
+            WHERE user_id = ?
+              AND week = ?
+              AND file_path IS NOT NULL
             LIMIT 1
             """,
             (user_id, week),
@@ -115,7 +120,15 @@ def list_all_assignments():
         cur.execute(
             """
             SELECT
-                a.*,
+                a.id,
+                a.user_id,
+                a.week,
+                a.file_path,
+                a.status,
+                a.grade,
+                a.feedback,
+                a.submitted_at,
+                a.graded_at,
                 u.username
             FROM assignments a
             JOIN users u ON u.id = a.user_id
@@ -143,14 +156,16 @@ def review_assignment(assignment_id: int, grade: int, feedback: str):
             """
             UPDATE assignments
             SET
-                grade=?,
-                feedback=?,
-                status='graded',
-                graded_at=?
-            WHERE id=?
+                grade = ?,
+                feedback = ?,
+                status = 'graded',
+                graded_at = ?
+            WHERE id = ?
             """,
             (grade, feedback, now, assignment_id),
         )
+
+        conn.commit()
 
 
 # ==================================================
@@ -166,9 +181,9 @@ def get_week_grade(user_id: int, week: int):
             """
             SELECT grade
             FROM assignments
-            WHERE user_id=?
-              AND week=?
-              AND status='graded'
+            WHERE user_id = ?
+              AND week = ?
+              AND status = 'graded'
             LIMIT 1
             """,
             (user_id, week),
@@ -202,7 +217,7 @@ def get_student_grade_summary(user_id: int):
                 status,
                 grade
             FROM assignments
-            WHERE user_id=?
+            WHERE user_id = ?
             ORDER BY week
             """,
             (user_id,),
@@ -245,8 +260,8 @@ def can_issue_certificate(user_id: int) -> bool:
             """
             SELECT COUNT(*)
             FROM assignments
-            WHERE user_id=?
-              AND status='graded'
+            WHERE user_id = ?
+              AND status = 'graded'
             """,
             (user_id,),
         )
