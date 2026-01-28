@@ -84,20 +84,24 @@ def write_txn():
     finally:
         conn.close()
 
+
 def ensure_dirs():
 
+    # DB PATH
     db_path = os.getenv("LMS_DB_PATH", "chumcred_lms.db")
 
-    # Extract folder from DB path
+    # Parent folder for DB
     data_dir = os.path.dirname(db_path)
 
-    # Only create folder, never the .db file
+    # Ensure /app/data exists
     if data_dir and not os.path.exists(data_dir):
         os.makedirs(data_dir, exist_ok=True)
 
+    # Upload folder
     uploads_dir = os.getenv("LMS_UPLOAD_PATH", "/app/data/uploads")
 
-    os.makedirs(uploads_dir, exist_ok=True)
+    if not os.path.exists(uploads_dir):
+        os.makedirs(uploads_dir, exist_ok=True)
 
 
 # --------------------------------------------
