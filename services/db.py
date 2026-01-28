@@ -12,12 +12,12 @@ import bcrypt
 # ==================================================
 # PATH CONFIG
 # ==================================================
-
 # Main DB path (from Railway or fallback)
-DB_PATH = os.getenv(
-    "LMS_DB_PATH",
-    "/app/data/chumcred_lms.db"
-)
+
+DB_PATH = os.getenv("LMS_DB_PATH")
+
+if not DB_PATH:
+    raise RuntimeError("LMS_DB_PATH is not set. Refusing to use fallback DB.")
 
 # Upload root
 UPLOAD_ROOT = os.getenv(
