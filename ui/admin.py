@@ -188,7 +188,6 @@ def admin_router(user):
                     assignment_id=a["id"],
                     grade=grade,
                     feedback=feedback,
-                    status="graded",     # ✅ VERY IMPORTANT
                 )
 
                 st.success("Assignment graded successfully.")
