@@ -55,8 +55,7 @@ def student_router(user):
             return  # 🔥 exit immediately
 
         
-        return  # hard stop only if NOT clicked
-
+        
     # =================================================
     # BROADCAST POPUP (Dashboard)
     # =================================================
