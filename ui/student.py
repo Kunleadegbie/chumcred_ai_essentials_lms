@@ -53,22 +53,22 @@ def student_router(user):
 
         st.divider()
 
+
         if st.button("✅ I have read and understood the Orientation", key="wk0_done_btn"):
 
             # Mark orientation complete
             mark_orientation_completed(user_id)
 
-            # Unlock Week 1 immediately
+            # Unlock Week 1
             mark_week_completed(user_id, 1)
 
             st.success("Orientation completed. Week 1 is now unlocked.")
 
-            # Force clean reload
-            st.session_state["orientation_done"] = True
             st.rerun()
 
-        # 🚨 STOP everything else until done
-        st.stop()
+        # 🚨 Stop ONLY if orientation is still not done
+        if not is_orientation_completed(user_id):
+            st.stop()
  
     # =================================================
     # BROADCAST POPUP (Dashboard)
