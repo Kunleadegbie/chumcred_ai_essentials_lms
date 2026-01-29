@@ -52,9 +52,10 @@ def student_router(user):
             mark_orientation_completed(user_id)
             st.success("Orientation completed. Week 1 is now unlocked.")
             st.rerun()
+            return  # 🔥 exit immediately
 
-        # ⛔ HARD STOP until Week 0 is completed
-        return
+        
+        return  # hard stop only if NOT clicked
 
     # =================================================
     # BROADCAST POPUP (Dashboard)
