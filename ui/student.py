@@ -50,15 +50,15 @@ def student_router(user):
             st.warning("Orientation content not found. Please contact admin.")
 
 
-       if st.button("✅ I have read and understood the Orientation", key="wk0_done_btn"):
-           try:
-              mark_orientation_completed(user_id)
-              st.success("Orientation saved in DB ✅")
-           except Exception as e:
-               st.error(f"DB Error: {e}")
+    if st.button("✅ I have read and understood the Orientation", key="wk0_done_btn"):
+        try:
+           mark_orientation_completed(user_id)
+           st.success("Orientation saved in DB ✅")
+        except Exception as e:
+            st.error(f"DB Error: {e}")
 
-           st.rerun()
-           return
+        st.rerun()
+        return
 
     # =================================================
     # BROADCAST POPUP (Dashboard)
