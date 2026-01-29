@@ -166,7 +166,28 @@ def admin_router(user):
 """
             )
 
-            st.link_button("📄 Download", a["file_path"])
+            
+            # ===============================
+            # DOWNLOAD ASSIGNMENT (SAFE)
+            # ===============================
+
+            file_path = a["file_path"]
+
+            if file_path and os.path.exists(file_path):
+
+                with open(file_path, "rb") as f:
+                    file_bytes = f.read()
+
+            st.download_button(
+                label="⬇️ Download Assignment",
+                data=file_bytes,
+                file_name=os.path.basename(file_path),
+                mime="application/octet-stream",
+                key=f"dl_{a['id']}"
+            )
+
+           else:
+               st.error("❌ File not found on server")
 
             grade = st.number_input(
                 "Grade (%)",
