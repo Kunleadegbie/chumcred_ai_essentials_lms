@@ -178,7 +178,7 @@ def admin_router(user):
 
             feedback = st.text_area(
                 "Feedback",
-                value=a.get("feedback") or "",
+                value=a["feedback"] if a["feedback"] is not None else "",
                 key=f"fb_{a['id']}",
             )
 
