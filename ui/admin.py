@@ -170,9 +170,10 @@ def admin_router(user):
 
             grade = st.number_input(
                 "Grade (%)",
-                min_value=0,
-                max_value=100,
-                value=a["grade"] if a["grade"] is not None else 0,
+                min_value=0.0,
+                max_value=100.0,
+                value=float(a["grade"] or 0),
+                step=1.0,  
                 key=f"grade_{a['id']}",
             )
 
