@@ -159,37 +159,37 @@ def is_orientation_completed(user_id: int) -> bool:
 # ==========================================================
 # WEEK COMPLETION
 # ==========================================================
-def mark_orientation_completed(user_id):
-    from datetime import datetime
+def mark_week_completed(user_id, week):
+
     now = datetime.utcnow().isoformat()
 
     with write_txn() as conn:
         cur = conn.cursor()
 
         # Check if record exists
-        cur.execute(
-            "SELECT id FROM progress WHERE user_id=? AND week=0",
-            (user_id,)
-        )
+        cur.execute("""
+            SELECT id FROM progress
+            WHERE user_id=? AND week=?
+        """, (user_id, week))
+
         row = cur.fetchone()
 
         if row:
-            # Update
+            # Update existing
             cur.execute("""
                 UPDATE progress
-                SET orientation_done=1,
-                    status='completed',
+                SET status='completed',
                     updated_at=?
-                WHERE user_id=? AND week=0
-            """, (now, user_id))
+                WHERE user_id=? AND week=?
+            """, (now, user_id, week))
 
         else:
-            # Insert
+            # Insert new
             cur.execute("""
                 INSERT INTO progress
-                (user_id, week, status, orientation_done, updated_at)
-                VALUES (?, 0, 'completed', 1, ?)
-            """, (user_id, now))
+                (user_id, week, status, updated_at)
+                VALUES (?, ?, 'completed', ?)
+            """, (user_id, week, now))
 
 # ==========================================================
 # ADMIN CONTROLS
