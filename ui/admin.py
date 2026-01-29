@@ -172,7 +172,7 @@ def admin_router(user):
                 "Grade (%)",
                 min_value=0,
                 max_value=100,
-                value=a.get("grade") or 0,
+                value=a["grade"] if a["grade"] is not None else 0,
                 key=f"grade_{a['id']}",
             )
 
