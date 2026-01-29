@@ -37,7 +37,7 @@ def student_router(user):
 
     
     # =================================================
-    # WEEK 0 (ORIENTATION) — MANDATORY LANDING
+    # WEEK 0 (ORIENTATION) — MANDATORY LANDING PAGE
     # =================================================
 
     if not is_orientation_completed(user_id):
