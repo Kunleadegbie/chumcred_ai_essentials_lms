@@ -101,6 +101,39 @@ def is_week_unlocked(user_id: int, week: int) -> bool:
 # ==========================================================
 # WEEK 0 (ORIENTATION)
 # ==========================================================
+def mark_orientation_completed(user_id):
+    from datetime import datetime
+    now = datetime.utcnow().isoformat()
+
+    with write_txn() as conn:
+        cur = conn.cursor()
+
+        # Check if record exists
+        cur.execute(
+            "SELECT id FROM progress WHERE user_id=? AND week=0",
+            (user_id,)
+        )
+        row = cur.fetchone()
+
+        if row:
+            # Update
+            cur.execute("""
+                UPDATE progress
+                SET orientation_done=1,
+                    status='completed',
+                    updated_at=?
+                WHERE user_id=? AND week=0
+            """, (now, user_id))
+
+        else:
+            # Insert
+            cur.execute("""
+                INSERT INTO progress
+                (user_id, week, status, orientation_done, updated_at)
+                VALUES (?, 0, 'completed', 1, ?)
+            """, (user_id, now))
+
+
 def is_orientation_completed(user_id: int) -> bool:
     """
     Returns True if Week 0 is completed.
@@ -120,74 +153,42 @@ def is_orientation_completed(user_id: int) -> bool:
     return row is not None and row["status"] == "completed"
 
 
-def mark_orientation_completed(user_id: int) -> None:
-    """
-    Marks Week 0 completed and unlocks Week 1.
-    """
-    now = datetime.utcnow().isoformat()
-
-    with write_txn() as conn:
-        cur = conn.cursor()
-
-        # Mark Week 0 completed
-        cur.execute(
-            """
-            UPDATE progress
-            SET status = 'completed', updated_at = ?
-            WHERE user_id = ? AND week = 0
-            """,
-            (now, user_id),
-        )
-
-        # Unlock Week 1 (ONLY if not admin-locked)
-        cur.execute(
-            """
-            UPDATE progress
-            SET status = 'unlocked', updated_at = ?
-            WHERE user_id = ?
-              AND week = 1
-              AND override_by_admin = 0
-            """,
-            (now, user_id),
-        )
 
 
 # ==========================================================
 # WEEK COMPLETION
 # ==========================================================
-def mark_week_completed(user_id: int, week: int) -> None:
-    """
-    Marks a week completed.
-
-    IMPORTANT:
-    - Completing Week 0 unlocks Week 1
-    - Completing Week 1+ does NOT unlock next week
-    """
+def mark_orientation_completed(user_id):
+    from datetime import datetime
     now = datetime.utcnow().isoformat()
 
     with write_txn() as conn:
         cur = conn.cursor()
 
+        # Check if record exists
         cur.execute(
-            """
-            UPDATE progress
-            SET status = 'completed', updated_at = ?
-            WHERE user_id = ? AND week = ?
-            """,
-            (now, user_id, week),
+            "SELECT id FROM progress WHERE user_id=? AND week=0",
+            (user_id,)
         )
+        row = cur.fetchone()
 
-        # Only Week 0 auto-unlocks Week 1
-        if week == ORIENTATION_WEEK:
-            cur.execute(
-                """
+        if row:
+            # Update
+            cur.execute("""
                 UPDATE progress
-                SET status = 'unlocked', updated_at = ?
-                WHERE user_id = ? AND week = 1 AND status = 'locked'
-                """,
-                (now, user_id),
-            )
+                SET orientation_done=1,
+                    status='completed',
+                    updated_at=?
+                WHERE user_id=? AND week=0
+            """, (now, user_id))
 
+        else:
+            # Insert
+            cur.execute("""
+                INSERT INTO progress
+                (user_id, week, status, orientation_done, updated_at)
+                VALUES (?, 0, 'completed', 1, ?)
+            """, (user_id, now))
 
 # ==========================================================
 # ADMIN CONTROLS

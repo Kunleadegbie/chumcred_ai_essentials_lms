@@ -49,14 +49,16 @@ def student_router(user):
         else:
             st.warning("Orientation content not found. Please contact admin.")
 
-        if st.button("✅ I have read and understood the Orientation", key="wk0_done_btn"):
-            mark_orientation_completed(user_id)
-            st.success("Orientation completed. Week 1 is now unlocked.")
-            st.rerun()
-            return  # 🔥 exit immediately
 
-        
-        return  # hard stop only if NOT clicked
+       if st.button("✅ I have read and understood the Orientation", key="wk0_done_btn"):
+           try:
+              mark_orientation_completed(user_id)
+              st.success("Orientation saved in DB ✅")
+           except Exception as e:
+               st.error(f"DB Error: {e}")
+
+           st.rerun()
+           return
 
     # =================================================
     # BROADCAST POPUP (Dashboard)
