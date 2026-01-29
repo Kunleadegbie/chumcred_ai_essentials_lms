@@ -13,7 +13,8 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Dict
 
-from services.db import read_conn, write_txn
+from services.db import read_conn
+from services.db import write_txn
 
 TOTAL_WEEKS = 6          # Weeks 1–6
 ORIENTATION_WEEK = 0     # Week 0
@@ -301,4 +302,35 @@ def sync_user_progress(user_id: int, total_weeks: int = 6):
                     """,
                     (user_id, week, status),
                 )
+
+def mark_week_completed(user_id, week):
+    from datetime import datetime
+    now = datetime.utcnow().isoformat()
+
+    with write_txn() as conn:
+        cur = conn.cursor()
+
+        # Check if record exists
+        cur.execute(
+            "SELECT id FROM progress WHERE user_id=? AND week=?",
+            (user_id, week)
+        )
+        row = cur.fetchone()
+
+        if row:
+            # Update
+            cur.execute("""
+                UPDATE progress
+                SET status='completed',
+                    updated_at=?
+                WHERE user_id=? AND week=?
+            """, (now, user_id, week))
+
+        else:
+            # Insert
+            cur.execute("""
+                INSERT INTO progress
+                (user_id, week, status, orientation_done, updated_at)
+                VALUES (?, ?, 'completed', 0, ?)
+            """, (user_id, week, now))
 
