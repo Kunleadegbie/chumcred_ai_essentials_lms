@@ -38,6 +38,7 @@ def student_router(user):
     # =================================================
     # WEEK 0 (ORIENTATION) — MANDATORY LANDING
     # =================================================
+
     if not is_orientation_completed(user_id):
         st.header("🧭 Orientation (Week 0)")
 
@@ -55,7 +56,8 @@ def student_router(user):
             return  # 🔥 exit immediately
 
         
-        
+        return  # hard stop only if NOT clicked
+
     # =================================================
     # BROADCAST POPUP (Dashboard)
     # =================================================
