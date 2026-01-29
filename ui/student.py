@@ -35,11 +35,13 @@ def student_router(user):
 
     user_id = user["id"]
 
+    
     # =================================================
     # WEEK 0 (ORIENTATION) — MANDATORY LANDING
     # =================================================
 
     if not is_orientation_completed(user_id):
+
         st.header("🧭 Orientation (Week 0)")
 
         md_path = os.path.join(CONTENT_DIR, "week0.md")
@@ -49,17 +51,25 @@ def student_router(user):
         else:
             st.warning("Orientation content not found. Please contact admin.")
 
+        st.divider()
 
-    if st.button("✅ I have read and understood the Orientation", key="wk0_done_btn"):
-        try:
-           mark_orientation_completed(user_id)
-           st.success("Orientation saved in DB ✅")
-        except Exception as e:
-            st.error(f"DB Error: {e}")
+        if st.button("✅ I have read and understood the Orientation", key="wk0_done_btn"):
 
-        st.rerun()
-        return
+            # Mark orientation complete
+            mark_orientation_completed(user_id)
 
+            # Unlock Week 1 immediately
+            mark_week_completed(user_id, 1)
+
+            st.success("Orientation completed. Week 1 is now unlocked.")
+
+            # Force clean reload
+            st.session_state["orientation_done"] = True
+            st.rerun()
+
+        # 🚨 STOP everything else until done
+        st.stop()
+ 
     # =================================================
     # BROADCAST POPUP (Dashboard)
     # =================================================
