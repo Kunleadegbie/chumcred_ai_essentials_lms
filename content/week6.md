@@ -216,12 +216,3 @@ Try the following prompts inside ChatGPT:
 
 ---
 
-## 8️⃣ Submission & Evaluation Criteria
-
-- Practical value — **30%**
-- Presentation & professionalism — **30%**
-- Effective use of AI tools — **20%**
-- Clarity of monetization strategy — **20%**
-
----
-

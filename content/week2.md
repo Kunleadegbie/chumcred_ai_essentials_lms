@@ -252,12 +252,4 @@ Observe how changes in prompts affect the output.
 
 ---
 
-## 8️⃣ Submission & Grading Criteria
-
-- Quality of prompts used — **30%**
-- Clarity of explanation — **30%**
-- Structure & organization — **20%**
-- Presentation — **20%**
-
----
 

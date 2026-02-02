@@ -219,12 +219,3 @@ Try the following exercises inside ChatGPT or Canva:
 
 ---
 
-## 8️⃣ Submission & Grading Criteria
-
-- Creativity & clarity — **30%**
-- Effective use of AI tools — **30%**
-- Branding consistency — **20%**
-- Presentation & formatting — **20%**
-
----
-

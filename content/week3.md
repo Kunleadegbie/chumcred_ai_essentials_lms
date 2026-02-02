@@ -211,12 +211,4 @@ Observe how clearer prompts lead to better outputs.
 
 ---
 
-## 8️⃣ Submission & Grading Criteria
-
-- ATS alignment & relevance — **30%**
-- Clarity & professionalism — **30%**
-- Effective use of AI prompting — **20%**
-- Presentation & formatting — **20%**
-
----
 

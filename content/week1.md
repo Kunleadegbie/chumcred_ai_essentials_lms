@@ -201,12 +201,7 @@ Try the following prompts inside ChatGPT:
 
 ---
 
-## 8️⃣ Submission & Grading Criteria
 
-- Clarity of explanation — **30%**
-- Practical relevance — **30%**
-- Personalization — **20%**
-- Structure & presentation — **20%**
 
----
+
 

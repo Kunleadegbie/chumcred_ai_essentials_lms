@@ -216,12 +216,3 @@ Try the following prompts and exercises:
 
 ---
 
-## 8️⃣ Submission & Grading Criteria
-
-- Functionality & completeness — **30%**
-- Clarity of message — **30%**
-- Effective use of AI tools — **20%**
-- Presentation & usability — **20%**
-
----
-
