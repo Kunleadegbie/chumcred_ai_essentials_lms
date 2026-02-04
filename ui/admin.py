@@ -144,7 +144,12 @@ def admin_router(user):
 
         users = list_all_users()
 
-        students = [u["username"] for u in users if u["role"] == "student"]
+        students = [
+            u["username"]
+            for u in users
+            if u.get("role") == "student"
+        ]
+
 
         if not students:
             st.info("No students found.")
