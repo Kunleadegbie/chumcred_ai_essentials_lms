@@ -1,4 +1,3 @@
-# ui/admin.py 
 # ui/admin.py
 
 import os
@@ -7,12 +6,13 @@ import streamlit as st
 from services.auth import (
     create_user,
     get_all_students,
+    reset_user_password,
+    list_all_users,
 )
 
 from services.progress import (
     unlock_week_for_user,
     lock_week_for_user,
-    get_progress,
 )
 
 from services.assignments import (
@@ -34,7 +34,7 @@ def admin_router(user):
     st.title("🛠 Admin Dashboard")
     st.caption(f"Welcome, {user['username']}")
 
-    # ---------------- SIDEBAR ----------------
+    # ================= SIDEBAR =================
     with st.sidebar:
 
         st.markdown("### 🛠 Admin Menu")
@@ -45,6 +45,7 @@ def admin_router(user):
                 "Dashboard",
                 "Create Student",
                 "All Students",
+                "Reset Password",
                 "Group Week Unlock",
                 "Assignment Review",
                 "Broadcast Announcement",
@@ -135,6 +136,55 @@ def admin_router(user):
             st.info("No students found.")
 
     # =========================================================
+    # RESET PASSWORD
+    # =========================================================
+    elif menu == "Reset Password":
+
+        st.subheader("🔐 Reset Student Password")
+
+        users = list_all_users()
+
+        students = [u["username"] for u in users if u["role"] == "student"]
+
+        if not students:
+            st.info("No students found.")
+            return
+
+        selected_user = st.selectbox(
+            "Select Student",
+            students,
+        )
+
+        new_pw = st.text_input(
+            "New Password",
+            type="password",
+        )
+
+        confirm_pw = st.text_input(
+            "Confirm Password",
+            type="password",
+        )
+
+        if st.button("🔄 Reset Password"):
+
+            if not new_pw:
+                st.warning("Enter new password")
+
+            elif new_pw != confirm_pw:
+                st.error("Passwords do not match")
+
+            elif len(new_pw) < 6:
+                st.warning("Password must be at least 6 characters")
+
+            else:
+                try:
+                    reset_user_password(selected_user, new_pw)
+                    st.success(f"Password reset for {selected_user}")
+
+                except Exception as e:
+                    st.error(f"Failed: {e}")
+
+    # =========================================================
     # GROUP WEEK UNLOCK
     # =========================================================
     elif menu == "Group Week Unlock":
@@ -192,34 +242,27 @@ def admin_router(user):
 """
             )
 
-            # ===============================
-            # DOWNLOAD ASSIGNMENT (FIXED)
-            # ===============================
+            # ================= DOWNLOAD =================
 
             file_path = a["file_path"]
-            file_bytes = None
 
             if file_path and os.path.exists(file_path):
 
                 with open(file_path, "rb") as f:
                     file_bytes = f.read()
 
-            else:
-                st.error("❌ File not found on server")
-
-            if file_bytes:
-
                 st.download_button(
                     label="⬇️ Download Assignment",
                     data=file_bytes,
                     file_name=os.path.basename(file_path),
                     mime="application/octet-stream",
-                    key=f"dl_{a['id']}"
+                    key=f"dl_{a['id']}",
                 )
 
-            # ===============================
-            # GRADING
-            # ===============================
+            else:
+                st.error("❌ File not found on server")
+
+            # ================= GRADING =================
 
             grade = st.number_input(
                 "Grade (%)",
@@ -232,7 +275,7 @@ def admin_router(user):
 
             feedback = st.text_area(
                 "Feedback",
-                value=a["feedback"] if a["feedback"] is not None else "",
+                value=a["feedback"] if a["feedback"] else "",
                 key=f"fb_{a['id']}",
             )
 
@@ -266,7 +309,7 @@ def admin_router(user):
             st.rerun()
 
     # =========================================================
-    # HELP & SUPPORT
+    # HELP
     # =========================================================
     elif menu == "Help & Support":
 

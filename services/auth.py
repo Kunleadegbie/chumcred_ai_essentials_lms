@@ -187,3 +187,36 @@ def login_user():
 def logout():
     st.session_state.user = None
     st.rerun()
+
+
+import bcrypt
+from services.db import write_txn
+
+
+def reset_user_password(username: str, new_password: str):
+    """
+    Securely reset a user's password
+    """
+
+    hashed = bcrypt.hashpw(
+        new_password.encode(),
+        bcrypt.gensalt()
+    )
+
+    with write_txn() as conn:
+        cur = conn.cursor()
+
+        cur.execute(
+            """
+            UPDATE users
+            SET password_hash = ?, active = 1
+            WHERE username = ?
+            """,
+            (hashed, username)
+        )
+
+        if cur.rowcount == 0:
+            raise ValueError("User not found")
+
+    return True
+
