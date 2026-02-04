@@ -95,6 +95,13 @@ def get_all_students():
         )
         return [dict(r) for r in cur.fetchall()]
 
+def list_all_users():
+    """
+    Alias for admin usage.
+    Returns all users (students only for now).
+    """
+    return get_all_students()
+
 
 def get_all_cohorts():
     """
@@ -192,31 +199,4 @@ def logout():
 import bcrypt
 from services.db import write_txn
 
-
-def reset_user_password(username: str, new_password: str):
-    """
-    Securely reset a user's password
-    """
-
-    hashed = bcrypt.hashpw(
-        new_password.encode(),
-        bcrypt.gensalt()
-    )
-
-    with write_txn() as conn:
-        cur = conn.cursor()
-
-        cur.execute(
-            """
-            UPDATE users
-            SET password_hash = ?, active = 1
-            WHERE username = ?
-            """,
-            (hashed, username)
-        )
-
-        if cur.rowcount == 0:
-            raise ValueError("User not found")
-
-    return True
 
