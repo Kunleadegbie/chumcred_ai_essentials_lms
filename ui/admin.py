@@ -171,7 +171,7 @@ def admin_router(user):
                 reset_user_password(selected_student, new_password)
 
             st.success(f"✅ Password reset successfully for: {selected_student}")
-            st.rerun()
+            st.session_state["pw_reset_done"] = True
 
     # =========================================================
     # GROUP WEEK UNLOCK
