@@ -1,218 +1,287 @@
-# 🎓 AI ESSENTIALS  
-## WEEK 5 — AI for Websites, Digital Products & No-Code Tools
+# 🚀 **WEEK 5: Advanced AI Applications & Real-World Projects**
 
-**Week Duration:** Monday → Sunday  
-**Learning Mode:** Self-study + 1-hour live review  
-**Assignment Deadline:** Saturday (late submission till Sunday)
+## 🎯 Theme:
 
----
-
-## 1️⃣ Week Overview
-
-Welcome to **Week 5**, where ideas turn into **real digital assets**.
-
-This week focuses on how AI and no-code tools allow you to:
-- Build websites without coding
-- Create landing pages for products or services
-- Launch personal link-in-bio pages
-- Set up simple automated workflows
-- Understand the concept of AI-powered mini-apps
-
-You will realize that building online is no longer a technical barrier — **clarity and structure matter more than code**.
-
-> If you can explain it clearly, AI can help you build it.
+**From Learning AI → Applying AI Like a Professional**
 
 ---
 
-## 2️⃣ Learning Objectives
+## 📌 WEEK 5 OBJECTIVE
 
-By the end of Week 5, you should be able to:
+By the end of this week, you will be able to:
 
-- Build a basic website using AI tools
-- Create simple landing pages for offers
-- Design personal link-in-bio pages
-- Understand basic workflow automation
-- Use popular AI website builders confidently
-- Understand what AI mini-apps and chat tools are
-- Publish a live digital page online
+✅ Design AI-powered solutions
+✅ Automate tasks
+✅ Analyze data with AI
+✅ Build mini AI systems
+✅ Present AI projects
+✅ Work like an AI consultant
 
----
-
-## 3️⃣ Core Reading Content
-
-### 3.1 Building a Website Using AI
-
-AI website builders allow you to:
-- Describe your business or idea
-- Automatically generate layouts, text, and structure
-- Edit content visually (no coding required)
-
-**Typical AI website process:**
-1. Describe your business or idea
-2. Choose style preferences
-3. Let AI generate the website
-4. Customize and publish
-
-This approach dramatically reduces setup time and technical complexity.
+This week transforms you into a **problem-solver**.
 
 ---
 
-### 3.2 Building Landing Pages
+## 🧠 WHY THIS WEEK MATTERS
 
-A landing page is a **single-purpose page** designed to:
-- Promote a product or service
-- Capture leads
-- Drive a specific action
+Most people stop at “knowing AI tools.”
 
-AI helps by:
-- Writing headlines
-- Structuring sections
-- Suggesting calls-to-action (CTAs)
+Professionals go further:
 
-**Example Prompt:**
-> “Create landing page copy for an online training program targeting beginners.”
+✔ They design workflows
+✔ They automate systems
+✔ They create solutions
+✔ They save companies money
+✔ They increase productivity
 
----
-
-### 3.3 Creating Personal Link-in-Bio Pages
-
-Link-in-bio pages are useful for:
-- Freelancers
-- Creators
-- Professionals
-- Small business owners
-
-They typically include:
-- Short bio
-- Links to work or products
-- Contact information
-
-Tools like **Carrd** make link-in-bio pages easy and fast to build.
+After this week, you will be valuable anywhere.
 
 ---
 
-### 3.4 Building Simple Automated Workflows
+# 📘 MODULE 1: AI Workflow & Automation
 
-Automation means:
-- Reducing repetitive tasks
-- Saving time
-- Improving consistency
+### 🔹 What You Will Learn
 
-**Examples of simple automation:**
-- Auto-generated notes
-- Task reminders
-- Content planning
-- Basic data organization
+* Building AI workflows
+* Task automation
+* AI + Google Sheets
+* AI + Notion
+* AI + Email systems
 
-AI tools like **Notion AI** support this by helping you:
-- Structure information
-- Summarize content
-- Generate action lists
+### 🔹 Example Prompt
 
----
+> “Create an automated workflow for managing customer inquiries using AI.”
 
-### 3.5 Overview of Popular AI & No-Code Tools
+### 🔹 Tools
 
-**Durable AI**
-- Fast AI website builder
-- Best for small businesses
-
-**Wix AI**
-- Strong design flexibility
-- Good for professional websites
-
-**Carrd**
-- Simple one-page websites
-- Ideal for portfolios and landing pages
-
-**Notion AI**
-- Content organization
-- Notes, planning, and workflows
-
-**Hostinger AI**
-- Hosting combined with AI website creation
-
-Each tool has strengths — the goal is **speed and clarity**, not perfection.
+* Zapier
+* Make.com
+* ChatGPT
+* Google Workspace
 
 ---
 
-### 3.6 Introduction to AI Mini-Apps & Chat-Based Tools
+## 🎥 Video: AI Automation for Beginners
 
-AI mini-apps are small tools that:
-- Solve specific problems
-- Automate tasks
-- Provide instant responses
-
-**Examples:**
-- Resume analyzers
-- Study helpers
-- Customer chat tools
-
-At this stage, you do not need to build them — **just understand the concept** and how they work.
+📌 [https://www.youtube.com/watch?v=Z4Jp9ZJ5K0A](https://www.youtube.com/watch?v=Z4Jp9ZJ5K0A)
 
 ---
 
-## 4️⃣ Watch: Required Videos
+# 📘 MODULE 2: AI for Data Analysis & Decision Making
 
-📺 Watch all videos before attempting the assignment.
+### 🔹 What You Will Learn
 
-1. **Build a Website in 5 Minutes Using AI**  
-https://youtu.be/UmC3nU8nq2o
+* Data cleaning with AI
+* Insight generation
+* Report writing
+* Visualization prompts
 
-2. **Durable AI Website Builder Review**  
-https://youtu.be/Gu0JtrTq7Nk
+### 🔹 Example Prompt
 
-3. **4 Free No-Code Tools for Beginners**  
-https://youtu.be/gKzBSSMSmcI
-
----
-
-## 5️⃣ Explore: Further Learning Resources (Optional)
-
-- Durable AI Builder  
-https://durable.co/
-
-- Notion AI  
-https://www.notion.so/product/ai
-
-- Carrd  
-https://carrd.co
-
-- Wix AI  
-https://www.wix.com/ai
+> “Analyze this dataset and give business insights.”
 
 ---
 
-## 6️⃣ Practice: Guided No-Code Exercises (Ungraded)
+## 🎥 Video: AI for Data Analysis
 
-Try the following prompts and exercises:
-
-1.  
-> “Describe a simple personal website you would like to build.”
-
-2.  
-> “Write landing page content for a service you offer.”
-
-3.  
-> “Create a short bio for a link-in-bio page.”
+📌 [https://www.youtube.com/watch?v=xC-c7E5wTz0](https://www.youtube.com/watch?v=xC-c7E5wTz0)
 
 ---
 
-## 7️⃣ Assignment — Week 5 DIY Project
+# 📘 MODULE 3: Building Mini AI Systems
 
-### 🌐 Title  
-**Build Your First AI-Powered Website**
+### 🔹 What You Will Learn
 
-### Task
-- Build **one live website or landing page** using any AI or no-code tool
+* Creating chatbots
+* Knowledge assistants
+* Helpdesk bots
+* FAQ systems
 
-### Submission Requirements
-- Live website link
-- Screenshot of homepage
+### 🔹 Tools
 
-### Deadline
-- ✔ Saturday (on time)
-- ✔ Sunday (late submission)
+* ChatGPT Custom GPTs
+* Botpress
+* Flowise
+* Voiceflow
+
+---
+
+## 🎥 Video: Build Your First AI Assistant
+
+📌 [https://www.youtube.com/watch?v=Q8JH6Z5K7F4](https://www.youtube.com/watch?v=Q8JH6Z5K7F4)
+
+---
+
+# 📘 MODULE 4: AI Project Management
+
+### 🔹 What You Will Learn
+
+* Planning AI projects
+* Risk assessment
+* Documentation
+* Client communication
+
+### 🔹 Template
+
+Students receive:
+✔ AI Project Proposal
+✔ Implementation Plan
+✔ Risk Register
+✔ Delivery Checklist
+
+---
+
+## 🎥 Video: Managing AI Projects
+
+📌 [https://www.youtube.com/watch?v=4G7P0p5ZKXU](https://www.youtube.com/watch?v=4G7P0p5ZKXU)
+
+---
+
+# 📘 MODULE 5: Advanced Prompt Engineering
+
+### 🔹 What You Will Learn
+
+* Role prompting
+* Chain-of-thought
+* Context engineering
+* Output structuring
+
+### 🔹 Master Prompt
+
+> “You are an AI consultant. Design a complete solution for…”
+
+---
+
+## 🎥 Video: Advanced Prompting
+
+📌 [https://www.youtube.com/watch?v=JjzW7Jb3K9U](https://www.youtube.com/watch?v=JjzW7Jb3K9U)
+
+---
+
+# 🛠️ PRACTICAL LAB — WEEK 5 CAPSTONE PROJECT
+
+## 📍 Project Title:
+
+**My Real-World AI Solution**
+
+Students must solve **one real problem**.
+
+---
+
+### ✅ Choose One Track:
+
+#### 🏢 Business Track
+
+* Customer support bot
+* Sales automation
+* Marketing automation
+
+#### 📊 Data Track
+
+* Sales analysis
+* Credit risk model
+* Performance dashboard
+
+#### 🎓 Education Track
+
+* Study assistant
+* Quiz generator
+* Learning planner
+
+#### 💼 Career Track
+
+* Job application system
+* Interview trainer
+* Resume optimizer
+
+---
+
+### 📦 Project Deliverables
+
+Submit:
+
+1️⃣ Problem Description
+2️⃣ AI Workflow Diagram
+3️⃣ Prompts Used
+4️⃣ Output Screenshots
+5️⃣ Business Impact Analysis
+
+---
+
+# 📝 Submission Format
+
+Name file:
+
+> `Week5_AI_Project_YourName.pdf`
+
+---
+
+# 🌟 BONUS: INDUSTRY CASE STUDIES
+
+### Case 1: SME Automation
+
+Saved ₦500k/month using AI.
+
+### Case 2: HR Department
+
+Reduced hiring time by 60%.
+
+### Case 3: Startup
+
+Built MVP with AI in 3 weeks.
+
+---
+
+# 💬 PEER REVIEW ACTIVITY
+
+Students must review 2 classmates’ projects:
+
+✔ Strengths
+✔ Improvements
+✔ Innovation score
+
+---
+
+# 🧭 WEEK 5 REFLECTION
+
+Answer:
+
+1. What problem did I solve?
+2. What skill did I master?
+3. How marketable am I now?
+4. Who can pay for this skill?
+
+---
+
+# 🎯 SKILLS YOU NOW POSSESS
+
+After Week 5, you can:
+
+✅ Build AI systems
+✅ Automate workflows
+✅ Analyze business data
+✅ Design solutions
+✅ Lead AI projects
+
+You are now **industry-ready**.
+
+---
+
+# 🚀 MOTIVATION
+
+> “Skills pay bills.
+> AI skills pay globally.”
+
+---
+
+# 📋 COMPLETION CHECKLIST
+
+Before moving to Week 6:
+
+☑ Project submitted
+☑ Workflow built
+☑ Automation tested
+☑ Peer reviews done
+☑ Reflection completed
 
 ---
 
