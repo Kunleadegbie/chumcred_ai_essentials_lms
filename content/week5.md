@@ -233,7 +233,7 @@ Built MVP with AI in 3 weeks.
 
 # 💬 PEER REVIEW ACTIVITY
 
-Students must review 2 classmates’ projects:
+Students must review 1 classmates’ projects:
 
 ✔ Strengths
 ✔ Improvements
