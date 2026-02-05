@@ -109,20 +109,14 @@ Improve workflow
 ---
 
 ## 🎥 Recommended Video
-📌 1. AI Productivity Masterclass (ChatGPT Workflows)
+1️⃣ AI Productivity Tips You Can Use Today
+📌 https://www.youtube.com/watch?v=50x4o3-OTpQ
 
-🎬 Use ChatGPT to Work Smarter, Not Harder
-🔗 https://www.youtube.com/watch?v=QqkR3Z9yQ7A
+2️⃣ 10 Ways to Automate Your Work Using AI Tools
+📌 https://www.youtube.com/watch?v=oqVm7p_iPLg
 
-📌 2. Automate Daily Work with AI Tools
-
-🎬 AI Tools That Will Save You 10+ Hours a Week
-🔗 https://www.youtube.com/watch?v=7F7qk6z9XG0
-
-📌 3. Build Smart Workflows
-
-🎬 Create Powerful AI Workflows (Beginner Friendly)
-🔗 https://www.youtube.com/watch?v=U6xX8H9z1dM
+3️⃣ Automate Your Day with ChatGPT & AI
+📌 https://www.youtube.com/watch?v=tc1G_xgNJZM
 
 
 ---
