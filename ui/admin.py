@@ -166,7 +166,7 @@ def admin_router(user):
 
             # Try ID-based reset first; fallback to username-based reset
             try:
-                reset_user_password(student_id, new_password)
+                reset_user_password(selected_student, new_password)
             except TypeError:
                 reset_user_password(selected_student, new_password)
 
