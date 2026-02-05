@@ -110,13 +110,13 @@ Improve workflow
 
 ## 🎥 Recommended Video
 1️⃣ AI Productivity Tips You Can Use Today
-📌 https://www.youtube.com/watch?v=50x4o3-OTpQ
+📌https://youtu.be/Q07rFZtc2Ao?si=sttRhvXvjdEmDKuq
 
-2️⃣ 10 Ways to Automate Your Work Using AI Tools
-📌 https://www.youtube.com/watch?v=oqVm7p_iPLg
+2️⃣ Ways to Automate Your Work Using AI Tools
+📌 https://youtu.be/f1lTMzWygTA?si=hludq_sY74DJDUtP
 
 3️⃣ Automate Your Day with ChatGPT & AI
-📌 https://www.youtube.com/watch?v=tc1G_xgNJZM
+📌 https://youtu.be/GVORrf0NVck?si=uF8oO2IR5V1h5lHe
 
 
 ---
