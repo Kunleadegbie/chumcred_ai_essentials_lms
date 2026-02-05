@@ -70,7 +70,7 @@ Create a mini business plan for:
 
 ## 🎥 Video: AI for Business Planning
 
-📌 [https://www.youtube.com/watch?v=8JYBvQ2Zr4Y](https://www.youtube.com/watch?v=8JYBvQ2Zr4Y)
+📌 [https://youtu.be/-RNZKU1JJGc?si=Ra954XT1MI14pD46]
 
 *(How to build business ideas with AI)*
 
@@ -100,7 +100,9 @@ Create a mini business plan for:
 
 ## 🎥 Video: AI Marketing Made Easy
 
-📌 [https://www.youtube.com/watch?v=Zs2JQ9B2p3A](https://www.youtube.com/watch?v=Zs2JQ9B2p3A)
+📌 [https://youtu.be/ZKBSp1CELZw?si=x-aRVSojS9EnPRQw]
+
+*(Marketing made easy with AI)*
 
 ---
 
@@ -123,7 +125,9 @@ Create a mini business plan for:
 
 ## 🎥 Video: AI for Job Success
 
-📌 [https://www.youtube.com/watch?v=0JZqM8PqzM4](https://www.youtube.com/watch?v=0JZqM8PqzM4)
+📌 [https://youtu.be/UtbNQqHhnKY?si=BlkPW1IR29-W_jCk]
+
+*(The RIGHT way to Use AI To Get A Job in 2026)*
 
 ---
 
@@ -153,7 +157,9 @@ You can earn using AI through:
 
 ## 🎥 Video: How to Make Money with AI
 
-📌 [https://www.youtube.com/watch?v=5PqD8uB1B_w](https://www.youtube.com/watch?v=5PqD8uB1B_w)
+📌 [https://youtu.be/qSqq5I1WtCA?si=DovAOKghRySQnHET]
+
+*(Genius Ways to Make Money from Home Using AI)*
 
 ---
 
