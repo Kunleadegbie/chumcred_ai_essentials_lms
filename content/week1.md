@@ -288,8 +288,6 @@ Write a short report (1–2 pages) covering:
 ### Format:
 
 ✔ PDF
-✔ Word
-✔ Typed clearly
 
 ### Upload Deadline:
 
