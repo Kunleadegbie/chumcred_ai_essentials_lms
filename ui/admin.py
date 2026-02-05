@@ -2,6 +2,8 @@
 
 import os
 import streamlit as st
+from services.db import read_conn
+
 
 from services.auth import (
     create_user,
@@ -135,59 +137,61 @@ def admin_router(user):
         else:
             st.info("No students found.")
 
-    # =========================================================
-    # RESET PASSWORD
-    # =========================================================
-    elif menu == "Reset Password":
+        # =========================================================
+        # RESET PASSWORD
+        # =========================================================
+        elif menu == "Reset Password":
 
-        st.subheader("🔐 Reset Student Password")
+            st.subheader("🔐 Reset Student Password")
 
-        users = list_all_users()
+            # Load students from DB
+            with read_conn() as conn:
+                rows = conn.execute("""
+                    SELECT id, username
+                    FROM users
+                    WHERE role = 'student'
+                    ORDER BY username
+                """).fetchall()
 
-        students = [
-            u["username"]
-            for u in users
-            if u.get("role") == "student"
-        ]
+            students = [dict(r) for r in rows]
 
+            if not students:
+                st.warning("No students found.")
+                return
 
-        if not students:
-            st.info("No students found.")
-            return
+            # Map username -> id
+            student_map = {
+                s["username"]: s["id"]
+                for s in students
+            }
 
-        selected_user = st.selectbox(
-            "Select Student",
-            students,
-        )
+            selected_student = st.selectbox(
+                "Select Student",
+                list(student_map.keys())
+            )
 
-        new_pw = st.text_input(
-            "New Password",
-            type="password",
-        )
+            new_password = st.text_input(
+                "New Password",
+                type="password"
+            )
 
-        confirm_pw = st.text_input(
-            "Confirm Password",
-            type="password",
-        )
+            confirm_password = st.text_input(
+                "Confirm Password",
+                type="password"
+            )
 
-        if st.button("🔄 Reset Password"):
+            if st.button("🔄 Reset Password"):
 
-            if not new_pw:
-                st.warning("Enter new password")
+                if not new_password:
+                   st.error("Please enter a password.")
+                   return
 
-            elif new_pw != confirm_pw:
-                st.error("Passwords do not match")
+                if new_password != confirm_password:
+                    st.error("Passwords do not match.")
+                    return
 
-            elif len(new_pw) < 6:
-                st.warning("Password must be at least 6 characters")
+                if len(new_password) < 6:
 
-            else:
-                try:
-                    reset_user_password(selected_user, new_pw)
-                    st.success(f"Password reset for {selected_user}")
-
-                except Exception as e:
-                    st.error(f"Failed: {e}")
 
     # =========================================================
     # GROUP WEEK UNLOCK
