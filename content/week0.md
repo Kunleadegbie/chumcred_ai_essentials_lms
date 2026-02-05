@@ -299,13 +299,4 @@ Your future starts here.
 **Welcome to AI Essentials. 🚀**
 
 ---
-
-If you’d like, next I can:
-
-✅ Upgrade Week 1 into premium format
-✅ Add embedded videos
-✅ Create gamification badges
-✅ Design
-
----
 Chumcred Academy - 2026
