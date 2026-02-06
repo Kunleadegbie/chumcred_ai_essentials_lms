@@ -229,7 +229,7 @@ Built MVP with AI in 3 weeks.
 
 # 💬 DO-IT-YOURSELF (DIY)
 
-Watch the video below and create your own Picture Talking. You can post what you have created for public to see and post the link via your "Help & Support" page 
+Watch the video below and create your own Talking Pictures. You can post what you have created for public to see and post the link via your "Help & Support" page 
 
 🎥 How to Make Your Pictures Talk Using Free AI Apps (No Editing or Paid Tools Needed)
 
