@@ -189,17 +189,19 @@ Students complete:
 5️⃣ 1 Freelance Proposal
 6️⃣ Income Plan (6 months)
 
-## 🎥 Video: Getting job fast using the Chumcred TalentIQ
-
-Chumcred TalentIQ is an AI-powered talent intelligence engine that helps job seekers measure, improve, and predict job-market success. It combines global job search with smart tools like ATS SmartMatch (CV vs. Job Description scoring + explanation), Resume & Cover Letter generation, Skills Extraction, Eligibility Check, Job Recommendations, and InterviewIQ (practice questions, scoring, and coaching).
-
-📌 [https://youtu.be/57lO3K_3E0c?si=60-ehiNTxodixQbu]
-
 ---
 
 # 📝 Submission Format
 
 > `Week6_CareerLaunch_YourName.pdf`
+
+---
+
+## 🎥 Video: Getting job fast using the Chumcred TalentIQ
+
+Chumcred TalentIQ is an AI-powered talent intelligence engine that helps job seekers measure, improve, and predict job-market success. It combines global job search with smart tools like ATS SmartMatch (CV vs. Job Description scoring + explanation), Resume & Cover Letter generation, Skills Extraction, Eligibility Check, Job Recommendations, and InterviewIQ (practice questions, scoring, and coaching).
+
+📌 [https://youtu.be/57lO3K_3E0c?si=60-ehiNTxodixQbu]
 
 ---
 

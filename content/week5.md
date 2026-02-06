@@ -144,13 +144,14 @@ Students receive:
 
 ### 🔹 Master Prompt
 
-> “You are an AI consultant. Design a complete solution for…”
+> “You are an AI consultant. Design a complete solution for any business using AI prompt"
 
 ---
 ## 🎥 Video: Advanced Prompting
-*Title: Master the Perfect ChatGPT Prompt Formula”*
-📌 https://youtu.be/jC4v5AS4RIM?si=o8bvY08xyUdFTIDO 
+*Title: Discovered The Perfect ChatGPT Prompt Formula”*
+📌 https://youtu.be/pmzZF2EnKaA?si=pNVnrRaR3ruruB58
 
+---
 
 # 🛠️ PRACTICAL LAB — WEEK 5 CAPSTONE PROJECT
 
@@ -226,13 +227,13 @@ Built MVP with AI in 3 weeks.
 
 ---
 
-# 💬 PEER REVIEW ACTIVITY
+# 💬 DO-IT-YOURSELF (DIY)
 
-Students must review 1 classmates’ projects:
+Watch the video below and create your own Picture Talking. You can post what you have created for public to see and post the link via your "Help & Support" page 
 
-✔ Strengths
-✔ Improvements
-✔ Innovation score
+🎥 How to Make Your Pictures Talk Using Free AI Apps (No Editing or Paid Tools Needed)
+
+🔗 https://youtu.be/OKa5q8DTy8U?si=lQImuC6u0D0q-DcQ
 
 ---
 
