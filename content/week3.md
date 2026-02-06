@@ -109,14 +109,18 @@ Improve workflow
 ---
 
 ## 🎥 Recommended Video
-1️⃣ AI Productivity Tips You Can Use Today
-📌https://youtu.be/Q07rFZtc2Ao?si=sttRhvXvjdEmDKuq
+1) AI Tools To Boost Productivity
+Title: How to Use AI to Improve Productivity (Beginner Friendly)
+🔗 https://youtu.be/gqqvI1oJdZs?si=fm20iqEXNeHqL_LI
 
-2️⃣ Ways to Automate Your Work Using AI Tools
-📌 https://youtu.be/f1lTMzWygTA?si=hludq_sY74DJDUtP
+🎥 2) AI Workflows & Automation Examples
+Title: Top AI Tools to Automate Your Work in 2025
+🔗 https://youtu.be/dzPVGAAOQug?si=Llbez5gkyNUdZL6y
+🔗 https://youtu.be/SGpoL2XJckg?si=Fvllw7-pgyZQnEzi
 
-3️⃣ Automate Your Day with ChatGPT & AI
-📌 https://youtu.be/GVORrf0NVck?si=uF8oO2IR5V1h5lHe
+🎥 3) AI in Practice (Real Case Scenarios)
+Title: AI Tools for Work: Best Daily Workflow Integrations
+🔗 https://youtu.be/htZRCE2GgIs?si=I0dHM47LSDcxNp5F
 
 
 ---

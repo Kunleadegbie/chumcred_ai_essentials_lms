@@ -60,10 +60,9 @@ Students must include:
 6️⃣ Contact info
 
 ---
-
-## 🎥 Video: How to Build a Tech Portfolio
-
-📌 [https://www.youtube.com/watch?v=ZqF1L8bKXqM](https://www.youtube.com/watch?v=ZqF1L8bKXqM)
+## 🎥 Build Your Tech Portfolio
+*Title: “How to Build a Professional Portfolio (AI & Tech)”*
+📌 https://youtu.be/IDuBsWmMWus?si=V60XmeGIOnPW1XdG 
 
 ---
 
@@ -88,10 +87,9 @@ Students complete:
 | 60–69 | Bronze |
 
 ---
-
 ## 🎥 Video: Preparing for Tech Certification
-
-📌 [https://www.youtube.com/watch?v=YhK6bW7WmP8](https://www.youtube.com/watch?v=YhK6bW7WmP8)
+*Title: “How to get started with tech”*
+📌 https://youtu.be/CxD-pl3JBNE?si=Cto0IcO0OS9JJWET 
 
 ---
 
@@ -114,8 +112,8 @@ Students complete:
 ---
 
 ## 🎥 Video: Build Your Personal Brand
-
-📌 [https://www.youtube.com/watch?v=9R7cWqL9jTw](https://www.youtube.com/watch?v=9R7cWqL9jTw)
+*Title: “How to Build a $10M/Year Personal Brand”*
+📌 https://youtu.be/NN8aw7eyruU?si=zrXWf56xkvZ-btbx 
 
 ---
 
@@ -140,10 +138,9 @@ Students complete:
 * RemoteOK
 
 ---
-
 ## 🎥 Video: How to Get Your First Tech Job
-
-📌 [https://www.youtube.com/watch?v=2E2j0Z8wYkQ](https://www.youtube.com/watch?v=2E2j0Z8wYkQ)
+*Title: ”how to get your first tech job”*
+📌 https://youtu.be/5GjxTr0tAC8?si=5LRAHk7yf8xpAMIB 
 
 ---
 
@@ -169,10 +166,9 @@ Students complete:
 | Training    | ₦300k+            |
 
 ---
-
-## 🎥 Video: Make Money with AI
-
-📌 [https://www.youtube.com/watch?v=K9F7P2ZqR5Q](https://www.youtube.com/watch?v=K9F7P2ZqR5Q)
+##🎥 3. Make Money with AI Services
+*Title: “5 Genius Ways to Make Money From Home in 2026 (Using AI)”*
+📌 https://youtu.be/pLs6ZKEDixQ?si=ZbgS55RPuQTfBGyi
 
 ---
 
@@ -198,6 +194,7 @@ Students complete:
 Chumcred TalentIQ is an AI-powered talent intelligence engine that helps job seekers measure, improve, and predict job-market success. It combines global job search with smart tools like ATS SmartMatch (CV vs. Job Description scoring + explanation), Resume & Cover Letter generation, Skills Extraction, Eligibility Check, Job Recommendations, and InterviewIQ (practice questions, scoring, and coaching).
 
 📌 [https://youtu.be/57lO3K_3E0c?si=60-ehiNTxodixQbu]
+
 ---
 
 # 📝 Submission Format

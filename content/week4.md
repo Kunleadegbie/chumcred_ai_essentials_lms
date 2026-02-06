@@ -68,11 +68,10 @@ Create a mini business plan for:
 
 ---
 
-## 🎥 Video: AI for Business Planning
+##🎥 AI for Business Strategy & Planning
+*Title: Use AI to Build Business Ideas & Plans*
+🔗 https://youtu.be/PwW1ZV5Mffs?si=MHhAklwdSmLsbyE9
 
-📌 [https://youtu.be/-RNZKU1JJGc?si=Ra954XT1MI14pD46]
-
-*(How to build business ideas with AI)*
 
 ---
 
@@ -97,12 +96,9 @@ Create a mini business plan for:
 > “Write a 7-day social media content plan for my business selling [product/service].”
 
 ---
-
-## 🎥 Video: AI Marketing Made Easy
-
-📌 [https://youtu.be/ZKBSp1CELZw?si=x-aRVSojS9EnPRQw]
-
-*(Marketing made easy with AI)*
+## 🎥 AI for Marketing & Content Creation
+*Title: Use AI to Create Marketing Content That Converts*
+🔗 https://youtu.be/nkuPUJVzB_E?si=iYKnyaRBSmVAvfSt 
 
 ---
 
@@ -122,12 +118,10 @@ Create a mini business plan for:
 > “Act as an interviewer for [job role] and interview me.”
 
 ---
-
-## 🎥 Video: AI for Job Success
-
-📌 [https://youtu.be/UtbNQqHhnKY?si=BlkPW1IR29-W_jCk]
-
-*(The RIGHT way to Use AI To Get A Job in 2026)*
+## 🎥 AI for Career Growth & Job Success
+*Title: Use AI to Improve Your Job Search & Career Skills*
+🔗 https://youtu.be/zqC1YjwJ2kQ?si=gmIUg7KMM539Qxvj
+🔗 https://youtu.be/tEQFa4boUqc?si=oJobY0MxlCHglRO5
 
 ---
 
@@ -155,11 +149,9 @@ You can earn using AI through:
 
 ---
 
-## 🎥 Video: How to Make Money with AI
-
-📌 [https://youtu.be/qSqq5I1WtCA?si=DovAOKghRySQnHET]
-
-*(Genius Ways to Make Money from Home Using AI)*
+## 🎥 Making Money with AI
+*Title: “How Anyone Can Make Money With AI in 2026”*
+🔗 https://youtu.be/GEa7KiO-kE4?si=BncwwiuzA2Y0K2O9
 
 ---
 

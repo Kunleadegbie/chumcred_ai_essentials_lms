@@ -60,9 +60,9 @@ After this week, you will be valuable anywhere.
 
 ---
 
-## 🎥 Video: AI Automation for Beginners
-
-📌 [https://www.youtube.com/watch?v=Z4Jp9ZJ5K0A](https://www.youtube.com/watch?v=Z4Jp9ZJ5K0A)
+## 🎥 AI Automation & Productivity/AI Automation for Beginners
+*Title: “Automate Your Work with AI — Best Use Cases”*
+📌 https://youtu.be/KSOxkhWs2Ic?si=KfY8Zgi-ybwaUHtV 
 
 ---
 
@@ -80,10 +80,9 @@ After this week, you will be valuable anywhere.
 > “Analyze this dataset and give business insights.”
 
 ---
-
-## 🎥 Video: AI for Data Analysis
-
-📌 [https://www.youtube.com/watch?v=xC-c7E5wTz0](https://www.youtube.com/watch?v=xC-c7E5wTz0)
+## 🎥 AI for Data Analysis
+*Title: “Use AI to Analyze Data — ChatGPT for Excel & Sheets”*
+📌 https://youtu.be/FKLr3ft8ea0?si=gNhDis8srkwZieeD
 
 ---
 
@@ -104,10 +103,9 @@ After this week, you will be valuable anywhere.
 * Voiceflow
 
 ---
-
-## 🎥 Video: Build Your First AI Assistant
-
-📌 [https://www.youtube.com/watch?v=Q8JH6Z5K7F4](https://www.youtube.com/watch?v=Q8JH6Z5K7F4)
+##🎥 Build a Chatbot with AI/Build Your First AI Assistant
+*Title: “Create AI Chatbots Without Coding”*
+📌 https://youtu.be/-8_9G9fwN-Q?si=Qm-n73Iy8HliSoto
 
 ---
 
@@ -129,10 +127,9 @@ Students receive:
 ✔ Delivery Checklist
 
 ---
-
-## 🎥 Video: Managing AI Projects
-
-📌 [https://www.youtube.com/watch?v=4G7P0p5ZKXU](https://www.youtube.com/watch?v=4G7P0p5ZKXU)
+## 🎥 Managing AI Projects
+*Title: “AI Skills Every Project Manager MUST Master“*
+📌 https://youtu.be/ZL8PBS7WRAs?si=tzsmn4o2Y3GR2P0s
 
 ---
 
@@ -150,12 +147,10 @@ Students receive:
 > “You are an AI consultant. Design a complete solution for…”
 
 ---
-
 ## 🎥 Video: Advanced Prompting
+*Title: Master the Perfect ChatGPT Prompt Formula”*
+📌 https://youtu.be/jC4v5AS4RIM?si=o8bvY08xyUdFTIDO 
 
-📌 [https://www.youtube.com/watch?v=JjzW7Jb3K9U](https://www.youtube.com/watch?v=JjzW7Jb3K9U)
-
----
 
 # 🛠️ PRACTICAL LAB — WEEK 5 CAPSTONE PROJECT
 
