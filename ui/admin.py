@@ -167,7 +167,7 @@ def admin_router(user):
     # =========================================================
     # RESET PASSWORD
     # =========================================================
-    elif menu == "Reset Password":
+    if menu == "Reset Password":
         st.subheader("🔐 Reset Student Password")
 
         # Load students from DB (authoritative)
