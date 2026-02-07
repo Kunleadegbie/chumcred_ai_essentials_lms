@@ -181,42 +181,38 @@ def admin_router(user):
                 """
             ).fetchall()
 
-        students = [dict(r) for r in rows]
+       students = [dict(r) for r in rows]
 
-        if not students:
-            st.warning("No students found.")
-            return
+       if not students:
+           st.warning("No students found.")
+           st.stop()
 
-        # Map username -> id
-        student_map = {s["username"]: s["id"] for s in students}
+       # Map username -> id
+       student_map = {s["username"]: s["id"] for s in students}
 
-        selected_student = st.selectbox("Select Student", list(student_map.keys()))
-        student_id = student_map[selected_student]
+       selected_student = st.selectbox(
+           "Select Student",
+           list(student_map.keys()),
+           key="reset_pw_student_select"
+       )
 
-        new_password = st.text_input("New Password", type="password")
-        confirm_password = st.text_input("Confirm Password", type="password")
+       new_password = st.text_input("New Password", type="password")
+       confirm_password = st.text_input("Confirm Password", type="password")
 
-        if st.button("🔄 Reset Password", key="admin_reset_pw_btn"):
-            if not new_password:
-                st.error("Please enter a password.")
-                return
+       if st.button("🔄 Reset Password", key="admin_reset_pw_btn"):
+           if not new_password:
+               st.error("Please enter a password.")
+       elif new_password != confirm_password:
+           st.error("Passwords do not match.")
+       elif len(new_password) < 6:
+           st.error("Password must be at least 6 characters.")
+       else:
+           # Username-based reset (authoritative & safe)
+           reset_user_password(selected_student, new_password)
 
-            if new_password != confirm_password:
-                st.error("Passwords do not match.")
-                return
-
-            if len(new_password) < 6:
-                st.error("Password must be at least 6 characters.")
-                return
-
-            # Try ID-based reset first; fallback to username-based reset
-            try:
-                reset_user_password(selected_student, new_password)
-            except TypeError:
-                reset_user_password(selected_student, new_password)
-
-            st.success(f"✅ Password reset successfully for: {selected_student}")
-            st.session_state["pw_reset_done"] = True
+           st.success(f"✅ Password reset successfully for: {selected_student}")
+           st.session_state["pw_reset_done"] = True
+    
 
     # =========================================================
     # GROUP WEEK UNLOCK
