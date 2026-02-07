@@ -128,6 +128,43 @@ def admin_router(user):
             st.info("No students found.")
 
     # =========================================================
+    # INDIVIDUAL STUDENT UNLOCK
+    # =========================================================
+
+    st.subheader("🔓 Unlock Week for Individual Student")
+
+    students = {
+        f"{u['username']} (ID {u['id']})": u["id"]
+        for u in users
+        if u.get("role") == "student"
+    }
+
+    if students:
+        selected_student = st.selectbox(
+            "Select Student",
+            options=list(students.keys())
+        )
+
+    week_to_unlock = st.number_input(
+        "Week to Unlock",
+        min_value=1,
+        max_value=12,
+        step=1
+    )
+
+    if st.button("Unlock Selected Week"):
+        student_id = students[selected_student]
+
+        mark_week_completed(student_id, week_to_unlock)
+
+        st.success(
+            f"✅ Week {week_to_unlock} unlocked for {selected_student}"
+        )
+    else:
+        st.info("No students found.")
+
+
+    # =========================================================
     # RESET PASSWORD
     # =========================================================
     elif menu == "Reset Password":
