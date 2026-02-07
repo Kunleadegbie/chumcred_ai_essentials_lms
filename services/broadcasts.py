@@ -1,3 +1,6 @@
+# --------------------------------------------------
+# services/broadcasts.py
+# --------------------------------------------------
 from datetime import datetime
 from services.db import read_conn, write_txn
 
@@ -13,12 +16,25 @@ def create_broadcast(title, message, admin_id):
         )
 
 
+def delete_broadcast(broadcast_id):
+    with write_txn() as conn:
+        conn.execute(
+            "DELETE FROM broadcasts WHERE id = ?",
+            (broadcast_id,),
+        )
+
+
 def get_active_broadcasts():
+    """
+    Fetch only active broadcasts from the last 3 days
+    """
     with read_conn() as conn:
         return conn.execute(
             """
-            SELECT * FROM broadcasts
+            SELECT *
+            FROM broadcasts
             WHERE active = 1
+              AND datetime(created_at) >= datetime('now', '-3 days')
             ORDER BY created_at DESC
             """
         ).fetchall()
@@ -28,7 +44,8 @@ def has_read(broadcast_id, user_id):
     with read_conn() as conn:
         row = conn.execute(
             """
-            SELECT 1 FROM broadcast_reads
+            SELECT 1
+            FROM broadcast_reads
             WHERE broadcast_id = ? AND user_id = ?
             """,
             (broadcast_id, user_id),
