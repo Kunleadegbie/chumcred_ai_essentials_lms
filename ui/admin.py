@@ -181,7 +181,7 @@ def admin_router(user):
                 """
             ).fetchall()
 
-       students = [dict(r) for r in rows]
+        students = [dict(r) for r in rows]
 
        if not students:
            st.warning("No students found.")
