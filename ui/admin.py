@@ -128,12 +128,21 @@ def admin_router(user):
     elif menu == "Individual Week Unlock":
         st.subheader("🔓 Unlock Week for Individual Student")
 
-        users = list_all_users()
+        with read_conn() as conn:
+            rows = conn.execute(
+                """
+                SELECT id, username
+                FROM users
+                WHERE role = 'student'
+                ORDER BY username
+                """
+        ).fetchall()
+
         students = {
-            f"{u['username']} (ID {u['id']})": u["id"]
-            for u in users
-            if u.get("role") == "student"
+            f"{r['username']} (ID {r['id']})": r["id"]
+            for r in rows
         }
+
 
         if not students:
             st.info("No students found.")
