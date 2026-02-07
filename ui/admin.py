@@ -8,7 +8,7 @@ from services.auth import (
     create_user,
     get_all_students,
     reset_user_password,
-    list_all_users,  # kept (even if not used elsewhere)
+    list_all_users,
 )
 
 from services.broadcasts import (
@@ -16,22 +16,16 @@ from services.broadcasts import (
     get_active_broadcasts,
     delete_broadcast,
 )
-from services.auth import list_all_users, reset_user_password
-
 
 from services.progress import (
     unlock_week_for_user,
     lock_week_for_user,
+    mark_week_completed,
 )
 
 from services.assignments import (
     list_all_assignments,
     review_assignment,
-)
-
-from services.broadcasts import (
-    create_broadcast,
-    get_active_broadcasts,
 )
 
 CONTENT_DIR = "content"
@@ -52,6 +46,7 @@ def admin_router(user):
                 "Dashboard",
                 "Create Student",
                 "All Students",
+                "Individual Week Unlock",
                 "Reset Password",
                 "Group Week Unlock",
                 "Assignment Review",
@@ -128,49 +123,48 @@ def admin_router(user):
             st.info("No students found.")
 
     # =========================================================
-    # INDIVIDUAL STUDENT UNLOCK
+    # INDIVIDUAL WEEK UNLOCK (RESTORED)
     # =========================================================
+    elif menu == "Individual Week Unlock":
+        st.subheader("🔓 Unlock Week for Individual Student")
 
-    st.subheader("🔓 Unlock Week for Individual Student")
+        users = list_all_users()
+        students = {
+            f"{u['username']} (ID {u['id']})": u["id"]
+            for u in users
+            if u.get("role") == "student"
+        }
 
-    students = {
-        f"{u['username']} (ID {u['id']})": u["id"]
-        for u in users
-        if u.get("role") == "student"
-    }
+        if not students:
+            st.info("No students found.")
+            return
 
-    if students:
         selected_student = st.selectbox(
             "Select Student",
             options=list(students.keys())
         )
 
-    week_to_unlock = st.number_input(
-        "Week to Unlock",
-        min_value=1,
-        max_value=12,
-        step=1
-    )
-
-    if st.button("Unlock Selected Week"):
-        student_id = students[selected_student]
-
-        mark_week_completed(student_id, week_to_unlock)
-
-        st.success(
-            f"✅ Week {week_to_unlock} unlocked for {selected_student}"
+        week_to_unlock = st.number_input(
+            "Week to Unlock",
+            min_value=1,
+            max_value=TOTAL_WEEKS,
+            step=1
         )
-    else:
-        st.info("No students found.")
 
+        if st.button("Unlock Selected Week"):
+            student_id = students[selected_student]
+            mark_week_completed(student_id, week_to_unlock)
+
+            st.success(
+                f"✅ Week {week_to_unlock} unlocked for {selected_student}"
+            )
 
     # =========================================================
-    # RESET PASSWORD
+    # RESET PASSWORD (FIXED)
     # =========================================================
-    if menu == "Reset Password":
+    elif menu == "Reset Password":
         st.subheader("🔐 Reset Student Password")
 
-        # Load students from DB (authoritative)
         with read_conn() as conn:
             rows = conn.execute(
                 """
@@ -183,36 +177,31 @@ def admin_router(user):
 
         students = [dict(r) for r in rows]
 
-       if not students:
-           st.warning("No students found.")
-           st.stop()
+        if not students:
+            st.warning("No students found.")
+            st.stop()
 
-       # Map username -> id
-       student_map = {s["username"]: s["id"] for s in students}
+        student_map = {s["username"]: s["id"] for s in students}
 
-       selected_student = st.selectbox(
-           "Select Student",
-           list(student_map.keys()),
-           key="reset_pw_student_select"
-       )
+        selected_student = st.selectbox(
+            "Select Student",
+            list(student_map.keys()),
+            key="reset_pw_student_select"
+        )
 
-       new_password = st.text_input("New Password", type="password")
-       confirm_password = st.text_input("Confirm Password", type="password")
+        new_password = st.text_input("New Password", type="password")
+        confirm_password = st.text_input("Confirm Password", type="password")
 
-       if st.button("🔄 Reset Password", key="admin_reset_pw_btn"):
-           if not new_password:
-               st.error("Please enter a password.")
-       elif new_password != confirm_password:
-           st.error("Passwords do not match.")
-       elif len(new_password) < 6:
-           st.error("Password must be at least 6 characters.")
-       else:
-           # Username-based reset (authoritative & safe)
-           reset_user_password(selected_student, new_password)
-
-           st.success(f"✅ Password reset successfully for: {selected_student}")
-           st.session_state["pw_reset_done"] = True
-    
+        if st.button("🔄 Reset Password", key="admin_reset_pw_btn"):
+            if not new_password:
+                st.error("Please enter a password.")
+            elif new_password != confirm_password:
+                st.error("Passwords do not match.")
+            elif len(new_password) < 6:
+                st.error("Password must be at least 6 characters.")
+            else:
+                reset_user_password(selected_student, new_password)
+                st.success(f"✅ Password reset successfully for: {selected_student}")
 
     # =========================================================
     # GROUP WEEK UNLOCK
@@ -235,7 +224,6 @@ def admin_router(user):
 
         if st.button("Apply to ALL Students"):
             for s in students:
-                # s may be sqlite Row/dict; support both safely
                 sid = s["id"] if isinstance(s, dict) else s[0]
                 if action == "Unlock Week":
                     unlock_week_for_user(sid, selected_week)
@@ -257,7 +245,6 @@ def admin_router(user):
             return
 
         for a in assignments:
-            # If a is sqlite Row, dict(a) makes it safe everywhere
             if not isinstance(a, dict):
                 a = dict(a)
 
@@ -269,39 +256,30 @@ def admin_router(user):
 """
             )
 
-            # ================= DOWNLOAD =================
             file_path = a.get("file_path")
-
             if file_path and os.path.exists(file_path):
                 with open(file_path, "rb") as f:
-                    file_bytes = f.read()
-
-                st.download_button(
-                    label="⬇️ Download Assignment",
-                    data=file_bytes,
-                    file_name=os.path.basename(file_path),
-                    mime="application/octet-stream",
-                    key=f"dl_{a['id']}",
-                )
+                    st.download_button(
+                        "⬇️ Download Assignment",
+                        f.read(),
+                        file_name=os.path.basename(file_path),
+                        key=f"dl_{a['id']}",
+                    )
             else:
                 st.error("❌ File not found on server")
-
-            # ================= GRADING =================
-            grade_val = a.get("grade")
-            grade_float = float(grade_val) if grade_val is not None else 0.0
 
             grade = st.number_input(
                 "Grade (%)",
                 min_value=0.0,
                 max_value=100.0,
-                value=grade_float,
+                value=float(a.get("grade") or 0),
                 step=1.0,
                 key=f"grade_{a['id']}",
             )
 
             feedback = st.text_area(
                 "Feedback",
-                value=a["feedback"] if a.get("feedback") else "",
+                value=a.get("feedback") or "",
                 key=f"fb_{a['id']}",
             )
 
@@ -316,11 +294,10 @@ def admin_router(user):
 
             st.divider()
 
-    # =================================================
+    # =========================================================
     # BROADCAST MANAGEMENT
-    # =================================================
+    # =========================================================
     elif menu == "Broadcast Announcement":
-
         st.subheader("📢 Post Broadcast")
 
         if not st.session_state.get("broadcast_posted"):
@@ -341,19 +318,16 @@ def admin_router(user):
         st.divider()
         st.subheader("📋 Active Broadcasts")
 
-        broadcasts = get_active_broadcasts()
-        for b in broadcasts:
+        for b in get_active_broadcasts():
             st.markdown(f"**{b['title']}**\n\n{b['message']}")
             if st.button("🗑 Delete", key=f"del_{b['id']}"):
                 delete_broadcast(b["id"])
                 st.success("Broadcast deleted.")
                 st.rerun()
 
-
     # =========================================================
     # HELP
     # =========================================================
     elif menu == "Help & Support":
         from ui.help import help_router
-
         help_router(user, role="admin")
