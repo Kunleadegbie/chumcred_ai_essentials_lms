@@ -1,9 +1,6 @@
 # --------------------------------------------------
 # ui/student.py
 # --------------------------------------------------
-# --------------------------------------------------
-# ui/student.py
-# --------------------------------------------------
 import os
 import streamlit as st
 
@@ -35,7 +32,6 @@ def student_router(user):
 
     user_id = user["id"]
 
-    
     # =================================================
     # WEEK 0 (ORIENTATION) — MANDATORY LANDING PAGE
     # =================================================
@@ -53,23 +49,17 @@ def student_router(user):
 
         st.divider()
 
-
         if st.button("✅ I have read and understood the Orientation", key="wk0_done_btn"):
 
-            # Mark orientation complete
             mark_orientation_completed(user_id)
-
-            # Unlock Week 1
             mark_week_completed(user_id, 1)
 
             st.success("Orientation completed. Week 1 is now unlocked.")
-
             st.rerun()
 
-        # 🚨 Stop ONLY if orientation is still not done
         if not is_orientation_completed(user_id):
             st.stop()
- 
+
     # =================================================
     # BROADCAST POPUP (Dashboard)
     # =================================================
@@ -140,7 +130,7 @@ def student_router(user):
                 st.button(label, disabled=True, key=f"w_{week}_disabled")
 
     # =================================================
-    # WEEK CONTENT + ASSIGNMENT + GRADE
+    # WEEK CONTENT + ASSIGNMENT + GRADE + FEEDBACK
     # =================================================
     selected_week = st.session_state.get("selected_week")
 
@@ -158,9 +148,26 @@ def student_router(user):
 
         st.divider()
 
-        grade, badge = get_week_grade(user_id, selected_week)
-        if grade is not None:
-            st.success(f"🏅 **Grade:** {grade}% — **{badge}**")
+        # 🔹 FETCH GRADE + FEEDBACK DIRECTLY FROM DB
+        from services.db import read_conn
+
+        with read_conn() as conn:
+            row = conn.execute(
+                """
+                SELECT grade, feedback
+                FROM assignments
+                WHERE user_id = ? AND week = ?
+                """,
+                (user_id, selected_week),
+            ).fetchone()
+
+        if row and row["grade"] is not None:
+            st.success(f"🏅 **Grade:** {row['grade']}%")
+
+            # ✅ SAFE FEEDBACK DISPLAY (NEW FIX)
+            if row["feedback"]:
+                st.markdown("### 📝 Instructor Feedback")
+                st.info(row["feedback"])
         else:
             st.info("No grade yet for this week (awaiting admin review).")
 
@@ -169,7 +176,6 @@ def student_router(user):
         if has_assignment(user_id, selected_week):
             st.info("✅ Assignment submitted.")
         else:
-            # Use a form so the submit action is stable
             with st.form(key=f"assign_form_{selected_week}"):
                 file = st.file_uploader(
                     "Upload assignment (PDF only)",
@@ -186,7 +192,6 @@ def student_router(user):
                         save_assignment(user_id, selected_week, file)
                         mark_week_completed(user_id, selected_week)
 
-                        # Keep them on the same week after rerun (no “disappearing” feeling)
                         st.session_state["selected_week"] = selected_week
 
                         st.success("Assignment submitted successfully.")
@@ -195,7 +200,7 @@ def student_router(user):
                         st.error(f"Assignment submit failed: {e}")
 
     # =================================================
-    # CERTIFICATE (STRICTLY AFTER ALL GRADES APPROVED)
+    # CERTIFICATE
     # =================================================
     st.divider()
     st.subheader("🎖 Certificate")
@@ -227,4 +232,3 @@ def student_router(user):
         if st.button("🚪 Logout", key="logout_btn"):
             st.session_state.clear()
             st.rerun()
-
