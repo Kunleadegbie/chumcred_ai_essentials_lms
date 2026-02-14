@@ -61,44 +61,6 @@ def student_router(user):
             st.stop()
 
 
-     # =================================================
-     # HELP & SUPPORT ROUTING (PRIORITY PAGE)
-     # =================================================
-    if st.session_state.get("support_open"):
-
-        st.header("🆘 Help & Support")
-
-        st.markdown("""
-Need help? We are here for you.
-
-You can:
-• Ask academic questions  
-• Request clarification  
-• Report technical issues  
-• Share feedback  
-""")
-
-    subject = st.text_input("Subject")
-    message = st.text_area("Your Message")
-
-    if st.button("📩 Submit Support Request", key="submit_support_btn"):
-        if not subject or not message:
-            st.error("Please fill in all fields.")
-        else:
-            # You can later store this in DB if needed
-            st.success("✅ Your message has been sent. The facilitator will respond soon.")
-            st.session_state["support_open"] = False
-            st.rerun()
-
-    if st.button("⬅ Back to Dashboard", key="back_from_support_btn"):
-        st.session_state["support_open"] = False
-        st.rerun()
-
-    st.stop()
-
-
-    
-
 
     # =================================================
     # BROADCAST POPUP (Dashboard)
@@ -279,5 +241,4 @@ You can:
             st.rerun()
 
 
-   
-  
+    
