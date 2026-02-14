@@ -7,6 +7,20 @@ def support_page(user):
 
     st.title("🆘 Help & Support")
 
+    # Ensure table exists (SAFE AUTO-CREATE)
+    with write_txn() as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS support_messages (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER,
+                subject TEXT,
+                message TEXT,
+                created_at TEXT
+            )
+        """)
+        conn.commit()
+
     st.markdown(f"**Logged in as:** {user['username']}")
 
     st.markdown("""
@@ -38,6 +52,7 @@ please send a message to the facilitator below.
             conn.commit()
 
         st.success("✅ Your message has been submitted successfully.")
+        st.session_state["page"] = "dashboard"
         st.rerun()
 
     if st.button("⬅ Back to Dashboard"):
