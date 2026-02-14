@@ -64,11 +64,11 @@ def student_router(user):
      # =================================================
      # HELP & SUPPORT ROUTING (PRIORITY PAGE)
      # =================================================
-     if st.session_state.get("support_open"):
+    if st.session_state.get("support_open"):
 
-         st.header("🆘 Help & Support")
+        st.header("🆘 Help & Support")
 
-         st.markdown("""
+        st.markdown("""
 Need help? We are here for you.
 
 You can:
