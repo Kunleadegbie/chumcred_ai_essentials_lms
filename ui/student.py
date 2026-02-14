@@ -216,6 +216,7 @@ def student_router(user):
         else:
             st.warning("Complete and pass all graded assignments to unlock certificate.")
 
+
     # =================================================
     # SIDEBAR
     # =================================================
@@ -226,9 +227,46 @@ def student_router(user):
         completed = sum(1 for s in progress.values() if s == "completed")
         st.progress(completed / TOTAL_WEEKS)
 
+        # -----------------------------
+        # Help & Support Navigation
+        # -----------------------------
         if st.button("🆘 Help & Support", key="help_support_btn"):
-            st.session_state["support_open"] = True
+            st.session_state["page"] = "support"
+            st.rerun()
 
         if st.button("🚪 Logout", key="logout_btn"):
             st.session_state.clear()
             st.rerun()
+
+
+   
+    # =================================================
+    # HELP & SUPPORT PAGE
+    # =================================================
+    if st.session_state.get("page") == "support":
+
+        st.header("🆘 Help & Support")
+
+        st.write(
+            "If you are experiencing any issue with your lessons, assignments, "
+            "or platform access, please send a message below."
+        )
+
+        with st.form("student_support_form", clear_on_submit=True):
+            subject = st.text_input("Subject")
+            message = st.text_area("Your Message")
+
+            submitted = st.form_submit_button("Send Message")
+
+            if submitted:
+                if not subject.strip() or not message.strip():
+                    st.error("Please complete all fields.")
+                else:
+                    st.success("✅ Your message has been sent successfully.")
+
+    if st.button("⬅ Back to Dashboard"):
+        st.session_state["page"] = "dashboard"
+        st.rerun()
+
+    st.stop()
+
