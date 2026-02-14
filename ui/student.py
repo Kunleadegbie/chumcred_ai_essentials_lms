@@ -3,6 +3,8 @@
 # --------------------------------------------------
 import os
 import streamlit as st
+from ui.support import support_page
+
 
 from services.progress import (
     get_progress,
@@ -60,6 +62,12 @@ def student_router(user):
         if not is_orientation_completed(user_id):
             st.stop()
 
+    # =================================================
+    # PAGE ROUTING
+    # =================================================
+    if st.session_state.get("page") == "support":
+        support_page(user)
+        return
 
 
     # =================================================
@@ -232,6 +240,7 @@ def student_router(user):
         # -----------------------------
         # Help & Support Navigation
         # -----------------------------
+
         if st.button("🆘 Help & Support", key="help_support_btn"):
             st.session_state["page"] = "support"
             st.rerun()
