@@ -1,263 +1,234 @@
-# ==================================================
-# services/assignments.py
-# ==================================================
+# --------------------------------------------------
+# ui/student.py
+# --------------------------------------------------
 import os
-from datetime import datetime
+import streamlit as st
 
-from services.db import read_conn, write_txn
+from services.progress import (
+    get_progress,
+    mark_week_completed,
+    is_orientation_completed,
+    mark_orientation_completed,
+)
 
-# ==================================================
-# CONFIG
-# ==================================================
-UPLOAD_ROOT = os.getenv("LMS_UPLOAD_PATH", "/app/data/uploads")
-ASSIGNMENT_DIR = os.path.join(UPLOAD_ROOT, "assignments")
+from services.assignments import (
+    save_assignment,
+    has_assignment,
+    get_week_grade,
+    get_student_grade_summary,
+    can_issue_certificate,
+)
 
-print("📌 ASSIGNMENTS DB:", os.getenv("LMS_DB_PATH"))
-print("📌 ASSIGNMENTS UPLOAD:", UPLOAD_ROOT)
+from services.help import list_active_broadcasts
+from services.certificates import has_certificate, issue_certificate
 
-
-# ==================================================
-# HELPERS
-# ==================================================
-def _now_iso() -> str:
-    return datetime.utcnow().isoformat()
-
-
-def _ensure_user_dir(user_id: int) -> str:
-    user_dir = os.path.join(ASSIGNMENT_DIR, str(user_id))
-    os.makedirs(user_dir, exist_ok=True)
-    return user_dir
+CONTENT_DIR = "content"
+TOTAL_WEEKS = 6
 
 
-def _assignment_filename(week: int) -> str:
-    return f"week_{int(week)}.pdf"
+def student_router(user):
+    st.title("🎓 AI Essentials — Student Dashboard")
+    st.caption(f"Welcome, {user['username']}")
 
+    user_id = user["id"]
 
-def _grade_to_badge(grade: float) -> str:
-    if grade >= 70:
-        return "A"
-    if grade >= 60:
-        return "B"
-    if grade >= 50:
-        return "C"
-    return "Fail"
+    # =================================================
+    # WEEK 0 (ORIENTATION) — MANDATORY LANDING PAGE
+    # =================================================
 
+    if not is_orientation_completed(user_id):
 
-# ==================================================
-# CORE FUNCTIONS
-# ==================================================
-def save_assignment(user_id: int, week: int, uploaded_file) -> None:
-    if uploaded_file is None:
-        raise ValueError("No file uploaded.")
+        st.header("🧭 Orientation (Week 0)")
 
-    week = int(week)
-    user_id = int(user_id)
-
-    os.makedirs(ASSIGNMENT_DIR, exist_ok=True)
-    user_dir = _ensure_user_dir(user_id)
-
-    filename = _assignment_filename(week)
-    file_path = os.path.join(user_dir, filename)
-
-    try:
-        with open(file_path, "wb") as f:
-            f.write(uploaded_file.getbuffer())
-    except Exception as e:
-        raise RuntimeError(f"Failed to write uploaded file: {e}") from e
-
-    submitted_at = _now_iso()
-    original_filename = getattr(uploaded_file, "name", None)
-
-    with write_txn() as conn:
-        cur = conn.cursor()
-        cur.execute(
-            """
-            INSERT INTO assignments (
-                user_id, week, file_path, submitted_at, original_filename,
-                status, grade, feedback, reviewed_at, reviewed_by
-            )
-            VALUES (?, ?, ?, ?, ?, 'submitted', NULL, NULL, NULL, NULL)
-            ON CONFLICT(user_id, week)
-            DO UPDATE SET
-                file_path=excluded.file_path,
-                submitted_at=excluded.submitted_at,
-                original_filename=excluded.original_filename,
-                status='submitted',
-                grade=NULL,
-                feedback=NULL,
-                reviewed_at=NULL,
-                reviewed_by=NULL
-            """,
-            (user_id, week, file_path, submitted_at, original_filename),
-        )
-
-
-def has_assignment(user_id: int, week: int) -> bool:
-    with read_conn() as conn:
-        row = conn.execute(
-            "SELECT 1 FROM assignments WHERE user_id=? AND week=? LIMIT 1",
-            (int(user_id), int(week)),
-        ).fetchone()
-        return row is not None
-
-
-def get_week_grade(user_id: int, week: int):
-    with read_conn() as conn:
-        row = conn.execute(
-            """
-            SELECT grade, status
-            FROM assignments
-            WHERE user_id=? AND week=?
-            LIMIT 1
-            """,
-            (int(user_id), int(week)),
-        ).fetchone()
-
-    if not row:
-        return None, None
-
-    if row["status"] not in ("approved", "graded") or row["grade"] is None:
-        return None, None
-
-    grade_val = float(row["grade"])
-    return grade_val, _grade_to_badge(grade_val)
-
-
-# ==================================================
-# 🔥 UPDATED FUNCTION (FEEDBACK FIX)
-# ==================================================
-def get_student_grade_summary(user_id: int):
-    """
-    Returns list of dicts:
-    [
-      {"week":1,"status":"graded","grade":90,"badge":"A","feedback":"Very good"},
-      ...
-    ]
-    """
-
-    user_id = int(user_id)
-    weeks = list(range(1, 7))
-    summary = []
-
-    with read_conn() as conn:
-        rows = conn.execute(
-            """
-            SELECT week, status, grade, feedback
-            FROM assignments
-            WHERE user_id=?
-            """,
-            (user_id,),
-        ).fetchall()
-
-    by_week = {}
-    for r in rows:
-        by_week[int(r["week"])] = {
-            "status": r["status"],
-            "grade": r["grade"],
-            "feedback": r["feedback"],
-        }
-
-    for w in weeks:
-        if (
-            w in by_week
-            and by_week[w]["status"] in ("approved", "graded")
-            and by_week[w]["grade"] is not None
-        ):
-            g = float(by_week[w]["grade"])
-            summary.append(
-                {
-                    "week": w,
-                    "status": "graded",
-                    "grade": g,
-                    "badge": _grade_to_badge(g),
-                    "feedback": by_week[w]["feedback"],
-                }
-            )
+        md_path = os.path.join(CONTENT_DIR, "week0.md")
+        if os.path.exists(md_path):
+            with open(md_path, "r", encoding="utf-8") as f:
+                st.markdown(f.read(), unsafe_allow_html=True)
         else:
-            summary.append(
-                {
-                    "week": w,
-                    "status": "pending",
-                    "grade": None,
-                    "badge": None,
-                    "feedback": None,
-                }
-            )
+            st.warning("Orientation content not found. Please contact admin.")
 
-    return summary
+        st.divider()
 
+        if st.button("✅ I have read and understood the Orientation", key="wk0_done_btn"):
 
-def list_all_assignments():
-    with read_conn() as conn:
-        return conn.execute(
-            """
-            SELECT
-                a.id,
-                a.user_id,
-                u.username,
-                a.week,
-                a.file_path,
-                a.submitted_at,
-                a.original_filename,
-                a.status,
-                a.grade,
-                a.feedback,
-                a.reviewed_at,
-                a.reviewed_by
-            FROM assignments a
-            JOIN users u ON u.id = a.user_id
-            ORDER BY a.submitted_at DESC
-            """
-        ).fetchall()
+            mark_orientation_completed(user_id)
+            mark_week_completed(user_id, 1)
 
+            st.success("Orientation completed. Week 1 is now unlocked.")
+            st.rerun()
 
-def list_student_assignments(user_id: int):
-    with read_conn() as conn:
-        return conn.execute(
-            """
-            SELECT id, user_id, week, file_path, submitted_at,
-                   status, grade, feedback
-            FROM assignments
-            WHERE user_id=?
-            ORDER BY week ASC
-            """,
-            (int(user_id),),
-        ).fetchall()
+        if not is_orientation_completed(user_id):
+            st.stop()
 
+    # =================================================
+    # BROADCAST POPUP (Dashboard)
+    # =================================================
+    broadcasts = list_active_broadcasts(limit=1) or []
+    if broadcasts:
+        b = broadcasts[0]
+        subject = b["subject"] if "subject" in b.keys() else "Announcement"
+        message = b["message"]
+        st.warning(f"📢 **{subject}**\n\n{message}")
 
-def review_assignment(assignment_id: int, grade: float, feedback: str, reviewed_by: int = None):
-    with write_txn() as conn:
-        conn.execute(
-            """
-            UPDATE assignments
-            SET status='approved',
-                grade=?,
-                feedback=?,
-                reviewed_at=?,
-                reviewed_by=?
-            WHERE id=?
-            """,
-            (
-                float(grade),
-                feedback,
-                _now_iso(),
-                reviewed_by,
-                int(assignment_id),
-            ),
-        )
+    # =================================================
+    # DASHBOARD GRADE TILES
+    # =================================================
+    st.subheader("📊 Your Grades")
 
+    summary = get_student_grade_summary(user_id)
 
-def can_issue_certificate(user_id: int) -> bool:
-    with read_conn() as conn:
-        row = conn.execute(
-            """
-            SELECT COUNT(*) AS cnt
-            FROM assignments
-            WHERE user_id=?
-              AND status IN ('approved','graded')
-              AND grade IS NOT NULL
-            """,
-            (int(user_id),),
-        ).fetchone()
+    cols = st.columns(3)
+    for i, item in enumerate(summary):
+        with cols[i % 3]:
+            if item["status"] == "graded":
+                st.metric(
+                    f"Week {item['week']}",
+                    f"{item['grade']}%",
+                    item["badge"],
+                )
+            else:
+                st.metric(f"Week {item['week']}", "Pending")
 
-    return int(row["cnt"]) >= 6 if row else False
+    st.divider()
+
+    # =================================================
+    # LOAD PROGRESS
+    # =================================================
+    progress = get_progress(user_id)
+
+    # =================================================
+    # COURSE WEEK CARDS
+    # =================================================
+    st.subheader("📘 Course Progress")
+
+    if "selected_week" not in st.session_state:
+        st.session_state["selected_week"] = None
+
+    cols = st.columns(3)
+
+    for week in range(1, TOTAL_WEEKS + 1):
+        status = progress.get(week, "locked")
+        col = cols[(week - 1) % 3]
+
+        with col:
+            label = f"Week {week}"
+            if status == "completed":
+                label += " ✔️"
+            elif status == "unlocked":
+                label += " 🔓"
+            else:
+                label += " 🔒"
+
+            grade, badge = get_week_grade(user_id, week)
+            if grade is not None:
+                st.caption(f"🏅 {grade}% — {badge}")
+
+            if status != "locked":
+                if st.button(label, key=f"w_{week}"):
+                    st.session_state["selected_week"] = week
+            else:
+                st.button(label, disabled=True, key=f"w_{week}_disabled")
+
+    # =================================================
+    # WEEK CONTENT + ASSIGNMENT + GRADE + FEEDBACK
+    # =================================================
+    selected_week = st.session_state.get("selected_week")
+
+    if selected_week:
+        st.divider()
+        st.header(f"📘 Week {selected_week}")
+
+        md_path = os.path.join(CONTENT_DIR, f"week{selected_week}.md")
+        if os.path.exists(md_path):
+            with open(md_path, "r", encoding="utf-8") as f:
+                st.markdown(f.read(), unsafe_allow_html=True)
+        else:
+            st.error("Week content not found. Please contact admin.")
+            return
+
+        st.divider()
+
+        # 🔹 FETCH GRADE + FEEDBACK DIRECTLY FROM DB
+        from services.db import read_conn
+
+        with read_conn() as conn:
+            row = conn.execute(
+                """
+                SELECT grade, feedback
+                FROM assignments
+                WHERE user_id = ? AND week = ?
+                """,
+                (user_id, selected_week),
+            ).fetchone()
+
+        if row and row["grade"] is not None:
+            st.success(f"🏅 **Grade:** {row['grade']}%")
+
+            # ✅ SAFE FEEDBACK DISPLAY (NEW FIX)
+            if row["feedback"]:
+                st.markdown("### 📝 Instructor Feedback")
+                st.info(row["feedback"])
+        else:
+            st.info("No grade yet for this week (awaiting admin review).")
+
+        st.subheader("📤 Assignment Submission")
+
+        if has_assignment(user_id, selected_week):
+            st.info("✅ Assignment submitted.")
+        else:
+            with st.form(key=f"assign_form_{selected_week}"):
+                file = st.file_uploader(
+                    "Upload assignment (PDF only)",
+                    type=["pdf"],
+                    key=f"up_{selected_week}",
+                )
+                submit = st.form_submit_button("📨 Submit Assignment")
+
+            if submit:
+                if not file:
+                    st.error("Please upload a PDF before submitting.")
+                else:
+                    try:
+                        save_assignment(user_id, selected_week, file)
+                        mark_week_completed(user_id, selected_week)
+
+                        st.session_state["selected_week"] = selected_week
+
+                        st.success("Assignment submitted successfully.")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Assignment submit failed: {e}")
+
+    # =================================================
+    # CERTIFICATE
+    # =================================================
+    st.divider()
+    st.subheader("🎖 Certificate")
+
+    if has_certificate(user_id):
+        st.success("Certificate issued 🎉")
+    else:
+        if can_issue_certificate(user_id):
+            st.info("All grades approved. Certificate ready.")
+            if st.button("Generate Certificate", key="gen_cert_btn"):
+                issue_certificate(user_id)
+                st.rerun()
+        else:
+            st.warning("Complete and pass all graded assignments to unlock certificate.")
+
+    # =================================================
+    # SIDEBAR
+    # =================================================
+    with st.sidebar:
+        st.markdown("### 👩‍🎓 Student Menu")
+        st.markdown(f"**User:** {user['username']}")
+
+        completed = sum(1 for s in progress.values() if s == "completed")
+        st.progress(completed / TOTAL_WEEKS)
+
+        if st.button("🆘 Help & Support", key="help_support_btn"):
+            st.session_state["support_open"] = True
+
+        if st.button("🚪 Logout", key="logout_btn"):
+            st.session_state.clear()
+            st.rerun()
