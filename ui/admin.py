@@ -334,6 +334,59 @@ def admin_router(user):
                 st.success("Broadcast deleted.")
                 st.rerun()
 
+
+    # =========================================================
+    # SUPPORT MESSAGES
+    # =========================================================
+    elif menu == "Support Messages":
+
+        st.subheader("🆘 Student Support Messages")
+
+        with read_conn() as conn:
+            rows = conn.execute("""
+                SELECT sm.id,
+                       u.username,
+                       sm.subject,
+                       sm.message,
+                       sm.status,
+                       sm.created_at
+                FROM support_messages sm
+                LEFT JOIN users u ON sm.user_id = u.id
+                ORDER BY sm.created_at DESC
+            """).fetchall()
+
+        messages = [dict(r) for r in rows]
+
+        if not messages:
+            st.info("No support messages yet.")
+            return
+
+        for msg in messages:
+
+            st.markdown("---")
+            st.markdown(f"**From:** {msg['username']}")
+            st.markdown(f"**Subject:** {msg['subject']}")
+            st.markdown(f"**Message:** {msg['message']}")
+            st.caption(f"Sent on: {msg['created_at']}")
+
+            if msg["status"] == "open":
+                if st.button("Mark as Resolved", key=f"resolve_{msg['id']}"):
+                    with write_txn() as conn2:
+                        conn2.execute("""
+                            UPDATE support_messages
+                            SET status = 'resolved'
+                            WHERE id = ?
+                        """, (msg["id"],))
+                        conn2.commit()
+
+                    st.success("Marked as resolved.")
+                    st.rerun()
+                else:
+                    st.success("✅ Resolved")
+
+
+
+
     # =========================================================
     # HELP
     # =========================================================
