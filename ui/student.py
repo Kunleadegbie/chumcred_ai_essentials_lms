@@ -60,35 +60,43 @@ def student_router(user):
         if not is_orientation_completed(user_id):
             st.stop()
 
-    # =================================================
-    # HELP & SUPPORT PAGE
-    # =================================================
-    if st.session_state.get("page") == "support":
 
-        st.header("🆘 Help & Support")
+     # =================================================
+     # HELP & SUPPORT ROUTING (PRIORITY PAGE)
+     # =================================================
+     if st.session_state.get("support_open"):
 
-        st.write(
-            "If you are experiencing any issue with your lessons, assignments, "
-            "or platform access, please send a message below."
-        )
+         st.header("🆘 Help & Support")
 
-        with st.form("student_support_form", clear_on_submit=True):
-            subject = st.text_input("Subject")
-            message = st.text_area("Your Message")
+         st.markdown("""
+Need help? We are here for you.
 
-            submitted = st.form_submit_button("Send Message")
+You can:
+• Ask academic questions  
+• Request clarification  
+• Report technical issues  
+• Share feedback  
+""")
 
-            if submitted:
-                if not subject.strip() or not message.strip():
-                    st.error("Please complete all fields.")
-                else:
-                    st.success("✅ Your message has been sent successfully.")
+    subject = st.text_input("Subject")
+    message = st.text_area("Your Message")
 
-    if st.button("⬅ Back to Dashboard"):
-        st.session_state["page"] = "dashboard"
+    if st.button("📩 Submit Support Request", key="submit_support_btn"):
+        if not subject or not message:
+            st.error("Please fill in all fields.")
+        else:
+            # You can later store this in DB if needed
+            st.success("✅ Your message has been sent. The facilitator will respond soon.")
+            st.session_state["support_open"] = False
+            st.rerun()
+
+    if st.button("⬅ Back to Dashboard", key="back_from_support_btn"):
+        st.session_state["support_open"] = False
         st.rerun()
 
     st.stop()
+
+
     
 
 
@@ -272,4 +280,4 @@ def student_router(user):
 
 
    
-    
+  
