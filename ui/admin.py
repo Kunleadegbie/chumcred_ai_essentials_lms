@@ -28,6 +28,10 @@ from services.assignments import (
     review_assignment,
 )
 
+
+from services.db import DB_PATH
+st.write(DB_PATH)
+
 CONTENT_DIR = "content"
 TOTAL_WEEKS = 6
 

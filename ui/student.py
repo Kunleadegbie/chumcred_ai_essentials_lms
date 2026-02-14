@@ -24,6 +24,10 @@ from services.assignments import (
 from services.help import list_active_broadcasts
 from services.certificates import has_certificate, issue_certificate
 
+from services.db import DB_PATH
+st.write(DB_PATH)
+
+
 CONTENT_DIR = "content"
 TOTAL_WEEKS = 6
 
