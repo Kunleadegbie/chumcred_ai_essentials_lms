@@ -217,6 +217,31 @@ def student_router(user):
             st.warning("Complete and pass all graded assignments to unlock certificate.")
 
     # =================================================
+    # HELP & SUPPORT PANEL (FIXED)
+    # =================================================
+    if st.session_state.get("support_open"):
+
+        st.divider()
+        st.header("🆘 Help & Support")
+
+        st.markdown("""
+        If you need assistance:
+
+        • 📩 Send a message via the platform  
+        • 📧 Email the program instructor  
+        • 💬 Join Saturday Live Session for clarifications  
+
+        We are here to support your learning journey.
+        """)
+
+        st.info("Instructor will respond within 24 hours.")
+
+        if st.button("Close Help", key="close_help_btn"):
+            st.session_state["support_open"] = False
+            st.rerun()
+ 
+
+    # =================================================
     # SIDEBAR
     # =================================================
     with st.sidebar:
