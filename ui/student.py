@@ -61,6 +61,38 @@ def student_router(user):
             st.stop()
 
     # =================================================
+    # HELP & SUPPORT PAGE
+    # =================================================
+    if st.session_state.get("page") == "support":
+
+        st.header("🆘 Help & Support")
+
+        st.write(
+            "If you are experiencing any issue with your lessons, assignments, "
+            "or platform access, please send a message below."
+        )
+
+        with st.form("student_support_form", clear_on_submit=True):
+            subject = st.text_input("Subject")
+            message = st.text_area("Your Message")
+
+            submitted = st.form_submit_button("Send Message")
+
+            if submitted:
+                if not subject.strip() or not message.strip():
+                    st.error("Please complete all fields.")
+                else:
+                    st.success("✅ Your message has been sent successfully.")
+
+    if st.button("⬅ Back to Dashboard"):
+        st.session_state["page"] = "dashboard"
+        st.rerun()
+
+    st.stop()
+    
+
+
+    # =================================================
     # BROADCAST POPUP (Dashboard)
     # =================================================
     broadcasts = list_active_broadcasts(limit=1) or []
@@ -240,33 +272,4 @@ def student_router(user):
 
 
    
-    # =================================================
-    # HELP & SUPPORT PAGE
-    # =================================================
-    if st.session_state.get("page") == "support":
-
-        st.header("🆘 Help & Support")
-
-        st.write(
-            "If you are experiencing any issue with your lessons, assignments, "
-            "or platform access, please send a message below."
-        )
-
-        with st.form("student_support_form", clear_on_submit=True):
-            subject = st.text_input("Subject")
-            message = st.text_area("Your Message")
-
-            submitted = st.form_submit_button("Send Message")
-
-            if submitted:
-                if not subject.strip() or not message.strip():
-                    st.error("Please complete all fields.")
-                else:
-                    st.success("✅ Your message has been sent successfully.")
-
-    if st.button("⬅ Back to Dashboard"):
-        st.session_state["page"] = "dashboard"
-        st.rerun()
-
-    st.stop()
-
+    
