@@ -533,5 +533,8 @@ def admin_router(user):
     # HELP
     # =========================================================
 
-    
+    elif menu == "Help & Support":
+        from ui.admin_support import admin_support_page
+        admin_support_page(user)
+
     
