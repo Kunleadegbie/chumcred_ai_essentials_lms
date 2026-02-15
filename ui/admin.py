@@ -395,6 +395,27 @@ def admin_router(user):
     # =========================================================
     # HELP
     # =========================================================
+
     elif menu == "Help & Support":
-        from ui.help import help_router
-        help_router(user, role="admin")
+    st.subheader("🆘 Help & Support Requests")
+
+    import pandas as pd
+
+    with read_conn() as conn:
+        # Show latest tickets regardless of schema
+        rows = conn.execute("""
+            SELECT *
+            FROM support_tickets
+            ORDER BY id DESC
+            LIMIT 200
+        """).fetchall()
+
+    tickets = [dict(r) for r in rows]
+
+    if not tickets:
+        st.info("No support tickets yet.")
+    else:
+        st.dataframe(pd.DataFrame(tickets), use_container_width=True)
+
+
+   
