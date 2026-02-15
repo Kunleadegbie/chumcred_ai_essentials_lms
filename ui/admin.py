@@ -395,37 +395,39 @@ def admin_router(user):
 
 
     elif menu == "Help & Support":
-        st.subheader("🆘 Help & Support Inbox (Tickets)")
+        st.subheader("🆘 Help & Support (Student Enquiries)")
 
-        # Show which DB file admin is reading (this helps catch DB-path mismatch fast)
         with read_conn() as conn:
+            # Show DB file path (helps confirm admin/student use same DB)
             db_row = conn.execute("PRAGMA database_list").fetchone()
             st.caption(f"DB file in use: {db_row[2] if db_row else 'unknown'}")
 
-            # detect columns so we don’t crash if schema differs slightly
+            # Detect columns safely
             cols = [r[1] for r in conn.execute("PRAGMA table_info(support_tickets)").fetchall()]
             has_user_id = "user_id" in cols
             has_created_at = "created_at" in cols
 
-            order_clause = "datetime(st.created_at) DESC" if has_created_at else "st.id DESC"
+            order_by = "datetime(st.created_at) DESC" if has_created_at else "st.id DESC"
 
             if has_user_id:
                 rows = conn.execute(f"""
                     SELECT st.*, u.username AS student_username
                     FROM support_tickets st
                     LEFT JOIN users u ON u.id = st.user_id
-                    ORDER BY {order_clause}
+                    ORDER BY {order_by}
                     LIMIT 200
                 """).fetchall()
-        else:
-            rows = conn.execute(f"""
-                SELECT st.*
-                FROM support_tickets st
-                ORDER BY {order_clause}
-                LIMIT 200
-            """).fetchall()
+            else:
+                # fallback if your support_tickets table doesn't have user_id
+                order_by2 = "datetime(created_at) DESC" if has_created_at else "id DESC"
+                rows = conn.execute(f"""
+                    SELECT *
+                    FROM support_tickets
+                    ORDER BY {order_by2}
+                    LIMIT 200
+                """).fetchall()
 
-        tickets = [dict(r) for r in rows]
+        tickets = [dict(r) for r in rows] if rows else []
 
         st.write(f"Tickets found: {len(tickets)}")
 
@@ -433,17 +435,17 @@ def admin_router(user):
             st.info("No support tickets yet.")
         else:
             for t in tickets:
-                title = f"#{t.get('id')} • {t.get('student_username','')} • {t.get('status','open')}"
+                who = t.get("student_username") or t.get("user_id") or "student"
+                title = f"#{t.get('id')} • {who} • {t.get('status','open')}"
                 with st.expander(title):
-                    if "subject" in t: st.write("**Subject:**", t.get("subject"))
-                    if "message" in t: st.write("**Message:**", t.get("message"))
-                    if "created_at" in t: st.caption(f"Created: {t.get('created_at')}")
-                    # fallback: show everything if message/subject fields differ
+                    if "subject" in t:
+                        st.write("**Subject:**", t.get("subject"))
+                    if "message" in t:
+                        st.write("**Message:**", t.get("message"))
+                    if "created_at" in t:
+                        st.caption(f"Created: {t.get('created_at')}")
                     if "subject" not in t and "message" not in t:
                         st.json(t)
-
-
-
 
 
 
