@@ -24,9 +24,6 @@ from services.assignments import (
 from services.help import list_active_broadcasts
 from services.certificates import has_certificate, issue_certificate
 
-from services.db import DB_PATH
-st.write(DB_PATH)
-
 
 CONTENT_DIR = "content"
 TOTAL_WEEKS = 6
@@ -69,9 +66,17 @@ def student_router(user):
     # =================================================
     # PAGE ROUTING
     # =================================================
+
     if st.session_state.get("page") == "support":
+        st.markdown("### 🆘 Help & Support")
+
+        if st.button("⬅️ Return to Dashboard", key="support_back_to_dash"):
+            st.session_state["page"] = None   # dashboard is the default path
+            st.rerun()
+
         support_page(user)
         return
+
 
 
     # =================================================

@@ -29,9 +29,6 @@ from services.assignments import (
 )
 
 
-from services.db import DB_PATH
-st.write(DB_PATH)
-
 CONTENT_DIR = "content"
 TOTAL_WEEKS = 6
 
@@ -396,26 +393,58 @@ def admin_router(user):
     # HELP
     # =========================================================
 
+
     elif menu == "Help & Support":
-        st.subheader("🆘 Help & Support Requests")
+        st.subheader("🆘 Help & Support Inbox (Tickets)")
 
-        import pandas as pd
-
+        # Show which DB file admin is reading (this helps catch DB-path mismatch fast)
         with read_conn() as conn:
-            # Show latest tickets regardless of schema
-            rows = conn.execute("""
-                SELECT *
-                FROM support_tickets
-                ORDER BY id DESC
+            db_row = conn.execute("PRAGMA database_list").fetchone()
+            st.caption(f"DB file in use: {db_row[2] if db_row else 'unknown'}")
+
+            # detect columns so we don’t crash if schema differs slightly
+            cols = [r[1] for r in conn.execute("PRAGMA table_info(support_tickets)").fetchall()]
+            has_user_id = "user_id" in cols
+            has_created_at = "created_at" in cols
+
+            order_clause = "datetime(st.created_at) DESC" if has_created_at else "st.id DESC"
+
+            if has_user_id:
+                rows = conn.execute(f"""
+                    SELECT st.*, u.username AS student_username
+                    FROM support_tickets st
+                    LEFT JOIN users u ON u.id = st.user_id
+                    ORDER BY {order_clause}
+                    LIMIT 200
+                """).fetchall()
+        else:
+            rows = conn.execute(f"""
+                SELECT st.*
+                FROM support_tickets st
+                ORDER BY {order_clause}
                 LIMIT 200
             """).fetchall()
 
         tickets = [dict(r) for r in rows]
 
+        st.write(f"Tickets found: {len(tickets)}")
+
         if not tickets:
             st.info("No support tickets yet.")
         else:
-            st.dataframe(pd.DataFrame(tickets), use_container_width=True)
+            for t in tickets:
+                title = f"#{t.get('id')} • {t.get('student_username','')} • {t.get('status','open')}"
+                with st.expander(title):
+                    if "subject" in t: st.write("**Subject:**", t.get("subject"))
+                    if "message" in t: st.write("**Message:**", t.get("message"))
+                    if "created_at" in t: st.caption(f"Created: {t.get('created_at')}")
+                    # fallback: show everything if message/subject fields differ
+                    if "subject" not in t and "message" not in t:
+                        st.json(t)
 
 
-   
+
+
+
+
+    
