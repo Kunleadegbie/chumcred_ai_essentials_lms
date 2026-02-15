@@ -397,25 +397,25 @@ def admin_router(user):
     # =========================================================
 
     elif menu == "Help & Support":
-    st.subheader("🆘 Help & Support Requests")
+        st.subheader("🆘 Help & Support Requests")
 
-    import pandas as pd
+        import pandas as pd
 
-    with read_conn() as conn:
-        # Show latest tickets regardless of schema
-        rows = conn.execute("""
-            SELECT *
-            FROM support_tickets
-            ORDER BY id DESC
-            LIMIT 200
-        """).fetchall()
+        with read_conn() as conn:
+            # Show latest tickets regardless of schema
+            rows = conn.execute("""
+                SELECT *
+                FROM support_tickets
+                ORDER BY id DESC
+                LIMIT 200
+            """).fetchall()
 
-    tickets = [dict(r) for r in rows]
+        tickets = [dict(r) for r in rows]
 
-    if not tickets:
-        st.info("No support tickets yet.")
-    else:
-        st.dataframe(pd.DataFrame(tickets), use_container_width=True)
+        if not tickets:
+            st.info("No support tickets yet.")
+        else:
+            st.dataframe(pd.DataFrame(tickets), use_container_width=True)
 
 
    
