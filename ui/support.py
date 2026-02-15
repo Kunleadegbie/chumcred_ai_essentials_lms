@@ -45,8 +45,8 @@ please send a message to the facilitator below.
                 VALUES (?, ?, ?, ?)
             """, (
                 user["id"],
-                subject.strip(),
-                message.strip(),
+                subject,
+                message,
                 datetime.utcnow().isoformat()
             ))
             conn.commit()
