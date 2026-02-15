@@ -1,28 +1,26 @@
 # --------------------------------------------------
 # ui/support.py
 # --------------------------------------------------
-# Student Help & Support page (SQLite)
+# Student Help & Support page (SQLite) — FIXED
 #
-# Ensures student enquiries are written to the same SQLite DB/table the admin reads.
-# Schema-tolerant (handles user_id vs student_user_id; username vs student_username).
+# Goal: make sure NEW student enquiries are written into the SAME SQLite DB
+# that the admin reads, and make failures obvious (row counts + Ticket ID).
+#
+# Works with BOTH schemas:
+# - support_tickets(student_user_id, student_username, ...)
+# - support_tickets(user_id, username, ...)
 
 from __future__ import annotations
 
 import datetime
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 import streamlit as st
 
 from services.db import DB_PATH, read_conn
 
-# If your codebase has a dedicated write transaction helper, we'll use it.
-try:
-    from services.db import write_txn  # type: ignore
-except Exception:  # pragma: no cover
-    write_txn = None  # type: ignore
 
-
-def _now_sqlite() -> str:
+def _now() -> str:
     return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 
@@ -38,105 +36,123 @@ def _cols(conn, table: str) -> List[str]:
     return [r[1] for r in conn.execute(f"PRAGMA table_info({table})").fetchall()]
 
 
-def _insert_ticket(conn, user: Dict, subject: str, message: str) -> int:
+def _insert_support_ticket(conn, user: Dict, subject: str, message: str) -> int:
     cols = _cols(conn, "support_tickets")
 
-    # Map columns safely
+    # map schema differences
     uid_col = "user_id" if "user_id" in cols else ("student_user_id" if "student_user_id" in cols else None)
     uname_col = "username" if "username" in cols else ("student_username" if "student_username" in cols else None)
 
     fields: List[str] = []
     params: List[object] = []
 
+    # user identifiers
     if uid_col:
         fields.append(uid_col)
         params.append(user.get("id"))
-
     if uname_col:
         fields.append(uname_col)
         params.append(user.get("username"))
 
+    # content
     if "subject" in cols:
         fields.append("subject")
         params.append(subject)
-
     if "message" in cols:
         fields.append("message")
         params.append(message)
 
+    # status / timestamps (only if columns exist)
     if "status" in cols:
         fields.append("status")
         params.append("open")
-
     if "created_at" in cols:
         fields.append("created_at")
-        params.append(_now_sqlite())
+        params.append(_now())
 
     if not fields:
-        raise RuntimeError("support_tickets has no writable columns. Check schema.")
+        raise RuntimeError("support_tickets has no writable columns (unexpected schema).")
 
     placeholders = ", ".join(["?"] * len(fields))
     sql = f"INSERT INTO support_tickets ({', '.join(fields)}) VALUES ({placeholders})"
 
     cur = conn.execute(sql, params)
-    # sqlite integer PK
+    # if INTEGER PK
     ticket_id = cur.lastrowid
-    return int(ticket_id) if ticket_id is not None else 0
+    try:
+        return int(ticket_id) if ticket_id is not None else 0
+    except Exception:
+        return 0
 
 
 def support_page(user: Dict):
     st.subheader("🆘 Help & Support")
 
-    # Show DB info (helps verify student/admin hit the same DB)
+    # back button
+    if st.button("⬅️ Return to Dashboard", key="support_back_to_dash"):
+        st.session_state["page"] = None
+        st.rerun()
+
+    # DB proof (student side)
     st.caption(f"DB_PATH: {DB_PATH}")
     with read_conn() as conn:
         db_row = conn.execute("PRAGMA database_list").fetchone()
         st.caption(f"SQLite file in use: {db_row[2] if db_row else 'unknown'}")
 
-    # Navigation
-    if st.button("⬅️ Return to Dashboard", key="support_back_to_dash"):
-        st.session_state["page"] = None
-        st.rerun()
-
-    # Guard: table must exist
-    with read_conn() as conn:
         if not _table_exists(conn, "support_tickets"):
-            st.error("Support system is not set up: missing table 'support_tickets'.")
+            st.error("Missing table: support_tickets. Support cannot work until DB is initialized.")
             st.stop()
 
-    st.markdown("Send your question to the admin/instructor. You'll see replies here once addressed.")
+        cols = _cols(conn, "support_tickets")
+        try:
+            cnt = conn.execute("SELECT COUNT(*) FROM support_tickets").fetchone()[0]
+        except Exception:
+            cnt = "unknown"
+        st.caption(f"support_tickets rows (student view): {cnt}")
+
+    st.markdown("Send your question to the admin/instructor. You’ll get a reply here once it’s addressed.")
 
     subject = st.text_input("Subject", placeholder="e.g., Week 2 assignment clarification")
-    message = st.text_area("Your message", height=160)
+    message = st.text_area("Your message", height=160, placeholder="Describe your issue clearly...")
 
-    submitted = st.button("Submit Request", type="primary")
-
-    if submitted:
+    if st.button("Submit Request", type="primary", key="submit_support_ticket"):
         if not subject.strip() or not message.strip():
             st.error("Please enter both a subject and a message.")
-        else:
-            try:
-                if write_txn is not None:
-                    with write_txn() as conn:  # type: ignore
-                        ticket_id = _insert_ticket(conn, user, subject.strip(), message.strip())
-                        conn.commit()
-                else:
-                    with read_conn() as conn:
-                        ticket_id = _insert_ticket(conn, user, subject.strip(), message.strip())
-                        conn.commit()
+            st.stop()
 
-                st.success(f"✅ Submitted! Ticket ID: {ticket_id if ticket_id else 'created'}")
-                st.rerun()
-            except Exception as e:
-                st.error(f"❌ Could not submit your request: {e}")
+        try:
+            with read_conn() as conn:
+                before = conn.execute("SELECT COUNT(*) FROM support_tickets").fetchone()[0]
+                ticket_id = _insert_support_ticket(conn, user, subject.strip(), message.strip())
+                conn.commit()
+                after = conn.execute("SELECT COUNT(*) FROM support_tickets").fetchone()[0]
+
+                # fetch the row we just wrote (best effort)
+                last_row = None
+                try:
+                    if ticket_id:
+                        last_row = conn.execute("SELECT * FROM support_tickets WHERE id = ?", (ticket_id,)).fetchone()
+                    if last_row is None:
+                        last_row = conn.execute("SELECT * FROM support_tickets ORDER BY id DESC LIMIT 1").fetchone()
+                except Exception:
+                    last_row = None
+
+            st.success(f"✅ Submitted! Ticket ID: {ticket_id if ticket_id else 'created'}")
+            st.caption(f"Row count: {before} → {after}")
+            if last_row is not None:
+                st.caption("Last saved ticket (proof):")
+                st.write(dict(last_row))
+
+            st.rerun()
+
+        except Exception as e:
+            st.error(f"❌ Could not submit your request: {e}")
 
     st.divider()
     st.markdown("### Your recent tickets")
 
-    # Show student's own tickets if possible
     with read_conn() as conn:
         cols = _cols(conn, "support_tickets")
-
         uid_col = "user_id" if "user_id" in cols else ("student_user_id" if "student_user_id" in cols else None)
         uname_col = "username" if "username" in cols else ("student_username" if "student_username" in cols else None)
 
@@ -157,7 +173,7 @@ def support_page(user: Dict):
             params,
         ).fetchall()
 
-        tickets = [dict(r) for r in rows] if rows else []
+    tickets = [dict(r) for r in rows] if rows else []
 
     if not tickets:
         st.info("No tickets yet.")
@@ -166,10 +182,13 @@ def support_page(user: Dict):
             tid = t.get("id")
             status = t.get("status", "open")
             created_at = t.get("created_at", "")
-            st.write(f"**#{tid}** — {status} — {created_at}")
+            title = f"#{tid} • {status} • {created_at}"
+            with st.expander(title, expanded=False):
+                if t.get("subject"):
+                    st.write("**Subject:**", t.get("subject"))
+                if t.get("message"):
+                    st.write("**Message:**")
+                    st.write(t.get("message"))
 
-            if t.get("subject"):
-                st.caption(t.get("subject"))
-
-            if t.get("admin_reply"):
-                st.success(f"Admin reply: {t.get('admin_reply')}")
+                if t.get("admin_reply"):
+                    st.success(f"Admin reply: {t.get('admin_reply')}")
