@@ -337,6 +337,102 @@ def admin_router(user):
                 st.rerun()
 
 
+
+    # =========================================================
+    # HELP & SUPPORT (TICKETS)
+    # =========================================================
+    elif menu == "Help & Support":
+        st.subheader("🆘 Help & Support (Student Enquiries)")
+
+        # Show which DB file is in use (helps catch DB-path mismatch fast)
+        try:
+            st.caption(f"DB_PATH: {DB_PATH}")
+        except Exception:
+            pass
+
+        with read_conn() as conn:
+            try:
+                db_row = conn.execute("PRAGMA database_list").fetchone()
+                st.caption(f"SQLite file in use: {db_row[2] if db_row else 'unknown'}")
+            except Exception:
+                st.caption("SQLite file in use: (unable to read)")
+
+            # Load latest tickets
+            rows = conn.execute("""
+                SELECT
+                    id,
+                    student_username,
+                    subject,
+                    message,
+                    created_at,
+                    status,
+                    admin_reply,
+                    replied_at
+                FROM support_tickets
+                ORDER BY datetime(created_at) DESC
+                LIMIT 200
+            """).fetchall()
+
+        tickets = [dict(r) for r in rows] if rows else []
+
+        if not tickets:
+            st.info("No support tickets yet.")
+        else:
+            st.write(f"Tickets found: **{len(tickets)}**")
+
+            for t in tickets:
+                title = f"#{t['id']} • {t.get('student_username','')} • {t.get('status','open')}"
+                with st.expander(title):
+                    st.markdown(f"**Subject:** {t.get('subject','')}")
+                    st.markdown("**Student message:**")
+                    st.info(t.get("message", ""))
+
+                    st.caption(f"Submitted: {t.get('created_at','')}")
+                    if t.get("replied_at"):
+                        st.caption(f"Last replied: {t.get('replied_at')}")
+
+                    # Admin actions
+                    new_status = st.selectbox(
+                        "Status",
+                        options=["open", "in_progress", "resolved", "closed"],
+                        index=["open", "in_progress", "resolved", "closed"].index(
+                            t.get("status", "open") if t.get("status", "open") in ["open", "in_progress", "resolved", "closed"] else "open"
+                        ),
+                        key=f"ticket_status_{t['id']}",
+                    )
+
+                    reply = st.text_area(
+                        "Admin reply",
+                        value=t.get("admin_reply") or "",
+                        height=120,
+                        key=f"ticket_reply_{t['id']}",
+                    )
+
+                    col_a, col_b = st.columns([1, 1])
+                    with col_a:
+                        if st.button("💾 Save update", key=f"save_ticket_{t['id']}"):
+                            with read_conn() as conn:
+                                conn.execute("""
+                                    UPDATE support_tickets
+                                    SET status = ?,
+                                        admin_reply = ?,
+                                        replied_at = datetime('now'),
+                                        replied_by = ?
+                                    WHERE id = ?
+                                """, (new_status, reply.strip() if reply else None, user.get("id"), t["id"]))
+                                try:
+                                    conn.commit()
+                                except Exception:
+                                    pass
+                            st.success("Updated.")
+                            st.rerun()
+
+                    with col_b:
+                        if st.button("🧹 Clear reply box", key=f"clear_reply_{t['id']}"):
+                            st.session_state[f"ticket_reply_{t['id']}"] = ""
+                            st.rerun()
+
+
     # =========================================================
     # SUPPORT MESSAGES
     # =========================================================
