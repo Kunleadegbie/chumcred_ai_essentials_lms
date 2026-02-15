@@ -16,7 +16,7 @@ from __future__ import annotations
 import streamlit as st
 import pandas as pd
 
-from services.db import read_conn, DB_PATH
+from services.db import read_conn
 
 
 def _table_exists(conn, table: str) -> bool:
@@ -99,20 +99,11 @@ def admin_support_page(user: dict | None = None):
     st.subheader("🆘 Help & Support (Student Enquiries)")
 
     # DB proof
-    st.caption(f"DB_PATH: {DB_PATH}")
     with read_conn() as conn:
         db_row = conn.execute("PRAGMA database_list").fetchone()
-        st.caption(f"SQLite file in use: {db_row[2] if db_row else 'unknown'}")
 
         if _table_exists(conn, "support_tickets"):
             cnt = conn.execute("SELECT COUNT(*) FROM support_tickets").fetchone()[0]
-            st.caption(f"support_tickets rows: {cnt}")
-            try:
-                last = conn.execute("SELECT id, created_at FROM support_tickets ORDER BY id DESC LIMIT 1").fetchone()
-                if last:
-                    st.caption(f"Latest ticket: id={last[0]} created_at={last[1]}")
-            except Exception:
-                pass
         else:
             st.error("support_tickets table not found.")
             st.stop()
@@ -128,13 +119,7 @@ def admin_support_page(user: dict | None = None):
         if st.button("🔄 Refresh", use_container_width=True):
             st.rerun()
 
-    show_debug = st.checkbox("Show debug", value=False)
-
     tickets, cols = _fetch(status=status, q=q)
-
-    if show_debug:
-        st.write("Detected support_tickets columns:")
-        st.write(cols)
 
     if not tickets:
         st.info("No enquiries found (or none match your filters).")

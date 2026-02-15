@@ -17,7 +17,7 @@ from typing import Dict, List
 
 import streamlit as st
 
-from services.db import DB_PATH, read_conn
+from services.db import read_conn
 
 
 def _now() -> str:
@@ -88,27 +88,10 @@ def _insert_support_ticket(conn, user: Dict, subject: str, message: str) -> int:
 def support_page(user: Dict):
     st.subheader("🆘 Help & Support")
 
-    # back button
-    if st.button("⬅️ Return to Dashboard", key="stu_support_back_to_dash_btn"):
-        st.session_state["page"] = None
-        st.rerun()
-
-    # DB proof (student side)
-    st.caption(f"DB_PATH: {DB_PATH}")
     with read_conn() as conn:
-        db_row = conn.execute("PRAGMA database_list").fetchone()
-        st.caption(f"SQLite file in use: {db_row[2] if db_row else 'unknown'}")
-
         if not _table_exists(conn, "support_tickets"):
             st.error("Missing table: support_tickets. Support cannot work until DB is initialized.")
             st.stop()
-
-        cols = _cols(conn, "support_tickets")
-        try:
-            cnt = conn.execute("SELECT COUNT(*) FROM support_tickets").fetchone()[0]
-        except Exception:
-            cnt = "unknown"
-        st.caption(f"support_tickets rows (student view): {cnt}")
 
     st.markdown("Send your question to the admin/instructor. You’ll get a reply here once it’s addressed.")
 
@@ -122,27 +105,10 @@ def support_page(user: Dict):
 
         try:
             with read_conn() as conn:
-                before = conn.execute("SELECT COUNT(*) FROM support_tickets").fetchone()[0]
                 ticket_id = _insert_support_ticket(conn, user, subject.strip(), message.strip())
                 conn.commit()
-                after = conn.execute("SELECT COUNT(*) FROM support_tickets").fetchone()[0]
-
-                # fetch the row we just wrote (best effort)
-                last_row = None
-                try:
-                    if ticket_id:
-                        last_row = conn.execute("SELECT * FROM support_tickets WHERE id = ?", (ticket_id,)).fetchone()
-                    if last_row is None:
-                        last_row = conn.execute("SELECT * FROM support_tickets ORDER BY id DESC LIMIT 1").fetchone()
-                except Exception:
-                    last_row = None
 
             st.success(f"✅ Submitted! Ticket ID: {ticket_id if ticket_id else 'created'}")
-            st.caption(f"Row count: {before} → {after}")
-            if last_row is not None:
-                st.caption("Last saved ticket (proof):")
-                st.write(dict(last_row))
-
             st.rerun()
 
         except Exception as e:
