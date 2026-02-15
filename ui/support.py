@@ -42,7 +42,7 @@ please send a message to the facilitator below.
             cur.execute("""
                 INSERT INTO support_messages
                 (user_id, subject, message, created_at)
-                VALUES (?, ?, ?, ?)
+                VALUES (?, ?, ?,'open', ?)
             """, (
                 user["id"],
                 subject.strip(),
