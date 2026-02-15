@@ -351,8 +351,7 @@ def admin_router(user):
                 SELECT sm.id,
                        u.username,
                        sm.subject,
-                       sm.message,
-                       sm.status,
+                       sm.message,                       
                        sm.created_at
                 FROM support_messages sm
                 LEFT JOIN users u ON sm.user_id = u.id
@@ -361,17 +360,19 @@ def admin_router(user):
 
         messages = [dict(r) for r in rows]
 
-        if not messages:
+        if not rows:
             st.info("No support messages yet.")
-            return
+        else:
+            for r in rows:
+                data = dict(r)
 
-        for msg in messages:
-
-            st.markdown("---")
-            st.markdown(f"**From:** {msg['username']}")
-            st.markdown(f"**Subject:** {msg['subject']}")
-            st.markdown(f"**Message:** {msg['message']}")
-            st.caption(f"Sent on: {msg['created_at']}")
+                st.markdown("### 📩 Support Request")
+                st.markdown(f"**Student:** {data['username']}")
+                st.markdown(f"**Subject:** {data['subject']}")
+                st.markdown(f"**Message:**")
+                st.info(data['message'])
+                st.caption(f"Submitted: {data['created_at']}")
+                st.divider()
 
             if msg["status"] == "open":
                 if st.button("Mark as Resolved", key=f"resolve_{msg['id']}"):
