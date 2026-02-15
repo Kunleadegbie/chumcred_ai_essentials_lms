@@ -337,148 +337,16 @@ def admin_router(user):
                 st.rerun()
 
 
-
-    # =========================================================
-    # HELP & SUPPORT (TICKETS)
-    # =========================================================
-    elif menu == "Help & Support":
-        st.subheader("🆘 Help & Support (Student Enquiries)")
-
-        # Show which DB file is in use (helps catch DB-path mismatch fast)
-        try:
-            st.caption(f"DB_PATH: {DB_PATH}")
-        except Exception:
-            pass
-
-        rows = []
-        ticket_cols = []
-        with read_conn() as conn:
-            # show SQLite file path
-            try:
-                db_row = conn.execute("PRAGMA database_list").fetchone()
-                st.caption(f"SQLite file in use: {db_row[2] if db_row else 'unknown'}")
-            except Exception:
-                st.caption("SQLite file in use: (unable to read)")
-
-            # discover ticket schema safely
-            try:
-                ticket_cols = [r[1] for r in conn.execute("PRAGMA table_info(support_tickets)").fetchall()]
-            except Exception:
-                ticket_cols = []
-
-            if not ticket_cols:
-                st.error("support_tickets table not found (or has no columns).")
-                rows = []
-            else:
-                has_created_at = "created_at" in ticket_cols
-                order_clause = "datetime(created_at) DESC" if has_created_at else "id DESC"
-
-                # Select * so we never break on missing columns (e.g., student_username)
-                rows = conn.execute(f"""
-                    SELECT *
-                    FROM support_tickets
-                    ORDER BY {order_clause}
-                    LIMIT 200
-                """).fetchall()
-
-        tickets = [dict(r) for r in rows] if rows else []
-
-        if not tickets:
-            st.info("No support tickets yet.")
-        else:
-            st.write(f"Tickets found: **{len(tickets)}**")
-
-            for t in tickets:
-                # Choose the best available student label
-                student_label = (
-                    t.get("student_username")
-                    or t.get("student_name")
-                    or t.get("username")
-                    or str(t.get("student_user_id") or t.get("user_id") or "")
-                )
-
-                title = f"#{t.get('id')} • {student_label} • {t.get('status','open')}"
-                with st.expander(title):
-                    # Common fields (fallbacks included)
-                    subject = t.get("subject") or ""
-                    message = t.get("message") or t.get("body") or ""
-
-                    if subject:
-                        st.markdown(f"**Subject:** {subject}")
-                    st.markdown("**Student message:**")
-                    st.info(message)
-
-                    if t.get("created_at"):
-                        st.caption(f"Submitted: {t.get('created_at')}")
-                    if t.get("replied_at"):
-                        st.caption(f"Last replied: {t.get('replied_at')}")
-
-                    # Admin actions (update only columns that exist)
-                    status_options = ["open", "in_progress", "resolved", "closed"]
-                    current_status = t.get("status", "open")
-                    if current_status not in status_options:
-                        current_status = "open"
-
-                    new_status = st.selectbox(
-                        "Status",
-                        options=status_options,
-                        index=status_options.index(current_status),
-                        key=f"ticket_status_{t.get('id')}",
-                    )
-
-                    reply = st.text_area(
-                        "Admin reply",
-                        value=t.get("admin_reply") or "",
-                        height=120,
-                        key=f"ticket_reply_{t.get('id')}",
-                    )
-
-                    col_a, col_b = st.columns([1, 1])
-
-                    with col_a:
-                        if st.button("💾 Save update", key=f"save_ticket_{t.get('id')}"):
-                            set_parts = []
-                            params = []
-
-                            if "status" in ticket_cols:
-                                set_parts.append("status = ?")
-                                params.append(new_status)
-
-                            if "admin_reply" in ticket_cols:
-                                set_parts.append("admin_reply = ?")
-                                params.append(reply.strip() if reply else None)
-
-                            if "replied_at" in ticket_cols:
-                                set_parts.append("replied_at = datetime('now')")
-
-                            if "replied_by" in ticket_cols:
-                                set_parts.append("replied_by = ?")
-                                params.append(user.get("id"))
-
-                            if not set_parts:
-                                st.warning("No updatable columns found on support_tickets.")
-                            else:
-                                sql = f"UPDATE support_tickets SET {', '.join(set_parts)} WHERE id = ?"
-                                params.append(t.get("id"))
-                                with read_conn() as conn:
-                                    conn.execute(sql, params)
-                                    try:
-                                        conn.commit()
-                                    except Exception:
-                                        pass
-                                st.success("Updated.")
-                                st.rerun()
-
-                    with col_b:
-                        if st.button("🧹 Clear reply box", key=f"clear_reply_{t.get('id')}"):
-                            st.session_state[f"ticket_reply_{t.get('id')}"] = ""
-                            st.rerun()
-
-
-
     # =========================================================
     # SUPPORT MESSAGES
     # =========================================================
+    # =========================================================
+    # HELP & SUPPORT (ADMIN)
+    # =========================================================
+    elif menu == "Help & Support":
+        from ui.admin_support import admin_support_page
+        admin_support_page(user)
+
     elif menu == "Support Messages":
 
         st.subheader("🆘 Student Support Messages")
@@ -533,8 +401,5 @@ def admin_router(user):
     # HELP
     # =========================================================
 
-    elif menu == "Help & Support":
-        from ui.admin_support import admin_support_page
-        admin_support_page(user)
-
+    
     
