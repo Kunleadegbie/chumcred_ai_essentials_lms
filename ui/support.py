@@ -1,40 +1,23 @@
 import streamlit as st
-from services.db import write_txn
 from datetime import datetime
-
+from services.db import write_txn
 
 def support_page(user):
-
     st.title("🆘 Help & Support")
 
-    # Ensure table exists (SAFE AUTO-CREATE)
-    with write_txn() as conn:
-        cur = conn.cursor()
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS support_messages (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER,
-                subject TEXT,
-                message TEXT,
-                created_at TEXT
-            )
-        """)
-        conn.commit()
-
-    st.markdown(f"**Logged in as:** {user['username']}")
-
-    st.markdown("""
-If you have any questions, challenges, or technical issues,
-please send a message to the facilitator below.
-    """)
+    st.write("Send a message to the program instructor.")
 
     subject = st.text_input("Subject")
     message = st.text_area("Your Message")
 
-    if st.button("📩 Submit Request", key="submit_support_btn"):
+    if st.button("📨 Send Message"):
 
-        if not subject.strip() or not message.strip():
-            st.error("Please complete all fields.")
+        if not subject.strip():
+            st.error("Please enter a subject.")
+            return
+
+        if not message.strip():
+            st.error("Please enter a message.")
             return
 
         with write_txn() as conn:
@@ -45,16 +28,10 @@ please send a message to the facilitator below.
                 VALUES (?, ?, ?, ?)
             """, (
                 user["id"],
-                subject,
-                message,
+                subject.strip(),
+                message.strip(),
                 datetime.utcnow().isoformat()
             ))
-            conn.commit()
 
-        st.success("✅ Your message has been submitted successfully.")
-        st.session_state["page"] = "dashboard"
-        st.rerun()
-
-    if st.button("⬅ Back to Dashboard"):
-        st.session_state["page"] = "dashboard"
+        st.success("✅ Message sent successfully!")
         st.rerun()
