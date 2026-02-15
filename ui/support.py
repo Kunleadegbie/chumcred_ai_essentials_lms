@@ -1,19 +1,19 @@
 # --------------------------------------------------
 # ui/support.py
 # --------------------------------------------------
-# Student Help & Support page (SQLite)
+# Student Help & Support page (SQLite) — FIXED
 #
-# Key goals:
-# - Write NEW student enquiries into the SAME SQLite DB the admin reads.
-# - Work across both schemas:
-#   A) support_tickets(student_user_id, student_username, ...)
-#   B) support_tickets(user_id, username, ...)
-# - Make failures obvious (row counts + Ticket ID), without noisy JSON unless debug is enabled.
+# Goal: make sure NEW student enquiries are written into the SAME SQLite DB
+# that the admin reads, and make failures obvious (row counts + Ticket ID).
+#
+# Works with BOTH schemas:
+# - support_tickets(student_user_id, student_username, ...)
+# - support_tickets(user_id, username, ...)
 
 from __future__ import annotations
 
 import datetime
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List
 
 import streamlit as st
 
@@ -32,56 +32,27 @@ def _table_exists(conn, table: str) -> bool:
     return row is not None
 
 
-def _colnames(conn, table: str) -> List[str]:
+def _cols(conn, table: str) -> List[str]:
     return [r[1] for r in conn.execute(f"PRAGMA table_info({table})").fetchall()]
 
 
-def _resolve_user_identity(user: Dict) -> Tuple[Optional[object], Optional[str]]:
-    """Return (user_id, username) using multiple fallbacks."""
-    uid = (
-        user.get("id")
-        or user.get("user_id")
-        or st.session_state.get("id")
-        or st.session_state.get("user_id")
-    )
-    uname = (
-        user.get("username")
-        or user.get("student_username")
-        or user.get("email")
-        or st.session_state.get("username")
-        or st.session_state.get("email")
-    )
-    # Ensure username is a string if present
-    if uname is not None:
-        uname = str(uname)
-    return uid, uname
-
-
 def _insert_support_ticket(conn, user: Dict, subject: str, message: str) -> int:
-    cols = _colnames(conn, "support_tickets")
+    cols = _cols(conn, "support_tickets")
 
     # map schema differences
     uid_col = "user_id" if "user_id" in cols else ("student_user_id" if "student_user_id" in cols else None)
     uname_col = "username" if "username" in cols else ("student_username" if "student_username" in cols else None)
 
-    user_id, username = _resolve_user_identity(user)
-
-    # If table expects these identifiers, enforce them (prevents silent NOT NULL failures)
-    if uid_col and user_id is None:
-        raise RuntimeError("Could not determine your user id for ticket submission.")
-    if uname_col and not username:
-        raise RuntimeError("Could not determine your username for ticket submission.")
-
     fields: List[str] = []
     params: List[object] = []
 
-    # identifiers
+    # user identifiers
     if uid_col:
         fields.append(uid_col)
-        params.append(user_id)
+        params.append(user.get("id"))
     if uname_col:
         fields.append(uname_col)
-        params.append(username)
+        params.append(user.get("username"))
 
     # content
     if "subject" in cols:
@@ -104,8 +75,9 @@ def _insert_support_ticket(conn, user: Dict, subject: str, message: str) -> int:
 
     placeholders = ", ".join(["?"] * len(fields))
     sql = f"INSERT INTO support_tickets ({', '.join(fields)}) VALUES ({placeholders})"
-    cur = conn.execute(sql, params)
 
+    cur = conn.execute(sql, params)
+    # if INTEGER PK
     ticket_id = cur.lastrowid
     try:
         return int(ticket_id) if ticket_id is not None else 0
@@ -116,12 +88,12 @@ def _insert_support_ticket(conn, user: Dict, subject: str, message: str) -> int:
 def support_page(user: Dict):
     st.subheader("🆘 Help & Support")
 
-    # Back button (student)
-    if st.button("⬅️ Return to Dashboard", key="support_back_to_dash"):
+    # back button
+    if st.button("⬅️ Return to Dashboard", key="stu_support_back_to_dash_btn"):
         st.session_state["page"] = None
         st.rerun()
 
-    # DB proof
+    # DB proof (student side)
     st.caption(f"DB_PATH: {DB_PATH}")
     with read_conn() as conn:
         db_row = conn.execute("PRAGMA database_list").fetchone()
@@ -131,7 +103,7 @@ def support_page(user: Dict):
             st.error("Missing table: support_tickets. Support cannot work until DB is initialized.")
             st.stop()
 
-        cols = _colnames(conn, "support_tickets")
+        cols = _cols(conn, "support_tickets")
         try:
             cnt = conn.execute("SELECT COUNT(*) FROM support_tickets").fetchone()[0]
         except Exception:
@@ -142,8 +114,6 @@ def support_page(user: Dict):
 
     subject = st.text_input("Subject", placeholder="e.g., Week 2 assignment clarification")
     message = st.text_area("Your message", height=160, placeholder="Describe your issue clearly...")
-
-    show_debug = st.checkbox("Show debug details", value=False)
 
     if st.button("Submit Request", type="primary", key="submit_support_ticket"):
         if not subject.strip() or not message.strip():
@@ -157,6 +127,7 @@ def support_page(user: Dict):
                 conn.commit()
                 after = conn.execute("SELECT COUNT(*) FROM support_tickets").fetchone()[0]
 
+                # fetch the row we just wrote (best effort)
                 last_row = None
                 try:
                     if ticket_id:
@@ -168,9 +139,8 @@ def support_page(user: Dict):
 
             st.success(f"✅ Submitted! Ticket ID: {ticket_id if ticket_id else 'created'}")
             st.caption(f"Row count: {before} → {after}")
-
-            if show_debug and last_row is not None:
-                st.caption("Last saved ticket (debug):")
+            if last_row is not None:
+                st.caption("Last saved ticket (proof):")
                 st.write(dict(last_row))
 
             st.rerun()
@@ -181,23 +151,20 @@ def support_page(user: Dict):
     st.divider()
     st.markdown("### Your recent tickets")
 
-    # Filter to current student if possible
-    user_id, username = _resolve_user_identity(user)
-
     with read_conn() as conn:
-        cols = _colnames(conn, "support_tickets")
+        cols = _cols(conn, "support_tickets")
         uid_col = "user_id" if "user_id" in cols else ("student_user_id" if "student_user_id" in cols else None)
         uname_col = "username" if "username" in cols else ("student_username" if "student_username" in cols else None)
 
         where_sql = ""
         params: List[object] = []
 
-        if uid_col and user_id is not None:
+        if uid_col and user.get("id") is not None:
             where_sql = f"WHERE {uid_col} = ?"
-            params = [user_id]
-        elif uname_col and username:
+            params = [user.get("id")]
+        elif uname_col and user.get("username"):
             where_sql = f"WHERE {uname_col} = ?"
-            params = [username]
+            params = [user.get("username")]
 
         order_sql = "ORDER BY datetime(created_at) DESC" if "created_at" in cols else "ORDER BY id DESC"
 

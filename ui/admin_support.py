@@ -1,12 +1,15 @@
 # --------------------------------------------------
 # ui/admin_support.py
 # --------------------------------------------------
-# Admin Help & Support (SQLite) — actionable inbox
+# Admin Help & Support (SQLite) — FIXED + actionable
 #
 # Reads from support_tickets and lets admin:
 # - filter/search
 # - open each ticket
 # - reply + change status
+#
+# IMPORTANT: This page shows DB file + row counts so you can confirm
+# admin is reading the same DB the student writes to.
 
 from __future__ import annotations
 
@@ -53,6 +56,8 @@ def _fetch(status: str, q: str) -> tuple[list[dict], list[str]]:
 
         cur = conn.execute(f"SELECT * FROM support_tickets {where_sql} {order_sql} LIMIT 500", params)
         rows = cur.fetchall()
+
+        # row_factory is likely sqlite3.Row
         tickets = [dict(r) for r in rows] if rows else []
         return tickets, cols
 
@@ -93,7 +98,7 @@ def _update(ticket_id: int, id_key: str, new_status: str | None, reply: str | No
 def admin_support_page(user: dict | None = None):
     st.subheader("🆘 Help & Support (Student Enquiries)")
 
-    # DB proof + quick stats
+    # DB proof
     st.caption(f"DB_PATH: {DB_PATH}")
     with read_conn() as conn:
         db_row = conn.execute("PRAGMA database_list").fetchone()
@@ -132,7 +137,7 @@ def admin_support_page(user: dict | None = None):
         st.write(cols)
 
     if not tickets:
-        st.info(f"No enquiries found (filters: status={status}, search='{q}').")
+        st.info("No enquiries found (or none match your filters).")
         return
 
     if view_mode == "Table view":
