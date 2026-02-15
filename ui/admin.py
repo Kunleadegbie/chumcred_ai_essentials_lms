@@ -2,7 +2,8 @@
 
 import os
 import streamlit as st
-from services.db import read_conn
+from services.db import read_conn, DB_PATH
+
 
 from services.auth import (
     create_user,
@@ -393,60 +394,10 @@ def admin_router(user):
     # HELP
     # =========================================================
 
-
-    elif menu == "Help & Support":
-        st.subheader("🆘 Help & Support (Student Enquiries)")
-
-        with read_conn() as conn:
-            # Show DB file path (helps confirm admin/student use same DB)
-            db_row = conn.execute("PRAGMA database_list").fetchone()
-            st.caption(f"DB file in use: {db_row[2] if db_row else 'unknown'}")
-
-            # Detect columns safely
-            cols = [r[1] for r in conn.execute("PRAGMA table_info(support_tickets)").fetchall()]
-            has_user_id = "user_id" in cols
-            has_created_at = "created_at" in cols
-
-            order_by = "datetime(st.created_at) DESC" if has_created_at else "st.id DESC"
-
-            if has_user_id:
-                rows = conn.execute(f"""
-                    SELECT st.*, u.username AS student_username
-                    FROM support_tickets st
-                    LEFT JOIN users u ON u.id = st.user_id
-                    ORDER BY {order_by}
-                    LIMIT 200
-                """).fetchall()
-            else:
-                # fallback if your support_tickets table doesn't have user_id
-                order_by2 = "datetime(created_at) DESC" if has_created_at else "id DESC"
-                rows = conn.execute(f"""
-                    SELECT *
-                    FROM support_tickets
-                    ORDER BY {order_by2}
-                    LIMIT 200
-                """).fetchall()
-
-        tickets = [dict(r) for r in rows] if rows else []
-
-        st.write(f"Tickets found: {len(tickets)}")
-
-        if not tickets:
-            st.info("No support tickets yet.")
-        else:
-            for t in tickets:
-                who = t.get("student_username") or t.get("user_id") or "student"
-                title = f"#{t.get('id')} • {who} • {t.get('status','open')}"
-                with st.expander(title):
-                    if "subject" in t:
-                        st.write("**Subject:**", t.get("subject"))
-                    if "message" in t:
-                        st.write("**Message:**", t.get("message"))
-                    if "created_at" in t:
-                        st.caption(f"Created: {t.get('created_at')}")
-                    if "subject" not in t and "message" not in t:
-                        st.json(t)
-
+    if has_user_id:
+        rows = conn.execute(...).fetchall()
+    else:
+        rows = conn.execute(...).fetchall()
 
 
     
