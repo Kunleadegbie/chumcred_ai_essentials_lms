@@ -1,11 +1,8 @@
 # ui/admin_support.py
-# Admin Help & Support page (SQLite) - matches student support writes
-#
-# Improvements in this version:
-# - "Action view" (default): each ticket shows a clean card + reply/status controls
-# - No raw JSON in normal view
-# - Schema-tolerant: updates only columns that exist
-# - Optional debug panels hidden behind a checkbox
+# Admin Help & Support page (SQLite) - schema-tolerant and actionable
+# - Reads from support_tickets (and optionally support_messages)
+# - Action view for replying + status updates
+# - No raw JSON unless Debug is enabled
 
 from __future__ import annotations
 
@@ -48,13 +45,15 @@ def _fetch_tickets(status: str, q: str) -> tuple[list[dict], list[str]]:
         where = []
         params = []
 
+        # status filter
         if status != "All" and "status" in cols:
             where.append("status = ?")
             params.append(status)
 
+        # search filter
         if q:
             like = f"%{q}%"
-            search_cols = [c for c in ["subject", "message", "student_username"] if c in cols]
+            search_cols = [c for c in ["subject", "message", "username", "student_username"] if c in cols]
             if search_cols:
                 where.append("(" + " OR ".join([f"{c} LIKE ?" for c in search_cols]) + ")")
                 params.extend([like] * len(search_cols))
@@ -90,6 +89,7 @@ def _update_ticket(ticket_id, id_key: str, new_status: str | None, admin_reply: 
         if "replied_at" in cols:
             sets.append("replied_at = datetime('now')")
 
+        # replied_by may be integer or text; store whatever user['id'] is
         if "replied_by" in cols and admin_user and isinstance(admin_user, dict) and "id" in admin_user:
             sets.append("replied_by = ?")
             params.append(admin_user["id"])
@@ -115,17 +115,24 @@ def admin_support_page(user: dict | None = None):
         with read_conn() as conn:
             db_row = conn.execute("PRAGMA database_list").fetchone()
             st.caption(f"SQLite file in use: {db_row[2] if db_row else 'unknown'}")
+            # show row count for quick sanity
+            if _table_exists(conn, "support_tickets"):
+                cnt = conn.execute("SELECT COUNT(*) FROM support_tickets").fetchone()[0]
+                st.caption(f"support_tickets rows: {cnt}")
     except Exception:
         pass
 
     # Filters / mode
-    c1, c2, c3 = st.columns([1.1, 1.7, 1.2])
+    c1, c2, c3, c4 = st.columns([1.1, 1.7, 1.2, 0.9])
     with c1:
-        status = st.selectbox("Status", ["All", "open", "in_progress", "resolved", "closed"], index=1)
+        status = st.selectbox("Status", ["All", "open", "in_progress", "resolved", "closed"], index=0)
     with c2:
         q = st.text_input("Search (subject/message/username)", value="").strip()
     with c3:
         view_mode = st.selectbox("View", ["Action view", "Table view"], index=0)
+    with c4:
+        if st.button("🔄 Refresh", use_container_width=True):
+            st.rerun()
 
     show_debug = st.checkbox("Show debug panels", value=False)
 
@@ -133,6 +140,8 @@ def admin_support_page(user: dict | None = None):
 
     if not tickets:
         st.info("No enquiries found (or none match your filters).")
+        if show_debug:
+            st.write("Detected support_tickets columns:", cols)
         st.stop()
 
     id_key = "id" if "id" in cols else (list(tickets[0].keys())[0] if tickets else "id")
@@ -148,7 +157,13 @@ def admin_support_page(user: dict | None = None):
 
     for t in tickets:
         ticket_id = t.get(id_key)
-        who = t.get("student_username") or t.get("student_user_id") or t.get("user_id") or "student"
+        who = (
+            t.get("username")
+            or t.get("student_username")
+            or t.get("student_user_id")
+            or t.get("user_id")
+            or "student"
+        )
         when = t.get("created_at") or ""
         current_status = t.get("status") or "open"
 
@@ -160,11 +175,6 @@ def admin_support_page(user: dict | None = None):
             if "message" in t:
                 st.write("**Message:**")
                 st.write(t.get("message"))
-
-            # If schema differs, show a small preview (not full JSON)
-            if "subject" not in t and "message" not in t:
-                preview = {k: t.get(k) for k in t.keys() if k not in ("admin_reply",)}
-                st.write(preview)
 
             st.divider()
 
@@ -231,20 +241,3 @@ def admin_support_page(user: dict | None = None):
                     st.write("Detected columns:", cols)
                     st.write("Ticket keys present:", list(t.keys()))
                     st.write("id_key:", id_key)
-
-    if show_debug:
-        with st.expander("Debug: support_messages table"):
-            try:
-                with read_conn() as conn:
-                    if _table_exists(conn, "support_messages"):
-                        cur = conn.execute("SELECT * FROM support_messages ORDER BY id DESC LIMIT 200")
-                        rows = cur.fetchall()
-                        msgs = _rows_to_dicts(cur, rows)
-                        if msgs:
-                            st.dataframe(pd.DataFrame(msgs), use_container_width=True)
-                        else:
-                            st.info("No rows in support_messages.")
-                    else:
-                        st.info("support_messages table not found in this DB.")
-            except Exception as e:
-                st.warning(f"Could not load support_messages: {e}")
