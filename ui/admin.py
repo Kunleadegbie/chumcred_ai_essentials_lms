@@ -394,10 +394,5 @@ def admin_router(user):
     # HELP
     # =========================================================
 
-    if has_user_id:
-        rows = conn.execute(...).fetchall()
-    else:
-        rows = conn.execute(...).fetchall()
-
-
+    
     
