@@ -4,7 +4,6 @@ from reportlab.lib.colors import HexColor
 from reportlab.lib.utils import ImageReader
 from datetime import datetime
 import os
-from PIL import Image
 
 
 def generate_certificate(student_name):
@@ -18,7 +17,23 @@ def generate_certificate(student_name):
     c.setFillColor(HexColor("#F4FAF9"))
     c.rect(0, 0, width, height, fill=1)
 
-    # Borders
+    # -------- LOGO --------
+    logo_path = os.path.abspath("assets/logo.png")
+
+    if os.path.exists(logo_path):
+
+        logo = ImageReader(logo_path)
+
+        c.drawImage(
+            logo,
+            width/2 - 100,
+            height - 200,
+            width=200,
+            preserveAspectRatio=True,
+            mask="auto"
+        )
+
+    # Decorative borders (drawn AFTER logo)
     c.setStrokeColor(HexColor("#0F766E"))
     c.setLineWidth(6)
     c.rect(30, 30, width-60, height-60)
@@ -27,46 +42,27 @@ def generate_certificate(student_name):
     c.setLineWidth(2)
     c.rect(50, 50, width-100, height-100)
 
-    # -------- LOGO --------
-    logo_path = os.path.abspath("assets/logo.png")
-
-    if os.path.exists(logo_path):
-
-        # Load using PIL to avoid PNG compatibility issues
-        img = Image.open(logo_path)
-        logo = ImageReader(img)
-
-        c.drawImage(
-            logo,
-            width/2 - 80,
-            height - 150,
-            width=160,
-            preserveAspectRatio=True,
-            mask='auto'
-        )
-
     # Title
     c.setFillColor(HexColor("#111827"))
     c.setFont("Helvetica-Bold", 36)
-
-    c.drawCentredString(width/2, height - 220, "CERTIFICATE OF COMPLETION")
+    c.drawCentredString(width/2, height - 260, "CERTIFICATE OF COMPLETION")
 
     # Body
     c.setFont("Helvetica", 18)
-    c.drawCentredString(width/2, height - 300, "This certifies that")
+    c.drawCentredString(width/2, height - 320, "This certifies that")
 
     c.setFont("Helvetica-Bold", 32)
-    c.drawCentredString(width/2, height - 350, student_name)
+    c.drawCentredString(width/2, height - 370, student_name)
 
     c.setFont("Helvetica", 18)
     c.drawCentredString(
         width/2,
-        height - 400,
+        height - 420,
         "has successfully completed the AI Essentials Program"
     )
 
     c.setFont("Helvetica-Bold", 22)
-    c.drawCentredString(width/2, height - 440, "Chumcred Academy")
+    c.drawCentredString(width/2, height - 460, "Chumcred Academy")
 
     # Date
     today = datetime.now().strftime("%B %d, %Y")
