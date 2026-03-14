@@ -27,8 +27,14 @@ def generate_certificate(student_name):
     c.rect(50, 50, width-100, height-100)
 
     # ---------- LOGO ----------
-    project_root = os.getcwd()
-    logo_path = os.path.join(project_root, "assets", "logo.png")
+    import os
+    from reportlab.lib.utils import ImageReader
+
+    # --- DEBUG LOGO PATH ---
+    logo_path = os.path.abspath("assets/logo.png")
+
+    print("Looking for logo at:", logo_path)
+    print("File exists:", os.path.exists(logo_path))
 
     if os.path.exists(logo_path):
 
@@ -74,7 +80,7 @@ def generate_certificate(student_name):
     today = datetime.now().strftime("%B %d, %Y")
 
     c.setFont("Helvetica", 16)
-    c.drawCentredString(width/2, height - 470, f"Issued: {today}")
+    c.drawCentredString(width/2, height - 475, f"Issued: {today}")
 
     # Signature (moved lower to prevent overlap)
     c.setFont("Helvetica-Bold", 18)
