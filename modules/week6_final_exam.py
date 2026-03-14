@@ -1,5 +1,5 @@
 import streamlit as st
-from services.db import read_conn
+from services.db import read_conn, write_txn
 from utils.certificate_generator import generate_certificate
 
 
@@ -11,38 +11,43 @@ def show_exam(user):
     user_id = user["id"]
     student_name = user["username"]
 
+    # -------------------------------------------------
+    # GET EXAM STATUS
+    # -------------------------------------------------
+
     with read_conn() as conn:
+
         cursor = conn.cursor()
 
-    # -------------------------------------------------
-    # Ensure exam record exists
-    # -------------------------------------------------
-
-    cursor.execute(
-        "SELECT * FROM student_exam_status WHERE user_id=?",
-        (user_id,)
-    )
-
-    record = cursor.fetchone()
-
-    if record is None:
-
         cursor.execute(
-            """
-            INSERT INTO student_exam_status
-            (user_id, exam_unlocked, exam_reviewed, attempts, last_score)
-            VALUES (?,0,0,0,0)
-            """,
+            "SELECT * FROM student_exam_status WHERE user_id=?",
             (user_id,)
         )
 
-        conn.commit()
+        record = cursor.fetchone()
+
+    # -------------------------------------------------
+    # CREATE RECORD IF NOT EXIST
+    # -------------------------------------------------
+
+    if record is None:
+
+        with write_txn() as conn:
+
+            conn.execute(
+                """
+                INSERT INTO student_exam_status
+                (user_id, exam_unlocked, exam_reviewed, attempts, last_score)
+                VALUES (?,0,0,0,0)
+                """,
+                (user_id,)
+            )
 
         st.warning("Final exam not yet unlocked by admin.")
         st.stop()
 
     # -------------------------------------------------
-    # Check unlock status
+    # CHECK UNLOCK STATUS
     # -------------------------------------------------
 
     if record["exam_unlocked"] == 0:
@@ -51,7 +56,7 @@ def show_exam(user):
         st.stop()
 
     # -------------------------------------------------
-    # Check review lock
+    # CHECK REVIEW STATUS
     # -------------------------------------------------
 
     if record["exam_reviewed"] == 1:
@@ -109,7 +114,7 @@ def show_exam(user):
 
     answers = []
 
-    for i,(q,opts,correct) in enumerate(questions):
+    for i, (q, opts, correct) in enumerate(questions):
 
         ans = st.radio(
             f"Q{i+1}. {q}",
@@ -127,21 +132,21 @@ def show_exam(user):
 
         score = 0
 
-        for i,(q,opts,correct) in enumerate(questions):
+        for i, (q, opts, correct) in enumerate(questions):
 
             if answers[i] == correct:
                 score += 1
 
-        cursor.execute(
-            """
-            UPDATE student_exam_status
-            SET last_score=?, attempts=attempts+1
-            WHERE user_id=?
-            """,
-            (score,user_id)
-        )
+        with write_txn() as conn:
 
-        conn.commit()
+            conn.execute(
+                """
+                UPDATE student_exam_status
+                SET last_score=?, attempts=attempts+1
+                WHERE user_id=?
+                """,
+                (score, user_id)
+            )
 
         st.success(f"Your Score: {score}/10")
 
@@ -164,17 +169,17 @@ def show_exam(user):
 
     if st.button("Review Answers"):
 
-        for i,(q,opts,correct) in enumerate(questions):
+        for i, (q, opts, correct) in enumerate(questions):
 
             st.write(f"Q{i+1} Correct Answer: {correct}")
 
-        cursor.execute(
-            """
-            UPDATE student_exam_status
-            SET exam_reviewed=1
-            WHERE user_id=?
-            """,
-            (user_id,)
-        )
+        with write_txn() as conn:
 
-        conn.commit()
+            conn.execute(
+                """
+                UPDATE student_exam_status
+                SET exam_reviewed=1
+                WHERE user_id=?
+                """,
+                (user_id,)
+            )
