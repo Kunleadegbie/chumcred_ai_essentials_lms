@@ -67,16 +67,19 @@ def student_router(user):
 
                 st.button(label,disabled=True)
 
+
     # =================================================
     # FINAL EXAM
     # =================================================
-
     st.divider()
     st.subheader("📝 Final Exam")
 
-    from services.db import read_conn, write_txn
+    from services.db import read_conn
 
-    # Get exam status
+    # persistent exam-open flag
+    if "show_final_exam" not in st.session_state:
+        st.session_state["show_final_exam"] = False
+
     with read_conn() as conn:
         row = conn.execute(
             """
@@ -84,49 +87,34 @@ def student_router(user):
             FROM student_exam_status
             WHERE user_id = ?
             """,
-            (user_id,),
+            (user_id,)
         ).fetchone()
 
-    # If no record exists create one automatically
-    if row is None:
+    if not row or not row["exam_unlocked"]:
 
-        with write_txn() as conn:
-            conn.execute(
-                """
-                INSERT INTO student_exam_status (user_id, exam_unlocked)
-                VALUES (?,0)
-                """,
-                (user_id,)
-            )
-
-        exam_unlocked = 0
-        exam_reviewed = 0
-
-    else:
-        exam_unlocked = row["exam_unlocked"]
-        exam_reviewed = row["exam_reviewed"]
-
-
-    # ---------- Exam Logic ----------
-
-    if exam_unlocked == 0:
-
-        st.warning("Final exam locked by admin.")
-
-    elif exam_reviewed == 1:
-
-        st.error("You already reviewed the answers. Exam locked.")
+        st.warning("Final exam will be unlocked by the administrator after Week 6 completion.")
 
     else:
 
-        st.success("Final exam unlocked. You can start the exam.")
+        if row["exam_reviewed"]:
 
-        if st.button("Start Final Exam"):
+            st.error("You have already reviewed the exam answers. Exam locked.")
 
-            from modules.week6_final_exam import show_exam
-            show_exam(user)
+        else:
 
-    
+            st.success("Final exam unlocked. You can start the exam.")
+
+            if st.button("Start Final Exam", key="start_final_exam_btn"):
+                st.session_state["show_final_exam"] = True
+                st.rerun()
+
+    # Keep exam visible across reruns
+    if st.session_state.get("show_final_exam", False):
+        from modules.week6_final_exam import show_exam
+        show_exam(user)
+        return
+
+
     # =================================================
     # CERTIFICATE
     # =================================================

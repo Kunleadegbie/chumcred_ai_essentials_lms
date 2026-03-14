@@ -11,15 +11,9 @@ def show_exam(user):
     user_id = user["id"]
     student_name = user["username"]
 
-    # ------------------------------------------------
-    # Keep exam active across Streamlit reruns
-    # ------------------------------------------------
-    if "exam_active" not in st.session_state:
-        st.session_state.exam_active = True
-
-    # ------------------------------------------------
+    # -------------------------------------
     # Ensure exam record exists
-    # ------------------------------------------------
+    # -------------------------------------
     with read_conn() as conn:
         cursor = conn.cursor()
         cursor.execute(
@@ -49,121 +43,131 @@ def show_exam(user):
         st.error("You already reviewed answers. Exam locked.")
         st.stop()
 
-    # ------------------------------------------------
+    # -------------------------------------
     # QUESTIONS
-    # ------------------------------------------------
+    # -------------------------------------
     questions = [
 
         ("What does AI stand for?",
-         ["Automated Internet","Artificial Intelligence","Advanced Info","Auto Interface"],
+         ["Automated Internet", "Artificial Intelligence", "Advanced Info", "Auto Interface"],
          "Artificial Intelligence"),
 
         ("Which tool is AI?",
-         ["ChatGPT","Notepad","Calculator","Excel"],
+         ["ChatGPT", "Notepad", "Calculator", "Excel"],
          "ChatGPT"),
 
         ("Prompt engineering means?",
-         ["Writing better instructions","Coding hardware","Internet repair","Game design"],
+         ["Writing better instructions", "Coding hardware", "Internet repair", "Game design"],
          "Writing better instructions"),
 
         ("AI helps productivity by?",
-         ["Automating tasks","Deleting files","Shutting computers","Blocking internet"],
+         ["Automating tasks", "Deleting files", "Shutting computers", "Blocking internet"],
          "Automating tasks"),
 
         ("Responsible AI means?",
-         ["Using ethically","Sharing private data","Blind trust","Ignoring outputs"],
+         ["Using ethically", "Sharing private data", "Blind trust", "Ignoring outputs"],
          "Using ethically"),
 
         ("AI helps businesses?",
-         ["Analyse data","Delete records","Reduce customers","Stop sales"],
+         ["Analyse data", "Delete records", "Reduce customers", "Stop sales"],
          "Analyse data"),
 
         ("Good prompt is?",
-         ["Clear instructions","Confusing text","No question","Random words"],
+         ["Clear instructions", "Confusing text", "No question", "Random words"],
          "Clear instructions"),
 
         ("AI supports decisions using?",
-         ["Data insights","Guessing","Random output","Deleting data"],
+         ["Data insights", "Guessing", "Random output", "Deleting data"],
          "Data insights"),
 
         ("AI tools help professionals?",
-         ["Work faster","Stop thinking","Avoid computers","Replace internet"],
+         ["Work faster", "Stop thinking", "Avoid computers", "Replace internet"],
          "Work faster"),
 
         ("Goal of this course?",
-         ["Confident AI user","Avoid tech","Stop learning","Ignore AI"],
+         ["Confident AI user", "Avoid tech", "Stop learning", "Ignore AI"],
          "Confident AI user")
 
     ]
 
-    # ------------------------------------------------
-    # SESSION STORAGE FOR ANSWERS
-    # ------------------------------------------------
+    # -------------------------------------
+    # SESSION STATE FOR ANSWERS
+    # -------------------------------------
     if "exam_answers" not in st.session_state:
         st.session_state.exam_answers = [None] * len(questions)
 
-    # ------------------------------------------------
+    # -------------------------------------
     # DISPLAY QUESTIONS
-    # ------------------------------------------------
+    # -------------------------------------
     for i, (q, opts, correct) in enumerate(questions):
+
+        current_answer = st.session_state.exam_answers[i]
+        current_index = opts.index(current_answer) if current_answer in opts else 0
 
         answer = st.radio(
             f"Q{i+1}. {q}",
             opts,
+            index=current_index,
             key=f"exam_q_{i}"
         )
 
         st.session_state.exam_answers[i] = answer
 
-    # ------------------------------------------------
-    # FINISH EXAM
-    # ------------------------------------------------
-    if st.button("Finish Exam"):
+    # -------------------------------------
+    # ACTION BUTTONS
+    # -------------------------------------
+    col1, col2, col3 = st.columns(3)
 
-        score = 0
+    with col1:
+        if st.button("Finish Exam"):
 
-        for i, (q, opts, correct) in enumerate(questions):
-            if st.session_state.exam_answers[i] == correct:
-                score += 1
+            score = 0
 
-        with write_txn() as conn:
-            conn.execute(
-                """
-                UPDATE student_exam_status
-                SET last_score=?, attempts=attempts+1
-                WHERE user_id=?
-                """,
-                (score, user_id)
-            )
+            for i, (q, opts, correct) in enumerate(questions):
+                if st.session_state.exam_answers[i] == correct:
+                    score += 1
 
-        st.success(f"Your Score: {score}/10")
+            with write_txn() as conn:
+                conn.execute(
+                    """
+                    UPDATE student_exam_status
+                    SET last_score=?, attempts=attempts+1
+                    WHERE user_id=?
+                    """,
+                    (score, user_id)
+                )
 
-        if score >= 7:
-            st.success("Congratulations! You passed the exam.")
+            st.success(f"Your Score: {score}/10")
 
-            certificate = generate_certificate(student_name)
+            if score >= 7:
+                st.success("Congratulations! You passed the exam.")
 
-            st.download_button(
-                label="Download Certificate",
-                data=certificate,
-                file_name="chumcred_certificate.pdf",
-                mime="application/pdf"
-            )
+                certificate = generate_certificate(student_name)
 
-    # ------------------------------------------------
-    # REVIEW ANSWERS
-    # ------------------------------------------------
-    if st.button("Review Answers"):
+                st.download_button(
+                    label="Download Certificate",
+                    data=certificate,
+                    file_name="chumcred_certificate.pdf",
+                    mime="application/pdf"
+                )
 
-        for i, (q, opts, correct) in enumerate(questions):
-            st.write(f"Q{i+1} Correct Answer: {correct}")
+    with col2:
+        if st.button("Review Answers"):
 
-        with write_txn() as conn:
-            conn.execute(
-                """
-                UPDATE student_exam_status
-                SET exam_reviewed=1
-                WHERE user_id=?
-                """,
-                (user_id,)
-            )
+            for i, (q, opts, correct) in enumerate(questions):
+                st.write(f"Q{i+1} Correct Answer: {correct}")
+
+            with write_txn() as conn:
+                conn.execute(
+                    """
+                    UPDATE student_exam_status
+                    SET exam_reviewed=1
+                    WHERE user_id=?
+                    """,
+                    (user_id,)
+                )
+
+    with col3:
+        if st.button("Back to Dashboard"):
+            st.session_state["show_final_exam"] = False
+            st.rerun()
