@@ -4,6 +4,7 @@ from reportlab.lib.colors import HexColor
 from reportlab.lib.utils import ImageReader
 from datetime import datetime
 import os
+from PIL import Image
 
 
 def generate_certificate(student_name):
@@ -26,19 +27,14 @@ def generate_certificate(student_name):
     c.setLineWidth(2)
     c.rect(50, 50, width-100, height-100)
 
-    # ---------- LOGO ----------
-    import os
-    from reportlab.lib.utils import ImageReader
-
-    # --- DEBUG LOGO PATH ---
+    # -------- LOGO --------
     logo_path = os.path.abspath("assets/logo.png")
-
-    print("Looking for logo at:", logo_path)
-    print("File exists:", os.path.exists(logo_path))
 
     if os.path.exists(logo_path):
 
-        logo = ImageReader(logo_path)
+        # Load using PIL to avoid PNG compatibility issues
+        img = Image.open(logo_path)
+        logo = ImageReader(img)
 
         c.drawImage(
             logo,
@@ -46,18 +42,14 @@ def generate_certificate(student_name):
             height - 150,
             width=160,
             preserveAspectRatio=True,
-            mask="auto"
+            mask='auto'
         )
 
     # Title
     c.setFillColor(HexColor("#111827"))
     c.setFont("Helvetica-Bold", 36)
 
-    c.drawCentredString(
-        width/2,
-        height - 220,
-        "CERTIFICATE OF COMPLETION"
-    )
+    c.drawCentredString(width/2, height - 220, "CERTIFICATE OF COMPLETION")
 
     # Body
     c.setFont("Helvetica", 18)
@@ -80,9 +72,9 @@ def generate_certificate(student_name):
     today = datetime.now().strftime("%B %d, %Y")
 
     c.setFont("Helvetica", 16)
-    c.drawCentredString(width/2, height - 475, f"Issued: {today}")
+    c.drawCentredString(width/2, height - 465, f"Issued: {today}")
 
-    # Signature (moved lower to prevent overlap)
+    # Signature
     c.setFont("Helvetica-Bold", 18)
     c.drawCentredString(width/2, 100, "Dr. Adekunle Adegbie")
 
