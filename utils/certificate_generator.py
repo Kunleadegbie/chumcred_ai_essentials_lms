@@ -1,6 +1,7 @@
 from reportlab.lib.pagesizes import landscape, A4
 from reportlab.pdfgen import canvas
 from reportlab.lib.colors import HexColor
+from reportlab.lib.utils import ImageReader
 from datetime import datetime
 import os
 
@@ -25,16 +26,18 @@ def generate_certificate(student_name):
     c.setLineWidth(2)
     c.rect(50, 50, width-100, height-100)
 
-    # ---- Locate logo reliably ----
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    project_root = os.path.dirname(current_dir)
+    # ---------- LOGO ----------
+    project_root = os.getcwd()
     logo_path = os.path.join(project_root, "assets", "logo.png")
 
     if os.path.exists(logo_path):
+
+        logo = ImageReader(logo_path)
+
         c.drawImage(
-            logo_path,
+            logo,
             width/2 - 80,
-            height - 160,
+            height - 150,
             width=160,
             preserveAspectRatio=True,
             mask="auto"
@@ -43,7 +46,12 @@ def generate_certificate(student_name):
     # Title
     c.setFillColor(HexColor("#111827"))
     c.setFont("Helvetica-Bold", 36)
-    c.drawCentredString(width/2, height - 220, "CERTIFICATE OF COMPLETION")
+
+    c.drawCentredString(
+        width/2,
+        height - 220,
+        "CERTIFICATE OF COMPLETION"
+    )
 
     # Body
     c.setFont("Helvetica", 18)
@@ -53,18 +61,22 @@ def generate_certificate(student_name):
     c.drawCentredString(width/2, height - 350, student_name)
 
     c.setFont("Helvetica", 18)
-    c.drawCentredString(width/2, height - 400,
-                        "has successfully completed the AI Essentials Program")
+    c.drawCentredString(
+        width/2,
+        height - 400,
+        "has successfully completed the AI Essentials Program"
+    )
 
     c.setFont("Helvetica-Bold", 22)
     c.drawCentredString(width/2, height - 440, "Chumcred Academy")
 
     # Date
     today = datetime.now().strftime("%B %d, %Y")
-    c.setFont("Helvetica", 16)
-    c.drawCentredString(width/2, height - 485, f"Issued: {today}")
 
-    # Signature (moved lower)
+    c.setFont("Helvetica", 16)
+    c.drawCentredString(width/2, height - 470, f"Issued: {today}")
+
+    # Signature (moved lower to prevent overlap)
     c.setFont("Helvetica-Bold", 18)
     c.drawCentredString(width/2, 100, "Dr. Adekunle Adegbie")
 
