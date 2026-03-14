@@ -12,15 +12,15 @@ def generate_certificate(student_name):
     c = canvas.Canvas(file_name, pagesize=landscape(A4))
     width, height = landscape(A4)
 
-    # --------------------------
+    # ----------------------------
     # Background
-    # --------------------------
+    # ----------------------------
     c.setFillColor(HexColor("#F4FAF9"))
     c.rect(0, 0, width, height, fill=1)
 
-    # --------------------------
+    # ----------------------------
     # Decorative borders
-    # --------------------------
+    # ----------------------------
     c.setStrokeColor(HexColor("#0F766E"))
     c.setLineWidth(6)
     c.rect(30, 30, width-60, height-60)
@@ -29,20 +29,12 @@ def generate_certificate(student_name):
     c.setLineWidth(2)
     c.rect(50, 50, width-100, height-100)
 
-    # --------------------------
-    # Logo detection
-    # --------------------------
-    logo1 = os.path.join("assets", "chumcred_academy_logo.png")
-    logo2 = os.path.join("assets", "logo.png")
+    # ----------------------------
+    # LOGO (single fixed path)
+    # ----------------------------
+    logo_path = "assets/logo.png"
 
-    logo_path = None
-
-    if os.path.isfile(logo1):
-        logo_path = logo1
-    elif os.path.isfile(logo2):
-        logo_path = logo2
-
-    if logo_path:
+    if os.path.exists(logo_path):
         c.drawImage(
             logo_path,
             width/2 - 80,
@@ -52,9 +44,9 @@ def generate_certificate(student_name):
             mask='auto'
         )
 
-    # --------------------------
+    # ----------------------------
     # Title
-    # --------------------------
+    # ----------------------------
     c.setFillColor(HexColor("#111827"))
     c.setFont("Helvetica-Bold", 36)
 
@@ -64,9 +56,9 @@ def generate_certificate(student_name):
         "CERTIFICATE OF COMPLETION"
     )
 
-    # --------------------------
-    # Certificate body
-    # --------------------------
+    # ----------------------------
+    # Body
+    # ----------------------------
     c.setFont("Helvetica", 18)
 
     c.drawCentredString(
@@ -99,28 +91,27 @@ def generate_certificate(student_name):
         "Chumcred Academy"
     )
 
-    # --------------------------
+    # ----------------------------
     # Date
-    # --------------------------
+    # ----------------------------
     today = datetime.now().strftime("%B %d, %Y")
 
     c.setFont("Helvetica", 16)
 
     c.drawCentredString(
         width/2,
-        height - 480,
+        height - 450,
         f"Issued: {today}"
     )
 
-    # --------------------------
-    # Signature section
-    # (moved further down to avoid overlap)
-    # --------------------------
+    # ----------------------------
+    # Signature (moved lower)
+    # ----------------------------
     c.setFont("Helvetica-Bold", 18)
 
     c.drawCentredString(
         width/2,
-        110,
+        100,
         "Dr. Adekunle Adegbie"
     )
 
@@ -128,13 +119,13 @@ def generate_certificate(student_name):
 
     c.drawCentredString(
         width/2,
-        85,
+        75,
         "Program Coordinator"
     )
 
-    # --------------------------
-    # Save PDF
-    # --------------------------
+    # ----------------------------
+    # Save
+    # ----------------------------
     c.save()
 
     with open(file_name, "rb") as f:
