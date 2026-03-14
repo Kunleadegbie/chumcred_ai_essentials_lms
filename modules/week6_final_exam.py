@@ -1,5 +1,5 @@
 import streamlit as st
-from utils.db import get_connection
+from services.db import read_conn
 from utils.certificate_generator import generate_certificate
 
 
@@ -11,7 +11,7 @@ def show_exam(user):
     user_id = user["id"]
     student_name = user["username"]
 
-    conn = get_connection()
+    with read_conn() as conn:
     cursor = conn.cursor()
 
     # -------------------------------------------------
