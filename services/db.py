@@ -297,3 +297,21 @@ def init_db():
         _ensure_default_admin(cur)
 
         print("✅ Database initialized successfully")
+
+def ensure_exam_tables():
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS student_exam_status (
+        user_id INTEGER PRIMARY KEY,
+        exam_unlocked INTEGER DEFAULT 0,
+        exam_reviewed INTEGER DEFAULT 0,
+        attempts INTEGER DEFAULT 0,
+        last_score REAL DEFAULT 0,
+        last_attempt_at TEXT
+    )
+    """)
+
+    conn.commit()
+    conn.close()

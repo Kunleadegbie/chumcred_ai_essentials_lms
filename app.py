@@ -1,6 +1,10 @@
 import os
 import streamlit as st
 
+from services.db import ensure_exam_tables
+
+ensure_exam_tables()
+
 # MUST be the first Streamlit command
 st.set_page_config(
     page_title="Chumcred Academy LMS",
