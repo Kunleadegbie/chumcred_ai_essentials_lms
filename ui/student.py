@@ -72,38 +72,61 @@ def student_router(user):
     # =================================================
 
     st.divider()
-
     st.subheader("📝 Final Exam")
 
-    with read_conn() as conn:
+    from services.db import read_conn, write_txn
 
+    # Get exam status
+    with read_conn() as conn:
         row = conn.execute(
             """
-            SELECT exam_unlocked,exam_reviewed
+            SELECT exam_unlocked, exam_reviewed
             FROM student_exam_status
-            WHERE user_id=?
+            WHERE user_id = ?
             """,
             (user_id,),
         ).fetchone()
 
-    if not row or not row["exam_unlocked"]:
+    # If no record exists create one automatically
+    if row is None:
+
+        with write_txn() as conn:
+            conn.execute(
+                """
+                INSERT INTO student_exam_status (user_id, exam_unlocked)
+                VALUES (?,0)
+                """,
+                (user_id,)
+            )
+
+        exam_unlocked = 0
+        exam_reviewed = 0
+
+    else:
+        exam_unlocked = row["exam_unlocked"]
+        exam_reviewed = row["exam_reviewed"]
+
+
+    # ---------- Exam Logic ----------
+
+    if exam_unlocked == 0:
 
         st.warning("Final exam locked by admin.")
 
+    elif exam_reviewed == 1:
+
+        st.error("You already reviewed the answers. Exam locked.")
+
     else:
 
-        if row["exam_reviewed"]:
+        st.success("Final exam unlocked. You can start the exam.")
 
-            st.error("Exam locked after review.")
+        if st.button("Start Final Exam"):
 
-        else:
+            from modules.week6_final_exam import show_exam
+            show_exam(user)
 
-            if st.button("Start Final Exam"):
-
-                from modules.week6_final_exam import show_exam
-
-                show_exam(user)
-
+    
     # =================================================
     # CERTIFICATE
     # =================================================

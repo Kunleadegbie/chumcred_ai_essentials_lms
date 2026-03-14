@@ -1,4 +1,5 @@
 
+# ui/admin.py
 
 import os
 import streamlit as st
@@ -243,42 +244,46 @@ def admin_router(user):
     # =========================================================
     # UNLOCK EXAM
     # =========================================================
+
     elif menu == "Unlock Exam":
 
         st.subheader("📝 Unlock Final Exam")
 
         with read_conn() as conn:
             rows = conn.execute(
-                "SELECT id,username FROM users WHERE role='student'"
+                "SELECT id, username FROM users WHERE role='student'"
             ).fetchall()
 
-        students = {r["username"]: r["id"] for r in rows}
+        students = {f"{r['username']} (ID {r['id']})": r["id"] for r in rows}
 
-        selected = st.selectbox("Student", list(students.keys()))
+        selected = st.selectbox("Select Student", list(students.keys()))
 
         if st.button("Unlock Exam"):
+
+            student_id = students[selected]
 
             with write_txn() as conn:
 
                 conn.execute(
                     """
-                    INSERT OR IGNORE INTO student_exam_status(user_id,exam_unlocked)
+                    INSERT OR IGNORE INTO student_exam_status (user_id, exam_unlocked)
                     VALUES (?,1)
                     """,
-                    (students[selected],),
+                    (student_id,)
                 )
 
                 conn.execute(
                     """
                     UPDATE student_exam_status
-                    SET exam_unlocked=1
-                    WHERE user_id=?
+                    SET exam_unlocked = 1
+                    WHERE user_id = ?
                     """,
-                    (students[selected],),
-                )
+                    (student_id,)
+               )
 
-            st.success("Exam unlocked.")
+            st.success(f"Exam unlocked for {selected}")
 
+    
     # =========================================================
     # STUDENT REPORTS
     # =========================================================
