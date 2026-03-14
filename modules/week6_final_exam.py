@@ -11,29 +11,19 @@ def show_exam(user):
     user_id = user["id"]
     student_name = user["username"]
 
-    # -------------------------------------------------
-    # GET EXAM STATUS
-    # -------------------------------------------------
-
+    # -------------------------------------
+    # Ensure exam record exists
+    # -------------------------------------
     with read_conn() as conn:
-
         cursor = conn.cursor()
-
         cursor.execute(
             "SELECT * FROM student_exam_status WHERE user_id=?",
             (user_id,)
         )
-
         record = cursor.fetchone()
 
-    # -------------------------------------------------
-    # CREATE RECORD IF NOT EXIST
-    # -------------------------------------------------
-
     if record is None:
-
         with write_txn() as conn:
-
             conn.execute(
                 """
                 INSERT INTO student_exam_status
@@ -42,32 +32,20 @@ def show_exam(user):
                 """,
                 (user_id,)
             )
-
         st.warning("Final exam not yet unlocked by admin.")
         st.stop()
-
-    # -------------------------------------------------
-    # CHECK UNLOCK STATUS
-    # -------------------------------------------------
 
     if record["exam_unlocked"] == 0:
-
         st.warning("Final exam not yet unlocked by admin.")
         st.stop()
 
-    # -------------------------------------------------
-    # CHECK REVIEW STATUS
-    # -------------------------------------------------
-
     if record["exam_reviewed"] == 1:
-
-        st.error("You already reviewed the answers. Exam locked.")
+        st.error("You already reviewed answers. Exam locked.")
         st.stop()
 
-    # -------------------------------------------------
+    # -------------------------------------
     # QUESTIONS
-    # -------------------------------------------------
-
+    # -------------------------------------
     questions = [
 
         ("What does AI stand for?",
@@ -112,33 +90,36 @@ def show_exam(user):
 
     ]
 
-    answers = []
+    # -------------------------------------
+    # SESSION STATE FOR ANSWERS
+    # -------------------------------------
+    if "exam_answers" not in st.session_state:
+        st.session_state.exam_answers = [None] * len(questions)
 
+    # -------------------------------------
+    # DISPLAY QUESTIONS
+    # -------------------------------------
     for i, (q, opts, correct) in enumerate(questions):
 
-        ans = st.radio(
+        st.session_state.exam_answers[i] = st.radio(
             f"Q{i+1}. {q}",
             opts,
+            index=None if st.session_state.exam_answers[i] is None else opts.index(st.session_state.exam_answers[i]),
             key=f"q_{i}"
         )
 
-        answers.append(ans)
-
-    # -------------------------------------------------
+    # -------------------------------------
     # FINISH EXAM
-    # -------------------------------------------------
-
+    # -------------------------------------
     if st.button("Finish Exam"):
 
         score = 0
 
         for i, (q, opts, correct) in enumerate(questions):
-
-            if answers[i] == correct:
+            if st.session_state.exam_answers[i] == correct:
                 score += 1
 
         with write_txn() as conn:
-
             conn.execute(
                 """
                 UPDATE student_exam_status
@@ -151,9 +132,7 @@ def show_exam(user):
         st.success(f"Your Score: {score}/10")
 
         if score >= 7:
-
             st.success("Congratulations! You passed the exam.")
-
             certificate = generate_certificate(student_name)
 
             st.download_button(
@@ -163,18 +142,15 @@ def show_exam(user):
                 mime="application/pdf"
             )
 
-    # -------------------------------------------------
+    # -------------------------------------
     # REVIEW ANSWERS
-    # -------------------------------------------------
-
+    # -------------------------------------
     if st.button("Review Answers"):
 
         for i, (q, opts, correct) in enumerate(questions):
-
             st.write(f"Q{i+1} Correct Answer: {correct}")
 
         with write_txn() as conn:
-
             conn.execute(
                 """
                 UPDATE student_exam_status
