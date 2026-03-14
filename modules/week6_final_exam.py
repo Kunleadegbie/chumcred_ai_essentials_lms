@@ -12,7 +12,7 @@ def show_exam(user):
     student_name = user["username"]
 
     with read_conn() as conn:
-    cursor = conn.cursor()
+        cursor = conn.cursor()
 
     # -------------------------------------------------
     # Ensure exam record exists
