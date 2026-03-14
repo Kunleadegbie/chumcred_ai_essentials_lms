@@ -11,9 +11,15 @@ def show_exam(user):
     user_id = user["id"]
     student_name = user["username"]
 
-    # -------------------------------------
+    # ------------------------------------------------
+    # Keep exam active across Streamlit reruns
+    # ------------------------------------------------
+    if "exam_active" not in st.session_state:
+        st.session_state.exam_active = True
+
+    # ------------------------------------------------
     # Ensure exam record exists
-    # -------------------------------------
+    # ------------------------------------------------
     with read_conn() as conn:
         cursor = conn.cursor()
         cursor.execute(
@@ -43,9 +49,9 @@ def show_exam(user):
         st.error("You already reviewed answers. Exam locked.")
         st.stop()
 
-    # -------------------------------------
+    # ------------------------------------------------
     # QUESTIONS
-    # -------------------------------------
+    # ------------------------------------------------
     questions = [
 
         ("What does AI stand for?",
@@ -87,30 +93,31 @@ def show_exam(user):
         ("Goal of this course?",
          ["Confident AI user","Avoid tech","Stop learning","Ignore AI"],
          "Confident AI user")
+
     ]
 
-    # -------------------------------------
-    # SESSION STATE FOR ANSWERS
-    # -------------------------------------
+    # ------------------------------------------------
+    # SESSION STORAGE FOR ANSWERS
+    # ------------------------------------------------
     if "exam_answers" not in st.session_state:
         st.session_state.exam_answers = [None] * len(questions)
 
-    # -------------------------------------
+    # ------------------------------------------------
     # DISPLAY QUESTIONS
-    # -------------------------------------
+    # ------------------------------------------------
     for i, (q, opts, correct) in enumerate(questions):
 
         answer = st.radio(
             f"Q{i+1}. {q}",
             opts,
-            key=f"q_{i}"
+            key=f"exam_q_{i}"
         )
 
         st.session_state.exam_answers[i] = answer
 
-    # -------------------------------------
+    # ------------------------------------------------
     # FINISH EXAM
-    # -------------------------------------
+    # ------------------------------------------------
     if st.button("Finish Exam"):
 
         score = 0
@@ -133,6 +140,7 @@ def show_exam(user):
 
         if score >= 7:
             st.success("Congratulations! You passed the exam.")
+
             certificate = generate_certificate(student_name)
 
             st.download_button(
@@ -142,9 +150,9 @@ def show_exam(user):
                 mime="application/pdf"
             )
 
-    # -------------------------------------
+    # ------------------------------------------------
     # REVIEW ANSWERS
-    # -------------------------------------
+    # ------------------------------------------------
     if st.button("Review Answers"):
 
         for i, (q, opts, correct) in enumerate(questions):
