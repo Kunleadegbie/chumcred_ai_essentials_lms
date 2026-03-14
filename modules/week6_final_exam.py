@@ -1,8 +1,17 @@
+
 import streamlit as st
 from utils.db import get_connection
 from utils.certificate_generator import generate_certificate
 
 st.title("Week 6 Final Assessment")
+
+import streamlit as st
+
+def show_exam():
+
+    st.header("Week 6 Final Exam")
+
+    st.write("Answer all questions and click Finish.")
 
 # example student session
 user_id = st.session_state.get("user_id")

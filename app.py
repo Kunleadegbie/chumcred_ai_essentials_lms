@@ -1,23 +1,22 @@
-# app.py
 import os
 import streamlit as st
 
-# MUST be the first Streamlit command in the file
+# MUST be the first Streamlit command
 st.set_page_config(
     page_title="Chumcred Academy LMS",
     page_icon="🎓",
     layout="wide"
 )
 
-# Imports AFTER set_page_config (this is correct)
-from services.db import init_db  # noqa: E402
-from services.auth import login_user  # noqa: E402
-from ui.admin import admin_router  # noqa: E402
-from ui.student import student_router  # noqa: E402
+# Imports AFTER set_page_config
+from services.db import init_db
+from services.auth import login_user
+from ui.admin import admin_router
+from ui.student import student_router
 
 
 def _logo_path():
-    # Try common locations safely
+    """Locate logo safely"""
     candidates = [
         os.path.join("assets", "logo.png"),
         "logo.png",
@@ -30,58 +29,85 @@ def _logo_path():
 
 def _env_health_checks():
     """
-    Non-blocking production checks.
-    Does NOT affect admin login.
-    Just helps you diagnose Railway issues fast.
+    Non-blocking production checks
+    Useful for Railway deployment diagnostics
     """
-    # On Railway, you SHOULD set LMS_DB_PATH to a persistent volume path e.g. /app/data/chumcred_lms.db
     db_path = os.getenv("LMS_DB_PATH", "").strip()
+
     if db_path:
-        # If DB folder doesn't exist, db.py should create it, but this hint helps
         parent = os.path.dirname(db_path)
+
         if parent and not os.path.exists(parent):
             st.sidebar.warning(
-                f"DB folder not found: {parent}\n"
-                "If you're on Railway, ensure you mounted a Volume to /app/data "
+                f"Database folder not found: {parent}\n\n"
+                "If deploying on Railway, mount a Volume to /app/data "
                 "and set LMS_DB_PATH=/app/data/chumcred_lms.db"
             )
-    
 
 
-# 1) Ensure DB + migrations + default admin are ready BEFORE login
+# ----------------------------------------------------
+# 1. INITIALIZE DATABASE
+# ----------------------------------------------------
 init_db()
 
-# Session bootstrap
+
+# ----------------------------------------------------
+# 2. SESSION INITIALIZATION
+# ----------------------------------------------------
 if "user" not in st.session_state:
     st.session_state.user = None
 
-# Sidebar branding
+
+# ----------------------------------------------------
+# 3. SIDEBAR BRANDING
+# ----------------------------------------------------
 with st.sidebar:
-    lp = _logo_path()
-    if lp:
-        st.image(lp, width=170)
+    logo = _logo_path()
+    if logo:
+        st.image(logo, width=170)
+
     st.markdown("## Chumcred Academy LMS")
+
     _env_health_checks()
 
-# 2) Login then route
+
+# ----------------------------------------------------
+# 4. LOGIN FLOW
+# ----------------------------------------------------
 if st.session_state.user is None:
+
     st.title("🔐 Login")
-    st.caption("Use your provided credentials to continue.")
+    st.caption("Enter your LMS credentials to continue.")
 
     user = login_user()
 
     if user:
         st.session_state.user = user
         st.rerun()
+
+    st.stop()
+
+
+# ----------------------------------------------------
+# 5. AFTER LOGIN → ROUTE USER
+# ----------------------------------------------------
+user = st.session_state.user
+
+# Safety check if account was disabled or corrupted
+if not user.get("role") or not user.get("username"):
+    st.session_state.user = None
+    st.rerun()
+
+
+# ----------------------------------------------------
+# 6. ROLE-BASED ROUTING
+# ----------------------------------------------------
+if user.get("role") == "admin":
+
+    # Admin sidebar + pages handled inside admin_router
+    admin_router(user)
+
 else:
-    user = st.session_state.user
 
-    # ✅ Safe guard: if user record changed/disabled, force logout cleanly
-    if not user.get("role") or not user.get("username"):
-        st.session_state.user = None
-        st.rerun()
-
-    if user.get("role") == "admin":
-        admin_router(user)
-    else:
-        student_router(user)
+    # Student sidebar + pages handled inside student_router
+    student_router(user)
