@@ -62,7 +62,7 @@ def generate_certificate(student_name):
     # Date
     today = datetime.now().strftime("%B %d, %Y")
     c.setFont("Helvetica", 16)
-    c.drawCentredString(width/2, height - 420, f"Issued: {today}")
+    c.drawCentredString(width/2, height - 485, f"Issued: {today}")
 
     # Signature (moved lower)
     c.setFont("Helvetica-Bold", 18)
