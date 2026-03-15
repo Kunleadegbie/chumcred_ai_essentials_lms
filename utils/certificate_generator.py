@@ -45,19 +45,19 @@ def generate_certificate(student_name):
     # Title
     c.setFillColor(HexColor("#111827"))
     c.setFont("Helvetica-Bold", 36)
-    c.drawCentredString(width/2, height - 260, "CERTIFICATE OF COMPLETION")
+    c.drawCentredString(width/2, height - 200, "CERTIFICATE OF COMPLETION")
 
     # Body
     c.setFont("Helvetica", 18)
-    c.drawCentredString(width/2, height - 320, "This certifies that")
+    c.drawCentredString(width/2, height - 300, "This certifies that")
 
     c.setFont("Helvetica-Bold", 32)
-    c.drawCentredString(width/2, height - 370, student_name)
+    c.drawCentredString(width/2, height - 330, student_name)
 
     c.setFont("Helvetica", 18)
     c.drawCentredString(
         width/2,
-        height - 420,
+        height - 400,
         "has successfully completed the AI Essentials Program"
     )
 
