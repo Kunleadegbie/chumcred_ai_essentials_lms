@@ -49,7 +49,7 @@ def generate_certificate(student_name):
 
     # Body
     c.setFont("Helvetica", 18)
-    c.drawCentredString(width/2, height - 300, "This certifies that")
+    c.drawCentredString(width/2, height - 250, "This certifies that")
 
     c.setFont("Helvetica-Bold", 32)
     c.drawCentredString(width/2, height - 330, student_name)
@@ -62,7 +62,7 @@ def generate_certificate(student_name):
     )
 
     c.setFont("Helvetica-Bold", 22)
-    c.drawCentredString(width/2, height - 460, "Chumcred Academy")
+    c.drawCentredString(width/2, height - 420, "Chumcred Academy")
 
     # Date
     today = datetime.now().strftime("%B %d, %Y")
