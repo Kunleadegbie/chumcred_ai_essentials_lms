@@ -26,9 +26,9 @@ def generate_certificate(student_name):
 
         c.drawImage(
             logo,
-            width/2 - 50,
-            height - 100,
-            width=100,
+            width/2 - 200,
+            height - 300,
+            width=200,
             preserveAspectRatio=True,
             mask="auto"
         )
