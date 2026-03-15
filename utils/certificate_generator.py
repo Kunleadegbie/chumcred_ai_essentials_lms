@@ -57,7 +57,7 @@ def generate_certificate(student_name):
     c.setFont("Helvetica", 18)
     c.drawCentredString(
         width/2,
-        height - 400,
+        height - 300,
         "has successfully completed the AI Essentials Program"
     )
 
@@ -71,10 +71,10 @@ def generate_certificate(student_name):
     c.drawCentredString(width/2, height - 465, f"Issued: {today}")
 
     # Signature
-    c.setFont("Helvetica-Bold", 18)
+    c.setFont("Helvetica-Bold", 14)
     c.drawCentredString(width/2, 100, "Dr. Adekunle Adegbie")
 
-    c.setFont("Helvetica", 16)
+    c.setFont("Helvetica", 12)
     c.drawCentredString(width/2, 75, "Program Coordinator")
 
     c.save()
