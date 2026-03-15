@@ -52,7 +52,7 @@ def generate_certificate(student_name):
     c.drawCentredString(width/2, height - 250, "This certifies that")
 
     c.setFont("Helvetica-Bold", 32)
-    c.drawCentredString(width/2, height - 330, student_name)
+    c.drawCentredString(width/2, height - 360, student_name)
 
     c.setFont("Helvetica", 18)
     c.drawCentredString(
