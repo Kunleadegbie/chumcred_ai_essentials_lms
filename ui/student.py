@@ -40,15 +40,74 @@ def _table_columns(conn, table_name: str) -> set[str]:
         return set()
 
 
-def _insert_assignment_row(conn, cols: set[str], payload: dict) -> None:
+def _upsert_assignment_row(conn, cols: set[str], payload: dict) -> None:
     """
-    Insert into assignments table using only columns that exist.
-    This prevents crashes if your schema differs.
+    FIX: handle UNIQUE constraint (assignments.user_id, assignments.week)
+
+    - If table has user_id + week, do SQLite UPSERT (ON CONFLICT(user_id, week) DO UPDATE)
+    - Otherwise, fallback to "delete then insert" based on whatever id columns exist.
+    - Only uses columns that exist (schema-safe).
     """
     usable = {k: v for k, v in payload.items() if k in cols}
     if not usable:
-        # Nothing matched schema; fail loudly so you notice
         raise RuntimeError("Assignments table schema did not match expected fields.")
+
+    # Preferred keys for uniqueness
+    has_user_id = "user_id" in cols and "user_id" in usable
+    has_week = "week" in cols and "week" in usable
+
+    # Build update set = all usable columns except the conflict keys
+    def _build_update_clause(keys_to_skip: set[str]) -> tuple[str, list]:
+        update_keys = [k for k in usable.keys() if k not in keys_to_skip]
+        if not update_keys:
+            return "", []
+        clause = ", ".join([f"{k} = excluded.{k}" for k in update_keys])
+        return clause, update_keys
+
+    if has_user_id and has_week:
+        # UPSERT path (solves the UNIQUE constraint error)
+        keys = list(usable.keys())
+        placeholders = ", ".join(["?"] * len(keys))
+
+        update_clause, _update_keys = _build_update_clause(keys_to_skip={"user_id", "week"})
+        if update_clause:
+            sql = f"""
+                INSERT INTO assignments ({', '.join(keys)})
+                VALUES ({placeholders})
+                ON CONFLICT(user_id, week)
+                DO UPDATE SET {update_clause}
+            """
+        else:
+            # nothing to update; just ignore conflicts
+            sql = f"""
+                INSERT INTO assignments ({', '.join(keys)})
+                VALUES ({placeholders})
+                ON CONFLICT(user_id, week)
+                DO NOTHING
+            """
+
+        conn.execute(sql, tuple(usable[k] for k in keys))
+        conn.commit()
+        return
+
+    # Fallback path: delete existing for that (student_id/week) then insert
+    # (only used if schema doesn't have user_id+week)
+    where = []
+    params = []
+
+    if "user_id" in cols and "user_id" in usable:
+        where.append("user_id = ?")
+        params.append(usable["user_id"])
+    elif "student_id" in cols and "student_id" in usable:
+        where.append("student_id = ?")
+        params.append(usable["student_id"])
+
+    if "week" in cols and "week" in usable:
+        where.append("week = ?")
+        params.append(usable["week"])
+
+    if where:
+        conn.execute(f"DELETE FROM assignments WHERE {' AND '.join(where)}", tuple(params))
 
     keys = list(usable.keys())
     placeholders = ", ".join(["?"] * len(keys))
@@ -65,7 +124,6 @@ def _fetch_assignments(conn, user_id: str, week: int):
     if not cols:
         return [], cols
 
-    # Prefer user_id+week filters if those columns exist
     where = []
     params = []
 
@@ -86,13 +144,11 @@ def _fetch_assignments(conn, user_id: str, week: int):
 
     try:
         rows = conn.execute(sql, tuple(params)).fetchall()
-        # Convert sqlite rows to dicts safely
         out = []
         for r in rows:
             try:
                 out.append(dict(r))
             except Exception:
-                # fallback if row isn't mapping-like
                 out.append({f"col_{i}": r[i] for i in range(len(r))})
         return out, cols
     except Exception:
@@ -126,7 +182,6 @@ def student_router(user):
             label += " 🔒"
 
         with cols[(week - 1) % 3]:
-            # ---------- WEEK BUTTON ----------
             if status != "locked":
                 if st.button(label, key=f"week_btn_{week}"):
                     st.session_state["selected_week"] = week
@@ -134,7 +189,6 @@ def student_router(user):
             else:
                 st.button(label, disabled=True, key=f"week_btn_locked_{week}")
 
-            # ---------- WEEK PROGRESS BAR ----------
             if status == "completed":
                 st.progress(1.0)
                 st.caption("Completed")
@@ -161,10 +215,9 @@ def student_router(user):
         else:
             st.warning("Content not yet uploaded for this week.")
 
-        # ---------- ASSIGNMENT UPLOAD (RESTORED) ----------
+        # ---------- ASSIGNMENT UPLOAD ----------
         st.divider()
         st.subheader(f"📤 Assignment Submission (Week {week})")
-
         st.caption("Upload your assignment file and click **Submit Assignment**.")
 
         uploaded = st.file_uploader(
@@ -180,7 +233,6 @@ def student_router(user):
             clear_clicked = st.button("🧹 Clear Selected File", key=f"clear_assignment_file_{week}")
 
         if clear_clicked:
-            # Reset uploader by rerun with a new key seed
             st.session_state[f"assignment_upload_week_{week}"] = None
             st.rerun()
 
@@ -188,7 +240,6 @@ def student_router(user):
             if uploaded is None:
                 st.error("Please upload a file before submitting.")
             else:
-                # Save file to disk
                 ts = datetime.now().strftime("%Y%m%d_%H%M%S")
                 safe_name = _safe_filename(uploaded.name)
                 save_dir = os.path.join(ASSIGNMENTS_UPLOAD_ROOT, str(user_id), f"week{week}")
@@ -199,12 +250,14 @@ def student_router(user):
                     with open(save_path, "wb") as out:
                         out.write(uploaded.getbuffer())
 
-                    # Insert row into DB (schema-safe)
+                    # ✅ FIXED: UPSERT instead of INSERT (prevents UNIQUE constraint error)
                     with read_conn() as conn:
                         assignment_cols = _table_columns(conn, "assignments")
 
+                        now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
                         payload = {
-                            # user identifiers
+                            # identifiers
                             "user_id": user_id,
                             "student_id": user_id,
                             "username": username,
@@ -216,16 +269,17 @@ def student_router(user):
                             "path": save_path,
                             "filename": safe_name,
                             "file_name": safe_name,
+                            "original_filename": safe_name,
 
                             # timestamps
-                            "submitted_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                            "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                            "submitted_at": now_str,
+                            "created_at": now_str,
 
                             # status
                             "status": "submitted",
                         }
 
-                        _insert_assignment_row(conn, assignment_cols, payload)
+                        _upsert_assignment_row(conn, assignment_cols, payload)
 
                     st.success("✅ Assignment submitted successfully.")
                     st.rerun()
@@ -239,12 +293,18 @@ def student_router(user):
 
         if existing:
             st.markdown("#### 📄 Your previous submissions (this week)")
-            # show a small, clean view
             for row in existing[:5]:
                 rid = row.get("id", "—")
                 status = row.get("status", "—")
                 submitted_at = row.get("submitted_at") or row.get("created_at") or "—"
-                fname = row.get("filename") or row.get("file_name") or row.get("path") or row.get("file_path") or "—"
+                fname = (
+                    row.get("original_filename")
+                    or row.get("filename")
+                    or row.get("file_name")
+                    or row.get("path")
+                    or row.get("file_path")
+                    or "—"
+                )
 
                 with st.expander(f"Submission #{rid} • {status} • {submitted_at}"):
                     st.write("**File:**", fname)
