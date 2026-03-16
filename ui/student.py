@@ -1,19 +1,15 @@
 import os
 import re
 from datetime import datetime
+
+import pandas as pd
 import streamlit as st
 
-from services.progress import (
-    get_progress,
-    mark_week_completed,
-)
-
-from services.assignments import (
-    can_issue_certificate,
-)
-
-from services.certificates import has_certificate, issue_certificate
 from services.db import read_conn
+from services.progress import get_progress, mark_week_completed
+from services.assignments import can_issue_certificate
+from services.certificates import has_certificate, issue_certificate
+from ui.support import support_page  # student help & support page
 
 
 CONTENT_DIR = "content"
@@ -25,7 +21,7 @@ ASSIGNMENTS_UPLOAD_ROOT = "/app/data/uploads/assignments"
 
 def _safe_filename(name: str) -> str:
     """Keep filenames simple and filesystem-safe."""
-    name = name.strip()
+    name = (name or "").strip()
     name = re.sub(r"[^\w\-. ]+", "", name)
     name = name.replace(" ", "_")
     return name or "assignment_file"
@@ -34,7 +30,6 @@ def _safe_filename(name: str) -> str:
 def _table_columns(conn, table_name: str) -> set[str]:
     try:
         rows = conn.execute(f"PRAGMA table_info({table_name})").fetchall()
-        # PRAGMA table_info returns rows with columns: cid, name, type, notnull, dflt_value, pk
         return {r[1] if isinstance(r, (tuple, list)) else r["name"] for r in rows}
     except Exception:
         return set()
@@ -43,34 +38,24 @@ def _table_columns(conn, table_name: str) -> set[str]:
 def _upsert_assignment_row(conn, cols: set[str], payload: dict) -> None:
     """
     FIX: handle UNIQUE constraint (assignments.user_id, assignments.week)
-
-    - If table has user_id + week, do SQLite UPSERT (ON CONFLICT(user_id, week) DO UPDATE)
-    - Otherwise, fallback to "delete then insert" based on whatever id columns exist.
-    - Only uses columns that exist (schema-safe).
+    - UPSERT when (user_id, week) exists
+    - Schema-safe: only writes columns that exist
     """
     usable = {k: v for k, v in payload.items() if k in cols}
     if not usable:
         raise RuntimeError("Assignments table schema did not match expected fields.")
 
-    # Preferred keys for uniqueness
-    has_user_id = "user_id" in cols and "user_id" in usable
-    has_week = "week" in cols and "week" in usable
-
-    # Build update set = all usable columns except the conflict keys
-    def _build_update_clause(keys_to_skip: set[str]) -> tuple[str, list]:
-        update_keys = [k for k in usable.keys() if k not in keys_to_skip]
-        if not update_keys:
-            return "", []
-        clause = ", ".join([f"{k} = excluded.{k}" for k in update_keys])
-        return clause, update_keys
+    has_user_id = "user_id" in usable and "user_id" in cols
+    has_week = "week" in usable and "week" in cols
 
     if has_user_id and has_week:
-        # UPSERT path (solves the UNIQUE constraint error)
         keys = list(usable.keys())
         placeholders = ", ".join(["?"] * len(keys))
 
-        update_clause, _update_keys = _build_update_clause(keys_to_skip={"user_id", "week"})
-        if update_clause:
+        # update all except conflict keys
+        update_keys = [k for k in keys if k not in {"user_id", "week"}]
+        if update_keys:
+            update_clause = ", ".join([f"{k}=excluded.{k}" for k in update_keys])
             sql = f"""
                 INSERT INTO assignments ({', '.join(keys)})
                 VALUES ({placeholders})
@@ -78,7 +63,6 @@ def _upsert_assignment_row(conn, cols: set[str], payload: dict) -> None:
                 DO UPDATE SET {update_clause}
             """
         else:
-            # nothing to update; just ignore conflicts
             sql = f"""
                 INSERT INTO assignments ({', '.join(keys)})
                 VALUES ({placeholders})
@@ -90,19 +74,18 @@ def _upsert_assignment_row(conn, cols: set[str], payload: dict) -> None:
         conn.commit()
         return
 
-    # Fallback path: delete existing for that (student_id/week) then insert
-    # (only used if schema doesn't have user_id+week)
+    # Fallback: delete then insert (only if schema is unusual)
     where = []
     params = []
 
-    if "user_id" in cols and "user_id" in usable:
+    if "user_id" in usable and "user_id" in cols:
         where.append("user_id = ?")
         params.append(usable["user_id"])
-    elif "student_id" in cols and "student_id" in usable:
+    elif "student_id" in usable and "student_id" in cols:
         where.append("student_id = ?")
         params.append(usable["student_id"])
 
-    if "week" in cols and "week" in usable:
+    if "week" in usable and "week" in cols:
         where.append("week = ?")
         params.append(usable["week"])
 
@@ -117,9 +100,6 @@ def _upsert_assignment_row(conn, cols: set[str], payload: dict) -> None:
 
 
 def _fetch_assignments(conn, user_id: str, week: int):
-    """
-    Pull past submissions (schema-safe).
-    """
     cols = _table_columns(conn, "assignments")
     if not cols:
         return [], cols
@@ -140,19 +120,33 @@ def _fetch_assignments(conn, user_id: str, week: int):
 
     where_sql = (" WHERE " + " AND ".join(where)) if where else ""
     order_col = "submitted_at" if "submitted_at" in cols else ("created_at" if "created_at" in cols else "id")
+
     sql = f"SELECT * FROM assignments{where_sql} ORDER BY {order_col} DESC"
 
-    try:
-        rows = conn.execute(sql, tuple(params)).fetchall()
-        out = []
-        for r in rows:
-            try:
-                out.append(dict(r))
-            except Exception:
-                out.append({f"col_{i}": r[i] for i in range(len(r))})
-        return out, cols
-    except Exception:
-        return [], cols
+    rows = conn.execute(sql, tuple(params)).fetchall()
+    out = []
+    for r in rows:
+        try:
+            out.append(dict(r))
+        except Exception:
+            out.append({f"col_{i}": r[i] for i in range(len(r))})
+    return out, cols
+
+
+def _extract_grade(row: dict):
+    # admin may save as grade OR score
+    g = row.get("grade")
+    if g is None:
+        g = row.get("score")
+    return g
+
+
+def _extract_feedback(row: dict):
+    # admin may save as feedback OR admin_feedback
+    fb = row.get("feedback")
+    if not fb:
+        fb = row.get("admin_feedback")
+    return fb
 
 
 def student_router(user):
@@ -161,6 +155,17 @@ def student_router(user):
     user_id = user["id"]
     username = user.get("username", "student")
 
+    # ------------------------------
+    # Support page routing
+    # ------------------------------
+    if st.session_state.get("page") == "support":
+        st.markdown("### 🆘 Help & Support")
+        if st.button("⬅️ Return to Dashboard", key="student_support_back_btn"):
+            st.session_state["page"] = None
+            st.rerun()
+        support_page(user)
+        return
+
     progress = get_progress(user_id)
 
     # =================================================
@@ -168,8 +173,7 @@ def student_router(user):
     # =================================================
     st.subheader("📘 Course Progress")
 
-    cols = st.columns(3)
-
+    grid_cols = st.columns(3)
     for week in range(1, TOTAL_WEEKS + 1):
         status = progress.get(week, "locked")
 
@@ -181,7 +185,7 @@ def student_router(user):
         else:
             label += " 🔒"
 
-        with cols[(week - 1) % 3]:
+        with grid_cols[(week - 1) % 3]:
             if status != "locked":
                 if st.button(label, key=f"week_btn_{week}"):
                     st.session_state["selected_week"] = week
@@ -200,7 +204,7 @@ def student_router(user):
                 st.caption("Locked")
 
     # =================================================
-    # DISPLAY WEEK CONTENT + ASSIGNMENT UPLOAD
+    # DISPLAY WEEK CONTENT + ASSIGNMENT UPLOAD + GRADES
     # =================================================
     if "selected_week" in st.session_state:
         week = st.session_state["selected_week"]
@@ -250,10 +254,8 @@ def student_router(user):
                     with open(save_path, "wb") as out:
                         out.write(uploaded.getbuffer())
 
-                    # ✅ FIXED: UPSERT instead of INSERT (prevents UNIQUE constraint error)
                     with read_conn() as conn:
                         assignment_cols = _table_columns(conn, "assignments")
-
                         now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
                         payload = {
@@ -287,12 +289,27 @@ def student_router(user):
                 except Exception as e:
                     st.error(f"Submission failed: {e}")
 
-        # Show past submissions for this week (if any)
+        # ---------- SHOW PREVIOUS SUBMISSIONS + GRADES ----------
         with read_conn() as conn:
             existing, _cols = _fetch_assignments(conn, user_id, week)
 
         if existing:
-            st.markdown("#### 📄 Your previous submissions (this week)")
+            st.markdown("#### 📄 Your submissions & grades (this week)")
+
+            # Grades summary table (shows even if feedback missing)
+            summary_rows = []
+            for r in existing:
+                summary_rows.append(
+                    {
+                        "Week": r.get("week", week),
+                        "Status": r.get("status", "submitted"),
+                        "Grade": _extract_grade(r),
+                        "Submitted At": r.get("submitted_at") or r.get("created_at") or "—",
+                    }
+                )
+            st.dataframe(pd.DataFrame(summary_rows), use_container_width=True)
+
+            # Detailed view (file + feedback)
             for row in existing[:5]:
                 rid = row.get("id", "—")
                 status = row.get("status", "—")
@@ -308,10 +325,18 @@ def student_router(user):
 
                 with st.expander(f"Submission #{rid} • {status} • {submitted_at}"):
                     st.write("**File:**", fname)
-                    if row.get("admin_feedback"):
-                        st.write("**Feedback:**", row.get("admin_feedback"))
-                    if row.get("score") is not None:
-                        st.write("**Score:**", row.get("score"))
+
+                    grade_val = _extract_grade(row)
+                    if grade_val is not None:
+                        st.success(f"✅ Grade: {grade_val}")
+                    else:
+                        st.caption("Grade not yet released.")
+
+                    fb_val = _extract_feedback(row)
+                    if fb_val:
+                        st.info(f"📝 Feedback: {fb_val}")
+                    else:
+                        st.caption("No feedback yet.")
 
         # ---------- MARK COMPLETED ----------
         if st.button("Mark Week as Completed", key=f"complete_week_{week}"):
@@ -351,6 +376,7 @@ def student_router(user):
 
     if st.session_state.get("show_final_exam", False):
         from modules.week6_final_exam import show_exam
+
         show_exam(user)
         return
 
@@ -373,12 +399,16 @@ def student_router(user):
     # =================================================
     with st.sidebar:
         st.markdown("### 👩‍🎓 Student Menu")
-        st.markdown(user.get("username", ""))
+        st.markdown(username)
 
         completed = sum(1 for s in progress.values() if s == "completed")
         st.progress(completed / TOTAL_WEEKS)
         st.caption(f"{completed} of {TOTAL_WEEKS} weeks completed")
 
-        if st.button("Logout"):
+        if st.button("🆘 Help & Support", key="student_help_support_btn"):
+            st.session_state["page"] = "support"
+            st.rerun()
+
+        if st.button("🚪 Logout", key="student_logout_btn"):
             st.session_state.clear()
             st.rerun()
