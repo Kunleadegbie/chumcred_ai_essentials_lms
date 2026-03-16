@@ -1,4 +1,3 @@
-
 # ui/admin.py
 
 import os
@@ -193,8 +192,34 @@ def admin_router(user):
 
             a = dict(a)
 
-            st.markdown(f"**Student:** {a['username']}  ")
-            st.markdown(f"**Week:** {a['week']}")
+            st.markdown(f"**Student:** {a.get('username','—')}  ")
+            st.markdown(f"**Week:** {a.get('week','—')}")
+
+            # ✅ FIX: show the uploaded assignment file to admin (download/open)
+            # We support multiple possible column names to avoid schema mismatch.
+            file_path = a.get("file_path") or a.get("path")
+            file_name = (
+                a.get("original_filename")
+                or a.get("filename")
+                or a.get("file_name")
+                or "assignment_file"
+            )
+
+            if file_path:
+                if os.path.exists(file_path):
+                    with open(file_path, "rb") as f:
+                        st.download_button(
+                            "⬇️ Download Assignment File",
+                            data=f.read(),
+                            file_name=file_name,
+                            mime="application/octet-stream",
+                            key=f"dl_{a.get('id')}_{a.get('week')}",
+                        )
+                else:
+                    st.warning("⚠️ Assignment file path saved, but file not found on server.")
+                    st.code(str(file_path))
+            else:
+                st.warning("⚠️ No file path found in this submission record (file_path/path is empty).")
 
             grade = st.number_input(
                 "Grade",
@@ -279,11 +304,10 @@ def admin_router(user):
                     WHERE user_id = ?
                     """,
                     (student_id,)
-               )
+                )
 
             st.success(f"Exam unlocked for {selected}")
 
-    
     # =========================================================
     # STUDENT REPORTS
     # =========================================================
@@ -327,7 +351,7 @@ def admin_router(user):
 
         if data:
 
-            st.metric("Average Score", round(data["avg_score"] or 0,2))
+            st.metric("Average Score", round(data["avg_score"] or 0, 2))
             st.metric("Highest Score", data["max_score"])
             st.metric("Lowest Score", data["min_score"])
 
