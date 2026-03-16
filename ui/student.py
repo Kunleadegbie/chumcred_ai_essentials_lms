@@ -20,7 +20,6 @@ ASSIGNMENTS_UPLOAD_ROOT = "/app/data/uploads/assignments"
 
 
 def _safe_filename(name: str) -> str:
-    """Keep filenames simple and filesystem-safe."""
     name = (name or "").strip()
     name = re.sub(r"[^\w\-. ]+", "", name)
     name = name.replace(" ", "_")
@@ -52,7 +51,6 @@ def _upsert_assignment_row(conn, cols: set[str], payload: dict) -> None:
         keys = list(usable.keys())
         placeholders = ", ".join(["?"] * len(keys))
 
-        # update all except conflict keys
         update_keys = [k for k in keys if k not in {"user_id", "week"}]
         if update_keys:
             update_clause = ", ".join([f"{k}=excluded.{k}" for k in update_keys])
@@ -74,7 +72,7 @@ def _upsert_assignment_row(conn, cols: set[str], payload: dict) -> None:
         conn.commit()
         return
 
-    # Fallback: delete then insert (only if schema is unusual)
+    # fallback delete+insert
     where = []
     params = []
 
@@ -99,7 +97,25 @@ def _upsert_assignment_row(conn, cols: set[str], payload: dict) -> None:
     conn.commit()
 
 
-def _fetch_assignments(conn, user_id: str, week: int):
+def _extract_grade(row: dict):
+    g = row.get("grade")
+    if g is None:
+        g = row.get("score")
+    return g
+
+
+def _extract_feedback(row: dict):
+    fb = row.get("feedback")
+    if not fb:
+        fb = row.get("admin_feedback")
+    return fb
+
+
+def _fetch_all_assignments_for_student(conn, user_id: str):
+    """
+    Restore: show score/grade per week (overview).
+    Pulls all assignments for this student across all weeks.
+    """
     cols = _table_columns(conn, "assignments")
     if not cols:
         return [], cols
@@ -114,16 +130,12 @@ def _fetch_assignments(conn, user_id: str, week: int):
         where.append("student_id = ?")
         params.append(user_id)
 
-    if "week" in cols:
-        where.append("week = ?")
-        params.append(week)
-
     where_sql = (" WHERE " + " AND ".join(where)) if where else ""
-    order_col = "submitted_at" if "submitted_at" in cols else ("created_at" if "created_at" in cols else "id")
+    order_col = "week" if "week" in cols else ("submitted_at" if "submitted_at" in cols else "id")
 
-    sql = f"SELECT * FROM assignments{where_sql} ORDER BY {order_col} DESC"
-
+    sql = f"SELECT * FROM assignments{where_sql} ORDER BY {order_col} ASC"
     rows = conn.execute(sql, tuple(params)).fetchall()
+
     out = []
     for r in rows:
         try:
@@ -131,22 +143,6 @@ def _fetch_assignments(conn, user_id: str, week: int):
         except Exception:
             out.append({f"col_{i}": r[i] for i in range(len(r))})
     return out, cols
-
-
-def _extract_grade(row: dict):
-    # admin may save as grade OR score
-    g = row.get("grade")
-    if g is None:
-        g = row.get("score")
-    return g
-
-
-def _extract_feedback(row: dict):
-    # admin may save as feedback OR admin_feedback
-    fb = row.get("feedback")
-    if not fb:
-        fb = row.get("admin_feedback")
-    return fb
 
 
 def student_router(user):
@@ -167,6 +163,50 @@ def student_router(user):
         return
 
     progress = get_progress(user_id)
+
+    # =================================================
+    # RESTORED: GRADES OVERVIEW (SCORES PER WEEK)
+    # =================================================
+    st.subheader("📊 My Grades (All Weeks)")
+    with read_conn() as conn:
+        all_rows, _cols = _fetch_all_assignments_for_student(conn, user_id)
+
+    # Build week-by-week summary (Weeks 1–6 always shown)
+    week_summary = []
+    rows_by_week = {}
+    for r in all_rows:
+        wk = r.get("week")
+        if wk is None:
+            continue
+        rows_by_week.setdefault(int(wk), []).append(r)
+
+    for wk in range(1, TOTAL_WEEKS + 1):
+        submissions = rows_by_week.get(wk, [])
+        latest = submissions[0] if submissions else None  # since query is ordered, but could be multiple; use first
+        # If multiple submissions exist (no unique constraint), take the most recent by submitted_at/created_at/id
+        if submissions:
+            def _sort_key(x):
+                return (
+                    x.get("submitted_at") or x.get("created_at") or "",
+                    x.get("id") or 0
+                )
+            latest = sorted(submissions, key=_sort_key, reverse=True)[0]
+
+        grade = _extract_grade(latest) if latest else None
+        status = (latest.get("status") if latest else None) or ("submitted" if latest else "not submitted")
+        submitted_at = (latest.get("submitted_at") or latest.get("created_at")) if latest else "—"
+        fb = _extract_feedback(latest) if latest else ""
+
+        week_summary.append({
+            "Week": wk,
+            "Submitted": "Yes" if latest else "No",
+            "Status": status,
+            "Score/Grade": grade if grade is not None else "—",
+            "Submitted At": submitted_at,
+            "Feedback (short)": (fb[:60] + "…") if fb and len(fb) > 60 else (fb or "—"),
+        })
+
+    st.dataframe(pd.DataFrame(week_summary), use_container_width=True)
 
     # =================================================
     # COURSE PROGRESS GRID
@@ -204,7 +244,7 @@ def student_router(user):
                 st.caption("Locked")
 
     # =================================================
-    # DISPLAY WEEK CONTENT + ASSIGNMENT UPLOAD + GRADES
+    # DISPLAY WEEK CONTENT + ASSIGNMENT UPLOAD + WEEK DETAIL (WITH GRADE)
     # =================================================
     if "selected_week" in st.session_state:
         week = st.session_state["selected_week"]
@@ -259,25 +299,21 @@ def student_router(user):
                         now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
                         payload = {
-                            # identifiers
                             "user_id": user_id,
                             "student_id": user_id,
                             "username": username,
                             "student_username": username,
-
-                            # week + file info
                             "week": week,
+
+                            # store both names to match any schema
                             "file_path": save_path,
                             "path": save_path,
                             "filename": safe_name,
                             "file_name": safe_name,
                             "original_filename": safe_name,
 
-                            # timestamps
                             "submitted_at": now_str,
                             "created_at": now_str,
-
-                            # status
                             "status": "submitted",
                         }
 
@@ -289,54 +325,35 @@ def student_router(user):
                 except Exception as e:
                     st.error(f"Submission failed: {e}")
 
-        # ---------- SHOW PREVIOUS SUBMISSIONS + GRADES ----------
-        with read_conn() as conn:
-            existing, _cols = _fetch_assignments(conn, user_id, week)
+        # ---------- SHOW THIS WEEK SUBMISSION + GRADE/FEEDBACK ----------
+        st.divider()
+        st.subheader(f"✅ Week {week} Grade & Feedback")
 
-        if existing:
-            st.markdown("#### 📄 Your submissions & grades (this week)")
+        # Find latest record for this week from all_rows (already fetched)
+        latest = None
+        submissions = rows_by_week.get(week, [])
+        if submissions:
+            def _sort_key(x):
+                return (x.get("submitted_at") or x.get("created_at") or "", x.get("id") or 0)
+            latest = sorted(submissions, key=_sort_key, reverse=True)[0]
 
-            # Grades summary table (shows even if feedback missing)
-            summary_rows = []
-            for r in existing:
-                summary_rows.append(
-                    {
-                        "Week": r.get("week", week),
-                        "Status": r.get("status", "submitted"),
-                        "Grade": _extract_grade(r),
-                        "Submitted At": r.get("submitted_at") or r.get("created_at") or "—",
-                    }
-                )
-            st.dataframe(pd.DataFrame(summary_rows), use_container_width=True)
+        if not latest:
+            st.info("No submission yet for this week.")
+        else:
+            grade = _extract_grade(latest)
+            fb = _extract_feedback(latest)
+            submitted_at = latest.get("submitted_at") or latest.get("created_at") or "—"
 
-            # Detailed view (file + feedback)
-            for row in existing[:5]:
-                rid = row.get("id", "—")
-                status = row.get("status", "—")
-                submitted_at = row.get("submitted_at") or row.get("created_at") or "—"
-                fname = (
-                    row.get("original_filename")
-                    or row.get("filename")
-                    or row.get("file_name")
-                    or row.get("path")
-                    or row.get("file_path")
-                    or "—"
-                )
+            st.write(f"**Submitted At:** {submitted_at}")
+            if grade is not None:
+                st.success(f"**Score/Grade:** {grade}")
+            else:
+                st.warning("Score/Grade not yet released.")
 
-                with st.expander(f"Submission #{rid} • {status} • {submitted_at}"):
-                    st.write("**File:**", fname)
-
-                    grade_val = _extract_grade(row)
-                    if grade_val is not None:
-                        st.success(f"✅ Grade: {grade_val}")
-                    else:
-                        st.caption("Grade not yet released.")
-
-                    fb_val = _extract_feedback(row)
-                    if fb_val:
-                        st.info(f"📝 Feedback: {fb_val}")
-                    else:
-                        st.caption("No feedback yet.")
+            if fb:
+                st.info(f"**Feedback:** {fb}")
+            else:
+                st.caption("No feedback yet.")
 
         # ---------- MARK COMPLETED ----------
         if st.button("Mark Week as Completed", key=f"complete_week_{week}"):
@@ -376,7 +393,6 @@ def student_router(user):
 
     if st.session_state.get("show_final_exam", False):
         from modules.week6_final_exam import show_exam
-
         show_exam(user)
         return
 
