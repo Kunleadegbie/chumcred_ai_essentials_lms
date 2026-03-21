@@ -1,5 +1,3 @@
-# ui/admin.py
-
 import os
 import streamlit as st
 
@@ -62,6 +60,19 @@ def admin_router(user):
                 st.divider()
         else:
             st.info("No broadcasts yet.")
+
+        # ✅ RESTORED: Weekly content preview (Week 1–6)
+        st.divider()
+        st.subheader("📚 Weekly Content (Weeks 1–6)")
+
+        for wk in range(1, TOTAL_WEEKS + 1):
+            md_path = os.path.join(CONTENT_DIR, f"week{wk}.md")
+            with st.expander(f"Week {wk} Content", expanded=False):
+                if os.path.exists(md_path):
+                    with open(md_path, "r", encoding="utf-8") as f:
+                        st.markdown(f.read())
+                else:
+                    st.warning(f"Content file not found: {md_path}")
 
     # =========================================================
     # CREATE STUDENT
@@ -195,8 +206,7 @@ def admin_router(user):
             st.markdown(f"**Student:** {a.get('username','—')}  ")
             st.markdown(f"**Week:** {a.get('week','—')}")
 
-            # ✅ FIX: show the uploaded assignment file to admin (download/open)
-            # We support multiple possible column names to avoid schema mismatch.
+            # ✅ show the uploaded assignment file to admin (download/open)
             file_path = a.get("file_path") or a.get("path")
             file_name = (
                 a.get("original_filename")
@@ -269,7 +279,6 @@ def admin_router(user):
     # =========================================================
     # UNLOCK EXAM
     # =========================================================
-
     elif menu == "Unlock Exam":
 
         st.subheader("📝 Unlock Final Exam")
