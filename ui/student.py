@@ -424,10 +424,6 @@ def student_router(user):
         st.progress(completed / TOTAL_WEEKS)
         st.caption(f"{completed} of {TOTAL_WEEKS} weeks completed")
 
-        if st.button("Week 0 (Orientation)", key="week0_btn_sidebar"):
-            st.session_state["selected_week"] = 0
-            st.rerun()
-
         if st.button("🆘 Help & Support", key="student_help_support_btn"):
             st.session_state["page"] = "support"
             st.rerun()
