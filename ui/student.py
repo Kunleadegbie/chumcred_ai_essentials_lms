@@ -35,11 +35,6 @@ def _table_columns(conn, table_name: str) -> set[str]:
 
 
 def _upsert_assignment_row(conn, cols: set[str], payload: dict) -> None:
-    """
-    FIX: handle UNIQUE constraint (assignments.user_id, assignments.week)
-    - UPSERT when (user_id, week) exists
-    - Schema-safe: only writes columns that exist
-    """
     usable = {k: v for k, v in payload.items() if k in cols}
     if not usable:
         raise RuntimeError("Assignments table schema did not match expected fields.")
@@ -112,10 +107,6 @@ def _extract_feedback(row: dict):
 
 
 def _fetch_all_assignments_for_student(conn, user_id: str):
-    """
-    Restore: show score/grade per week (overview).
-    Pulls all assignments for this student across all weeks.
-    """
     cols = _table_columns(conn, "assignments")
     if not cols:
         return [], cols
@@ -171,8 +162,6 @@ def student_router(user):
     with read_conn() as conn:
         all_rows, _cols = _fetch_all_assignments_for_student(conn, user_id)
 
-    # Build week-by-week summary (Weeks 1–6 always shown)
-    week_summary = []
     rows_by_week = {}
     for r in all_rows:
         wk = r.get("week")
@@ -180,16 +169,13 @@ def student_router(user):
             continue
         rows_by_week.setdefault(int(wk), []).append(r)
 
+    week_summary = []
     for wk in range(1, TOTAL_WEEKS + 1):
         submissions = rows_by_week.get(wk, [])
-        latest = submissions[0] if submissions else None  # since query is ordered, but could be multiple; use first
-        # If multiple submissions exist (no unique constraint), take the most recent by submitted_at/created_at/id
+        latest = None
         if submissions:
             def _sort_key(x):
-                return (
-                    x.get("submitted_at") or x.get("created_at") or "",
-                    x.get("id") or 0
-                )
+                return (x.get("submitted_at") or x.get("created_at") or "", x.get("id") or 0)
             latest = sorted(submissions, key=_sort_key, reverse=True)[0]
 
         grade = _extract_grade(latest) if latest else None
@@ -212,6 +198,11 @@ def student_router(user):
     # COURSE PROGRESS GRID
     # =================================================
     st.subheader("📘 Course Progress")
+
+    # ✅ Week 0 (Orientation) — always available (put it first)
+    if st.button("Week 0 (Orientation) 🔓", key="week0_btn"):
+        st.session_state["selected_week"] = 0
+        st.rerun()
 
     grid_cols = st.columns(3)
     for week in range(1, TOTAL_WEEKS + 1):
@@ -252,114 +243,120 @@ def student_router(user):
         st.divider()
         st.subheader(f"📖 Week {week} Content")
 
-        file_path = os.path.join(CONTENT_DIR, f"week{week}.md")
+        if week == 0:
+            file_path = os.path.join(CONTENT_DIR, "week0.md")
+        else:
+            file_path = os.path.join(CONTENT_DIR, f"week{week}.md")
+
         if os.path.exists(file_path):
             with open(file_path, "r", encoding="utf-8") as f:
                 st.markdown(f.read())
         else:
             st.warning("Content not yet uploaded for this week.")
 
-        # ---------- ASSIGNMENT UPLOAD ----------
-        st.divider()
-        st.subheader(f"📤 Assignment Submission (Week {week})")
-        st.caption("Upload your assignment file and click **Submit Assignment**.")
-
-        uploaded = st.file_uploader(
-            "Choose file (PDF/DOCX/PNG/JPG)",
-            type=["pdf", "docx", "png", "jpg", "jpeg"],
-            key=f"assignment_upload_week_{week}",
-        )
-
-        col_a, col_b = st.columns([1, 1])
-        with col_a:
-            submit_clicked = st.button("✅ Submit Assignment", key=f"submit_assignment_{week}")
-        with col_b:
-            clear_clicked = st.button("🧹 Clear Selected File", key=f"clear_assignment_file_{week}")
-
-        if clear_clicked:
-            st.session_state[f"assignment_upload_week_{week}"] = None
-            st.rerun()
-
-        if submit_clicked:
-            if uploaded is None:
-                st.error("Please upload a file before submitting.")
-            else:
-                ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-                safe_name = _safe_filename(uploaded.name)
-                save_dir = os.path.join(ASSIGNMENTS_UPLOAD_ROOT, str(user_id), f"week{week}")
-                os.makedirs(save_dir, exist_ok=True)
-                save_path = os.path.join(save_dir, f"{ts}_{safe_name}")
-
-                try:
-                    with open(save_path, "wb") as out:
-                        out.write(uploaded.getbuffer())
-
-                    with read_conn() as conn:
-                        assignment_cols = _table_columns(conn, "assignments")
-                        now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-                        payload = {
-                            "user_id": user_id,
-                            "student_id": user_id,
-                            "username": username,
-                            "student_username": username,
-                            "week": week,
-
-                            # store both names to match any schema
-                            "file_path": save_path,
-                            "path": save_path,
-                            "filename": safe_name,
-                            "file_name": safe_name,
-                            "original_filename": safe_name,
-
-                            "submitted_at": now_str,
-                            "created_at": now_str,
-                            "status": "submitted",
-                        }
-
-                        _upsert_assignment_row(conn, assignment_cols, payload)
-
-                    st.success("✅ Assignment submitted successfully.")
-                    st.rerun()
-
-                except Exception as e:
-                    st.error(f"Submission failed: {e}")
-
-        # ---------- SHOW THIS WEEK SUBMISSION + GRADE/FEEDBACK ----------
-        st.divider()
-        st.subheader(f"✅ Week {week} Grade & Feedback")
-
-        # Find latest record for this week from all_rows (already fetched)
-        latest = None
-        submissions = rows_by_week.get(week, [])
-        if submissions:
-            def _sort_key(x):
-                return (x.get("submitted_at") or x.get("created_at") or "", x.get("id") or 0)
-            latest = sorted(submissions, key=_sort_key, reverse=True)[0]
-
-        if not latest:
-            st.info("No submission yet for this week.")
+        # ✅ Week 0: no assignment, no completion marking
+        if week == 0:
+            st.info("Orientation week does not require assignment submission.")
         else:
-            grade = _extract_grade(latest)
-            fb = _extract_feedback(latest)
-            submitted_at = latest.get("submitted_at") or latest.get("created_at") or "—"
+            # ---------- ASSIGNMENT UPLOAD ----------
+            st.divider()
+            st.subheader(f"📤 Assignment Submission (Week {week})")
+            st.caption("Upload your assignment file and click **Submit Assignment**.")
 
-            st.write(f"**Submitted At:** {submitted_at}")
-            if grade is not None:
-                st.success(f"**Score/Grade:** {grade}")
+            uploaded = st.file_uploader(
+                "Choose file (PDF/DOCX/PNG/JPG)",
+                type=["pdf", "docx", "png", "jpg", "jpeg"],
+                key=f"assignment_upload_week_{week}",
+            )
+
+            col_a, col_b = st.columns([1, 1])
+            with col_a:
+                submit_clicked = st.button("✅ Submit Assignment", key=f"submit_assignment_{week}")
+            with col_b:
+                clear_clicked = st.button("🧹 Clear Selected File", key=f"clear_assignment_file_{week}")
+
+            if clear_clicked:
+                st.session_state[f"assignment_upload_week_{week}"] = None
+                st.rerun()
+
+            if submit_clicked:
+                if uploaded is None:
+                    st.error("Please upload a file before submitting.")
+                else:
+                    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+                    safe_name = _safe_filename(uploaded.name)
+                    save_dir = os.path.join(ASSIGNMENTS_UPLOAD_ROOT, str(user_id), f"week{week}")
+                    os.makedirs(save_dir, exist_ok=True)
+                    save_path = os.path.join(save_dir, f"{ts}_{safe_name}")
+
+                    try:
+                        with open(save_path, "wb") as out:
+                            out.write(uploaded.getbuffer())
+
+                        with read_conn() as conn:
+                            assignment_cols = _table_columns(conn, "assignments")
+                            now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+                            payload = {
+                                "user_id": user_id,
+                                "student_id": user_id,
+                                "username": username,
+                                "student_username": username,
+                                "week": week,
+
+                                "file_path": save_path,
+                                "path": save_path,
+                                "filename": safe_name,
+                                "file_name": safe_name,
+                                "original_filename": safe_name,
+
+                                "submitted_at": now_str,
+                                "created_at": now_str,
+                                "status": "submitted",
+                            }
+
+                            _upsert_assignment_row(conn, assignment_cols, payload)
+
+                        st.success("✅ Assignment submitted successfully.")
+                        st.rerun()
+
+                    except Exception as e:
+                        st.error(f"Submission failed: {e}")
+
+            # ---------- SHOW THIS WEEK SUBMISSION + GRADE/FEEDBACK ----------
+            st.divider()
+            st.subheader(f"✅ Week {week} Grade & Feedback")
+
+            latest = None
+            submissions = rows_by_week.get(week, [])
+            if submissions:
+                def _sort_key(x):
+                    return (x.get("submitted_at") or x.get("created_at") or "", x.get("id") or 0)
+                latest = sorted(submissions, key=_sort_key, reverse=True)[0]
+
+            if not latest:
+                st.info("No submission yet for this week.")
             else:
-                st.warning("Score/Grade not yet released.")
+                grade = _extract_grade(latest)
+                fb = _extract_feedback(latest)
+                submitted_at = latest.get("submitted_at") or latest.get("created_at") or "—"
 
-            if fb:
-                st.info(f"**Feedback:** {fb}")
-            else:
-                st.caption("No feedback yet.")
+                st.write(f"**Submitted At:** {submitted_at}")
+                if grade is not None:
+                    st.success(f"**Score/Grade:** {grade}")
+                else:
+                    st.warning("Score/Grade not yet released.")
 
-        # ---------- MARK COMPLETED ----------
-        if st.button("Mark Week as Completed", key=f"complete_week_{week}"):
-            mark_week_completed(user_id, week)
-            st.success(f"Week {week} marked as completed")
-            st.rerun()
+                if fb:
+                    st.info(f"**Feedback:** {fb}")
+                else:
+                    st.caption("No feedback yet.")
+
+            # ---------- MARK COMPLETED ----------
+            if st.button("Mark Week as Completed", key=f"complete_week_{week}"):
+                mark_week_completed(user_id, week)
+                st.success(f"Week {week} marked as completed")
+                st.rerun()
 
     # =================================================
     # FINAL EXAM
