@@ -234,12 +234,6 @@ def student_router(user):
                 st.progress(0.0)
                 st.caption("Locked")
 
-
-    # ✅ Week 0 (Orientation) — always available (guaranteed visible)
-    if st.button("Week 0 (Orientation) 🔓", key="week0_btn_main"):
-        st.session_state["selected_week"] = 0
-        st.rerun()
-
     # =================================================
     # DISPLAY WEEK CONTENT + ASSIGNMENT UPLOAD + WEEK DETAIL (WITH GRADE)
     # =================================================
@@ -423,6 +417,10 @@ def student_router(user):
         completed = sum(1 for s in progress.values() if s == "completed")
         st.progress(completed / TOTAL_WEEKS)
         st.caption(f"{completed} of {TOTAL_WEEKS} weeks completed")
+
+        if st.button("Week 0 (Orientation)", key="week0_btn_sidebar"):
+            st.session_state["selected_week"] = 0
+            st.rerun()
 
         if st.button("🆘 Help & Support", key="student_help_support_btn"):
             st.session_state["page"] = "support"
