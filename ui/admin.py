@@ -37,6 +37,7 @@ def admin_router(user):
                 "Exam Analytics",
                 "Help & Support",
                 "Support Messages",
+                "Block / Unblock Students",  # ✅ ADDED (structure preserved)
             ],
         )
 
@@ -399,3 +400,131 @@ def admin_router(user):
 
         else:
             st.info("No support messages.")
+
+    # =========================================================
+    # BLOCK / UNBLOCK STUDENTS (ADDED - DOES NOT ALTER OTHER SECTIONS)
+    # =========================================================
+    elif menu == "Block / Unblock Students":
+        from datetime import datetime
+
+        st.subheader("⛔ Block / Unblock Students")
+
+        # Ensure required columns exist (safe to run repeatedly)
+        with write_txn() as conn:
+            cols = [r[1] for r in conn.execute("PRAGMA table_info(users)").fetchall()]
+            if "is_blocked" not in cols:
+                conn.execute("ALTER TABLE users ADD COLUMN is_blocked INTEGER NOT NULL DEFAULT 0")
+            if "blocked_at" not in cols:
+                conn.execute("ALTER TABLE users ADD COLUMN blocked_at TEXT")
+            if "blocked_reason" not in cols:
+                conn.execute("ALTER TABLE users ADD COLUMN blocked_reason TEXT")
+            conn.commit()
+
+        # Load students
+        with read_conn() as conn:
+            rows = conn.execute(
+                """
+                SELECT id, username, cohort, is_blocked, blocked_at, blocked_reason
+                FROM users
+                WHERE role='student'
+                ORDER BY cohort, username
+                """
+            ).fetchall()
+
+        students = [dict(r) for r in rows] if rows else []
+        if not students:
+            st.info("No students found.")
+            return
+
+        # Filter by cohort
+        cohorts = sorted({s.get("cohort") for s in students if s.get("cohort")})
+        cohort_filter = st.selectbox("Filter by cohort", ["All"] + cohorts)
+
+        view = [s for s in students if cohort_filter == "All" or s.get("cohort") == cohort_filter]
+
+        st.dataframe(view, use_container_width=True)
+
+        st.divider()
+        st.markdown("### Individual block/unblock")
+
+        usernames = [s["username"] for s in view]
+        selected_username = st.selectbox("Select student", usernames)
+        selected = next(s for s in view if s["username"] == selected_username)
+
+        reason = st.text_input("Reason (optional)", value="Cohort access expired")
+
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("⛔ Block", key="block_one"):
+                with write_txn() as conn:
+                    conn.execute(
+                        """
+                        UPDATE users
+                        SET is_blocked=1, blocked_at=?, blocked_reason=?
+                        WHERE id=? AND role='student'
+                        """,
+                        (datetime.now().strftime("%Y-%m-%d %H:%M:%S"), reason, selected["id"]),
+                    )
+                    conn.commit()
+                st.success(f"Blocked: {selected_username}")
+                st.rerun()
+
+        with col2:
+            if st.button("✅ Unblock", key="unblock_one"):
+                with write_txn() as conn:
+                    conn.execute(
+                        """
+                        UPDATE users
+                        SET is_blocked=0, blocked_at=NULL, blocked_reason=NULL
+                        WHERE id=? AND role='student'
+                        """,
+                        (selected["id"],),
+                    )
+                    conn.commit()
+                st.success(f"Unblocked: {selected_username}")
+                st.rerun()
+
+        st.divider()
+        st.markdown("### Bulk block/unblock")
+
+        selected_many = st.multiselect("Select multiple students", usernames)
+        ids_many = [s["id"] for s in view if s["username"] in selected_many]
+
+        col3, col4 = st.columns(2)
+        with col3:
+            if st.button("⛔ Block Selected", key="block_many"):
+                if not ids_many:
+                    st.warning("Select at least one student.")
+                else:
+                    placeholders = ",".join(["?"] * len(ids_many))
+                    with write_txn() as conn:
+                        conn.execute(
+                            f"""
+                            UPDATE users
+                            SET is_blocked=1, blocked_at=?, blocked_reason=?
+                            WHERE role='student' AND id IN ({placeholders})
+                            """,
+                            (datetime.now().strftime("%Y-%m-%d %H:%M:%S"), reason, *ids_many),
+                        )
+                        conn.commit()
+                    st.success(f"Blocked {len(ids_many)} student(s).")
+                    st.rerun()
+
+        with col4:
+            if st.button("✅ Unblock Selected", key="unblock_many"):
+                if not ids_many:
+                    st.warning("Select at least one student.")
+                else:
+                    placeholders = ",".join(["?"] * len(ids_many))
+                    with write_txn() as conn:
+                        conn.execute(
+                            f"""
+                            UPDATE users
+                            SET is_blocked=0, blocked_at=NULL, blocked_reason=NULL
+                            WHERE role='student' AND id IN ({placeholders})
+                            """,
+                            (*ids_many,),
+                        )
+                        conn.commit()
+                    st.success(f"Unblocked {len(ids_many)} student(s).")
+                    st.rerun()
