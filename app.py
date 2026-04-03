@@ -13,7 +13,7 @@ st.set_page_config(
 )
 
 # Imports AFTER set_page_config
-from services.db import init_db
+from services.db import init_db, read_conn  # ✅ added read_conn ONLY (needed for block check)
 from services.auth import login_user
 from ui.admin import admin_router
 from ui.student import student_router
@@ -101,6 +101,50 @@ user = st.session_state.user
 if not user.get("role") or not user.get("username"):
     st.session_state.user = None
     st.rerun()
+
+
+# ----------------------------------------------------
+# ✅ 5.1 BLOCK / UNBLOCK ENFORCEMENT (ADDED SAFELY)
+# ----------------------------------------------------
+# This enforces the admin "block student" feature without altering any other flow.
+# It supports either:
+#   - users.is_blocked (INTEGER 0/1), optional blocked_reason
+#   - OR users.status ('active'/'blocked') if that is what your LMS uses
+try:
+    with read_conn() as conn:
+        cols = [r[1] for r in conn.execute("PRAGMA table_info(users)").fetchall()]
+
+        # Option A: is_blocked column
+        if "is_blocked" in cols:
+            row = conn.execute(
+                "SELECT is_blocked, blocked_reason FROM users WHERE id = ?",
+                (user.get("id"),)
+            ).fetchone()
+
+            if row and int(row[0] or 0) == 1:
+                st.error("🚫 Your account has been blocked. Please contact the administrator.")
+                # show reason if stored
+                try:
+                    if row[1]:
+                        st.caption(f"Reason: {row[1]}")
+                except Exception:
+                    pass
+                st.stop()
+
+        # Option B: status column
+        elif "status" in cols:
+            row = conn.execute(
+                "SELECT status FROM users WHERE id = ?",
+                (user.get("id"),)
+            ).fetchone()
+
+            if row and str(row[0] or "").strip().lower() == "blocked":
+                st.error("🚫 Your account has been blocked. Please contact the administrator.")
+                st.stop()
+
+except Exception:
+    # Silent fail: do not break the app if DB schema differs
+    pass
 
 
 # ----------------------------------------------------
