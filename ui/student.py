@@ -414,8 +414,17 @@ def student_router(user):
         st.markdown("### 👩‍🎓 Student Menu")
         st.markdown(username)
 
-        completed = sum(1 for s in progress.values() if s == "completed")
-        st.progress(completed / TOTAL_WEEKS)
+        # Count ONLY Weeks 1–6 (ignore Week 0 and any stray keys)
+        completed = 0
+        for wk in range(1, TOTAL_WEEKS + 1):
+            if progress.get(wk) == "completed":
+                completed += 1
+
+        ratio = completed / TOTAL_WEEKS
+        # Clamp to [0.0, 1.0] to avoid Streamlit progress error
+        ratio = max(0.0, min(1.0, ratio))
+
+        st.progress(ratio)
         st.caption(f"{completed} of {TOTAL_WEEKS} weeks completed")
 
         if st.button("Week 0 (Orientation)", key="week0_btn_sidebar"):
