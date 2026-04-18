@@ -75,6 +75,15 @@ with st.sidebar:
 
     _env_health_checks()
 
+# ----------------------------------------------------
+# LOGIN 
+# ----------------------------------------------------
+
+# If landing route is 'login', jump attention to login section
+if st.session_state.get("landing_route") == "login":
+    st.markdown("## 🔐 Login to Continue")
+else:
+    st.markdown("## 🔐 Login to Continue")
 
 # ----------------------------------------------------
 # 4. LOGIN FLOW
