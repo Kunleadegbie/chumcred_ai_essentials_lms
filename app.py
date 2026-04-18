@@ -13,10 +13,11 @@ st.set_page_config(
 )
 
 # Imports AFTER set_page_config
-from services.db import init_db, read_conn  # ✅ added read_conn ONLY (needed for block check)
+from services.db import init_db, read_conn
 from services.auth import login_user
 from ui.admin import admin_router
 from ui.student import student_router
+from ui.landing import render_landing_page  # ✅ NEW
 
 
 def _logo_path():
@@ -80,7 +81,11 @@ with st.sidebar:
 # ----------------------------------------------------
 if st.session_state.user is None:
 
-    st.title("🔐 Login")
+    # ✅ Landing page first (new)
+    render_landing_page()
+
+    st.markdown("---")
+    st.markdown("## 🔐 Login to Continue")
     st.caption("Enter your LMS credentials to continue.")
 
     user = login_user()
@@ -106,10 +111,6 @@ if not user.get("role") or not user.get("username"):
 # ----------------------------------------------------
 # ✅ 5.1 BLOCK / UNBLOCK ENFORCEMENT (ADDED SAFELY)
 # ----------------------------------------------------
-# This enforces the admin "block student" feature without altering any other flow.
-# It supports either:
-#   - users.is_blocked (INTEGER 0/1), optional blocked_reason
-#   - OR users.status ('active'/'blocked') if that is what your LMS uses
 try:
     with read_conn() as conn:
         cols = [r[1] for r in conn.execute("PRAGMA table_info(users)").fetchall()]
@@ -123,7 +124,6 @@ try:
 
             if row and int(row[0] or 0) == 1:
                 st.error("🚫 Your account has been blocked. Please contact the administrator.")
-                # show reason if stored
                 try:
                     if row[1]:
                         st.caption(f"Reason: {row[1]}")
@@ -143,7 +143,6 @@ try:
                 st.stop()
 
 except Exception:
-    # Silent fail: do not break the app if DB schema differs
     pass
 
 
@@ -151,11 +150,6 @@ except Exception:
 # 6. ROLE-BASED ROUTING
 # ----------------------------------------------------
 if user.get("role") == "admin":
-
-    # Admin sidebar + pages handled inside admin_router
     admin_router(user)
-
 else:
-
-    # Student sidebar + pages handled inside student_router
     student_router(user)
