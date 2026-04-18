@@ -122,7 +122,7 @@ def render_landing_page():
         )
 
         # ✅ Replace with your real WhatsApp link/number
-        st.success("WhatsApp Enrollment Desk: +234 XXX XXX XXXX (replace with your number)")
+        st.success("WhatsApp Enrollment Desk: +234 805 557 6770 (replace with your number)")
 
         st.markdown("---")
         col1, col2 = st.columns(2)
