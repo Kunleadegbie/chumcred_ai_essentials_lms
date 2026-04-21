@@ -12,29 +12,6 @@ st.set_page_config(
     layout="wide"
 )
 
-# ✅ GLOBAL CSS: Hide sidebar/nav and make content full-width
-st.markdown(
-    """
-    <style>
-      /* Hide Streamlit sidebar + nav completely */
-      [data-testid="stSidebar"] { display: none !important; }
-      [data-testid="stSidebarNav"] { display: none !important; }
-
-      /* Make main content full-width */
-      .block-container {
-        max-width: 100% !important;
-        padding-left: 2.5rem !important;
-        padding-right: 2.5rem !important;
-        padding-top: 1.5rem !important;
-      }
-
-      /* Optional: hide Streamlit header (hamburger/menu area) */
-      header { visibility: hidden; height: 0; }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
-
 # Imports AFTER set_page_config
 from services.db import init_db, read_conn
 from services.auth import login_user
@@ -78,6 +55,29 @@ _env_health_checks()
 # 3. LOGIN FLOW (shows landing + login when not logged in)
 # ----------------------------------------------------
 if st.session_state.user is None:
+    # ✅ ONLY ON LANDING/LOGIN: hide sidebar + make full-width
+    st.markdown(
+        """
+        <style>
+          /* Hide Streamlit sidebar + nav completely (landing only) */
+          [data-testid="stSidebar"] { display: none !important; }
+          [data-testid="stSidebarNav"] { display: none !important; }
+
+          /* Make main content full-width */
+          .block-container {
+            max-width: 100% !important;
+            padding-left: 2.5rem !important;
+            padding-right: 2.5rem !important;
+            padding-top: 1.5rem !important;
+          }
+
+          /* Optional: hide Streamlit header (hamburger/menu area) on landing only */
+          header { visibility: hidden; height: 0; }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
     # Landing page first
     render_landing_page()
 
@@ -97,6 +97,21 @@ if st.session_state.user is None:
 # 4. AFTER LOGIN → ROUTE USER
 # ----------------------------------------------------
 user = st.session_state.user
+
+# ✅ AFTER LOGIN: restore sidebar + restore header (undo landing CSS)
+st.markdown(
+    """
+    <style>
+      /* Restore sidebar after login */
+      [data-testid="stSidebar"] { display: block !important; }
+      [data-testid="stSidebarNav"] { display: block !important; }
+
+      /* Restore header after login */
+      header { visibility: visible; height: auto; }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
 # Safety check if account was disabled or corrupted
 if not user.get("role") or not user.get("username"):
