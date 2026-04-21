@@ -10,6 +10,7 @@ from reportlab.pdfbase.pdfmetrics import stringWidth
 
 from services.db import read_conn, write_txn
 
+# Persistent folder (make sure Railway volume is mounted to /app/data)
 OUTPUT_DIR = os.getenv("CERT_OUTPUT_DIR", "/app/data/generated_certificates")
 
 
@@ -25,6 +26,7 @@ def _safe_filename(name: str) -> str:
 
 
 def _ensure_cert_table():
+    """Ensure certificates table exists + required columns (non-destructive)."""
     with write_txn() as conn:
         exists = conn.execute(
             "SELECT name FROM sqlite_master WHERE type='table' AND name='certificates'"
@@ -84,129 +86,197 @@ def _fit_font_size(text: str, font: str, max_size: int, min_size: int, max_width
     return min_size
 
 
-def _draw_premium_background(c: canvas.Canvas, w: float, h: float) -> None:
-    c.setFillColor(Color(0.97, 0.98, 0.99))
+def _draw_soft_gradient_background(c: canvas.Canvas, w: float, h: float) -> None:
+    """
+    ReportLab has no true gradients by default, so we fake a premium gradient
+    with thin horizontal bands.
+    """
+    top = Color(0.06, 0.20, 0.55)      # deep blue
+    mid = Color(0.12, 0.55, 0.90)      # bright blue
+    bottom = Color(0.94, 0.98, 1.00)   # very light blue
+
+    steps = 70
+    for i in range(steps):
+        t = i / (steps - 1)
+        # blend top->mid->bottom
+        if t < 0.45:
+            tt = t / 0.45
+            r = top.red + (mid.red - top.red) * tt
+            g = top.green + (mid.green - top.green) * tt
+            b = top.blue + (mid.blue - top.blue) * tt
+        else:
+            tt = (t - 0.45) / 0.55
+            r = mid.red + (bottom.red - mid.red) * tt
+            g = mid.green + (bottom.green - mid.green) * tt
+            b = mid.blue + (bottom.blue - mid.blue) * tt
+
+        c.setFillColor(Color(r, g, b, alpha=0.16))
+        y = (h * (1 - t))
+        c.rect(0, y, w, h / steps + 2, fill=1, stroke=0)
+
+    # Base wash so the page is never “white”
+    c.setFillColor(Color(0.98, 0.99, 1.00))
     c.rect(0, 0, w, h, fill=1, stroke=0)
 
-    c.setFillColor(Color(0.12, 0.46, 0.96, alpha=0.10))
-    c.saveState(); c.translate(-w * 0.2, h * 0.15); c.rotate(-12)
-    c.rect(0, h * 0.55, w * 1.4, h * 0.16, fill=1, stroke=0)
-    c.restoreState()
+    # Soft corner accents
+    c.setFillColor(Color(0.12, 0.55, 0.90, alpha=0.10))
+    c.circle(w * 0.88, h * 0.76, 110, fill=1, stroke=0)
 
-    c.setFillColor(Color(0.95, 0.42, 0.47, alpha=0.10))
-    c.saveState(); c.translate(-w * 0.1, h * 0.05); c.rotate(-12)
-    c.rect(0, h * 0.32, w * 1.4, h * 0.14, fill=1, stroke=0)
-    c.restoreState()
-
-    c.setFillColor(Color(0.22, 0.78, 0.66, alpha=0.10))
-    c.saveState(); c.translate(-w * 0.05, -h * 0.10); c.rotate(-12)
-    c.rect(0, h * 0.12, w * 1.4, h * 0.12, fill=1, stroke=0)
-    c.restoreState()
-
-    c.setFillColor(Color(0.12, 0.46, 0.96, alpha=0.08))
-    c.circle(w * 0.90, h * 0.80, 85, fill=1, stroke=0)
-
-    c.setFillColor(Color(0.95, 0.42, 0.47, alpha=0.08))
-    c.circle(w * 0.12, h * 0.25, 75, fill=1, stroke=0)
+    c.setFillColor(Color(0.98, 0.70, 0.25, alpha=0.10))  # gold tint
+    c.circle(w * 0.12, h * 0.28, 90, fill=1, stroke=0)
 
 
-def _draw_border(c: canvas.Canvas, w: float, h: float) -> None:
+def _draw_borders(c: canvas.Canvas, w: float, h: float) -> None:
     margin = 14 * mm
-    c.setLineWidth(2.2)
-    c.setStrokeColor(Color(0.10, 0.15, 0.22, alpha=0.55))
-    c.roundRect(margin, margin, w - 2 * margin, h - 2 * margin, 14, stroke=1, fill=0)
 
-    c.setLineWidth(1.0)
-    c.setStrokeColor(Color(0.12, 0.46, 0.96, alpha=0.35))
-    c.roundRect(margin + 6, margin + 6, w - 2 * (margin + 6), h - 2 * (margin + 6), 12, stroke=1, fill=0)
+    # outer border
+    c.setStrokeColor(Color(0.05, 0.12, 0.22, alpha=0.65))
+    c.setLineWidth(2.4)
+    c.roundRect(margin, margin, w - 2 * margin, h - 2 * margin, 16, stroke=1, fill=0)
+
+    # inner border (gold-ish)
+    c.setStrokeColor(Color(0.78, 0.60, 0.20, alpha=0.60))
+    c.setLineWidth(1.2)
+    c.roundRect(margin + 6, margin + 6, w - 2 * (margin + 6), h - 2 * (margin + 6), 14, stroke=1, fill=0)
 
 
-def _build_certificate_pdf_landscape(full_name: str, out_path: str) -> str:
+def _draw_top_ribbon(c: canvas.Canvas, w: float, h: float) -> None:
+    # Ribbon background
+    ribbon_h = 24 * mm
+    c.setFillColor(Color(0.06, 0.20, 0.55))
+    c.roundRect(18 * mm, h - (18 * mm + ribbon_h), w - 36 * mm, ribbon_h, 14, fill=1, stroke=0)
+
+    # Ribbon highlight line
+    c.setFillColor(Color(0.12, 0.55, 0.90, alpha=0.25))
+    c.roundRect(18 * mm, h - (18 * mm + 6), w - 36 * mm, 4, 6, fill=1, stroke=0)
+
+
+def _draw_gold_seal(c: canvas.Canvas, x: float, y: float) -> None:
+    # Outer ring
+    c.setFillColor(Color(0.98, 0.78, 0.24, alpha=0.92))
+    c.circle(x, y, 26, fill=1, stroke=0)
+    # Inner
+    c.setFillColor(Color(0.98, 0.90, 0.55, alpha=0.95))
+    c.circle(x, y, 18, fill=1, stroke=0)
+    # Center dot
+    c.setFillColor(Color(0.78, 0.60, 0.20, alpha=0.85))
+    c.circle(x, y, 3, fill=1, stroke=0)
+
+    c.setFillColor(Color(0.20, 0.18, 0.12, alpha=0.80))
+    c.setFont("Helvetica-Bold", 8)
+    c.drawCentredString(x, y - 3, "CERTIFIED")
+
+
+def _draw_watermark(c: canvas.Canvas, w: float, h: float) -> None:
+    c.saveState()
+    c.setFillColor(Color(0.06, 0.20, 0.55, alpha=0.05))
+    c.translate(w / 2, h / 2)
+    c.rotate(20)
+    c.setFont("Helvetica-Bold", 86)
+    c.drawCentredString(0, 0, "CHUMCRED")
+    c.restoreState()
+
+
+def _build_premium_landscape_certificate(full_name: str, out_path: str) -> str:
     _ensure_dir(os.path.dirname(out_path))
-    page_w, page_h = landscape(A4)
-    c = canvas.Canvas(out_path, pagesize=(page_w, page_h))
 
-    _draw_premium_background(c, page_w, page_h)
-    _draw_border(c, page_w, page_h)
+    w, h = landscape(A4)
+    c = canvas.Canvas(out_path, pagesize=(w, h))
 
-    left = 40 * mm
-    right = page_w - 40 * mm
-    center_x = page_w / 2
+    # Premium background + styling
+    _draw_soft_gradient_background(c, w, h)
+    _draw_watermark(c, w, h)
+    _draw_borders(c, w, h)
+    _draw_top_ribbon(c, w, h)
 
-    # 🔥 VERSION MARKER (so you can confirm the new code is active)
-    c.setFillColor(Color(0.10, 0.15, 0.22, alpha=0.15))
-    c.setFont("Helvetica-Bold", 12)
-    c.drawRightString(right, page_h - 20 * mm, "LANDSCAPE_CERT_V2")
+    # Layout anchors
+    left = 34 * mm
+    right = w - 34 * mm
+    cx = w / 2
 
-    c.setFillColor(Color(0.08, 0.11, 0.17))
+    # Seal (top-right)
+    _draw_gold_seal(c, right - 12, h - 34 * mm)
+
+    # Brand inside ribbon
+    c.setFillColor(Color(1, 1, 1))
     c.setFont("Helvetica-Bold", 18)
-    c.drawCentredString(center_x, page_h - 38 * mm, "CHUMCRED ACADEMY")
+    c.drawCentredString(cx, h - 33 * mm, "CHUMCRED ACADEMY")
 
-    c.setFillColor(Color(0.12, 0.46, 0.96))
-    c.setFont("Helvetica-Bold", 28)
-    c.drawCentredString(center_x, page_h - 55 * mm, "CERTIFICATE OF COMPLETION")
+    # Title
+    c.setFillColor(Color(0.05, 0.12, 0.22))
+    c.setFont("Helvetica-Bold", 30)
+    c.drawCentredString(cx, h - 60 * mm, "CERTIFICATE OF COMPLETION")
 
-    c.setFillColor(Color(0.20, 0.24, 0.30))
+    # Subtext
+    c.setFillColor(Color(0.20, 0.26, 0.34))
     c.setFont("Helvetica", 14)
-    c.drawCentredString(center_x, page_h - 70 * mm, "This is to certify that")
+    c.drawCentredString(cx, h - 74 * mm, "This is to certify that")
 
-    max_name_width = (right - left)
+    # Name highlight bar
+    bar_w = min((right - left), 180 * mm)
+    bar_h = 18 * mm
+    bar_y = h - 100 * mm
+    c.setFillColor(Color(0.12, 0.55, 0.90, alpha=0.10))
+    c.roundRect(cx - bar_w / 2, bar_y - 8, bar_w, bar_h, 12, fill=1, stroke=0)
+
+    # Name (auto-fit)
     name_font = "Helvetica-Bold"
-    name_size = _fit_font_size(full_name.strip(), name_font, max_size=44, min_size=22, max_width=max_name_width)
-
-    bar_w = min(max_name_width, 160 * mm)
-    bar_h = 16 * mm
-    bar_y = page_h - 98 * mm
-    c.setFillColor(Color(0.12, 0.46, 0.96, alpha=0.10))
-    c.roundRect(center_x - bar_w / 2, bar_y - 8, bar_w, bar_h, 10, fill=1, stroke=0)
-
+    name_size = _fit_font_size(full_name.strip(), name_font, 46, 24, (right - left))
     c.setFillColor(Color(0.06, 0.08, 0.12))
     c.setFont(name_font, name_size)
-    c.drawCentredString(center_x, page_h - 95 * mm, full_name.strip())
+    c.drawCentredString(cx, h - 96 * mm, full_name.strip())
 
-    c.setFillColor(Color(0.20, 0.24, 0.30))
+    # Program lines
+    c.setFillColor(Color(0.20, 0.26, 0.34))
     c.setFont("Helvetica", 14)
-    c.drawCentredString(center_x, page_h - 115 * mm, "has successfully completed the 6-week online training program")
+    c.drawCentredString(cx, h - 116 * mm, "has successfully completed the 6-week online training program")
 
-    c.setFillColor(Color(0.08, 0.11, 0.17))
-    c.setFont("Helvetica-Bold", 16)
-    c.drawCentredString(center_x, page_h - 128 * mm, "AI Essentials — From Zero to Confident AI User")
+    c.setFillColor(Color(0.05, 0.12, 0.22))
+    c.setFont("Helvetica-Bold", 17)
+    c.drawCentredString(cx, h - 131 * mm, "AI Essentials — From Zero to Confident AI User")
 
-    issued_text = "Issued: " + datetime.now().strftime("%d %b %Y")
-    c.setFillColor(Color(0.20, 0.24, 0.30))
+    # Date
+    issued_text = "Issued: " + datetime.now().strftime("%d %B %Y")
+    c.setFillColor(Color(0.20, 0.26, 0.34))
     c.setFont("Helvetica", 12)
-    c.drawCentredString(center_x, page_h - 145 * mm, issued_text)
+    c.drawCentredString(cx, h - 147 * mm, issued_text)
 
-    y_sig = 28 * mm
-    c.setStrokeColor(Color(0.10, 0.15, 0.22, alpha=0.35))
+    # Signature area
+    y_sig = 24 * mm
+    c.setStrokeColor(Color(0.05, 0.12, 0.22, alpha=0.35))
     c.setLineWidth(1)
-    c.line(left, y_sig + 18, left + 90 * mm, y_sig + 18)
-    c.line(right - 90 * mm, y_sig + 18, right, y_sig + 18)
+    c.line(left, y_sig + 18, left + 95 * mm, y_sig + 18)
+    c.line(right - 95 * mm, y_sig + 18, right, y_sig + 18)
 
-    c.setFillColor(Color(0.08, 0.11, 0.17))
+    c.setFillColor(Color(0.05, 0.12, 0.22))
     c.setFont("Helvetica-Bold", 12)
     c.drawString(left, y_sig, "Dr. Adekunle Adegbie")
-    c.setFillColor(Color(0.20, 0.24, 0.30))
+    c.setFillColor(Color(0.20, 0.26, 0.34))
     c.setFont("Helvetica", 11)
     c.drawString(left, y_sig - 12, "Program Coordinator")
 
-    c.setFillColor(Color(0.08, 0.11, 0.17))
+    c.setFillColor(Color(0.05, 0.12, 0.22))
     c.setFont("Helvetica-Bold", 12)
     c.drawRightString(right, y_sig, "Chumcred Academy")
-    c.setFillColor(Color(0.20, 0.24, 0.30))
+    c.setFillColor(Color(0.20, 0.26, 0.34))
     c.setFont("Helvetica", 11)
     c.drawRightString(right, y_sig - 12, "Official Certificate")
 
+    # Small footer note
+    c.setFillColor(Color(0.20, 0.26, 0.34, alpha=0.75))
+    c.setFont("Helvetica", 9)
+    c.drawCentredString(cx, 12, "This certificate is issued by Chumcred Academy.")
+
     c.showPage()
     c.save()
+
     return os.path.abspath(out_path)
 
 
 def issue_certificate(user_id: int, full_name: str) -> str:
     """
-    FORCE NEW STYLE:
-    - Always generates a NEW file name (timestamped) so you never get the old portrait file again.
-    - Always updates DB to the new path.
+    Always generates the NEW premium landscape certificate and updates DB path.
+    Uses timestamped filename so the old portrait file is never reused.
     """
     _ensure_cert_table()
 
@@ -215,10 +285,10 @@ def issue_certificate(user_id: int, full_name: str) -> str:
 
     safe_name = _safe_filename(full_name)
     ts = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
-    filename = f"LANDSCAPE_V2_certificate_{safe_name}_{user_id}_{ts}.pdf"
+    filename = f"CHUMCRED_PREMIUM_{safe_name}_{user_id}_{ts}.pdf"
     out_path = os.path.abspath(os.path.join(OUTPUT_DIR, filename))
 
-    cert_path = _build_certificate_pdf_landscape(full_name.strip(), out_path)
+    cert_path = _build_premium_landscape_certificate(full_name, out_path)
     issued_at = datetime.utcnow().isoformat()
 
     rec = get_certificate_record(user_id)
