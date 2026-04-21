@@ -1,15 +1,31 @@
 import os
 import re
 from datetime import datetime
+from io import BytesIO
 
-from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
+from reportlab.pdfbase.pdfmetrics import stringWidth
+from reportlab.lib.colors import Color
+
+from pypdf import PdfReader, PdfWriter
 
 from services.db import read_conn, write_txn
 
 
 # ✅ persistent folder (Railway volume should be mounted to /app/data)
 OUTPUT_DIR = os.getenv("CERT_OUTPUT_DIR", "/app/data/generated_certificates")
+
+# Template locations to try (works in local + Railway)
+TEMPLATE_CANDIDATES = [
+    os.getenv("CERT_TEMPLATE_PATH", "").strip(),
+    "/app/assets/chumcred_certificate_template.pdf",
+    "assets/chumcred_certificate_template.pdf",
+    "./assets/chumcred_certificate_template.pdf",
+    "chumcred_certificate_template.pdf",
+]
+
+# Background color behind name/date on your template (safe “paper” tone)
+BG = Color(244 / 255, 249 / 255, 249 / 255)
 
 
 def _ensure_dir(path: str) -> None:
@@ -78,66 +94,110 @@ def get_certificate_record(user_id: int):
         return dict(row) if row else None
 
 
-def _build_certificate_pdf(full_name: str, out_path: str) -> str:
+def _find_template_path() -> str:
+    for p in TEMPLATE_CANDIDATES:
+        if not p:
+            continue
+        p_abs = os.path.abspath(p)
+        if os.path.exists(p_abs):
+            return p_abs
+    raise FileNotFoundError(
+        "Certificate template PDF not found. Expected one of:\n"
+        "- /app/assets/chumcred_certificate_template.pdf (Railway)\n"
+        "- assets/chumcred_certificate_template.pdf (repo)\n"
+        "OR set CERT_TEMPLATE_PATH env var."
+    )
+
+
+def _fit_font_size(text: str, font: str, max_size: int, min_size: int, max_width: float) -> int:
+    size = max_size
+    while size > min_size:
+        if stringWidth(text, font, size) <= max_width:
+            return size
+        size -= 1
+    return min_size
+
+
+def _make_overlay_pdf(page_w: float, page_h: float, full_name: str, issued_text: str) -> bytes:
     """
-    Generates certificate in the SAME format as your template PDF content:
-    CERTIFICATE OF COMPLETION
-    This certifies that
-    <Full Name>
-    has successfully completed the AI Essentials Program
-    Chumcred Academy
-    Issued: <date>
-    Dr. Adekunle Adegbie
-    Program Coordinator
+    Create a one-page transparent overlay PDF that covers the old name/date area and
+    writes the new name/date in the right spot.
+
+    NOTE: Coordinates are tuned to your template PDF you uploaded.
+    If you later change the template design, we may need to re-tune.
     """
-    _ensure_dir(os.path.dirname(out_path))
+    buf = BytesIO()
+    c = canvas.Canvas(buf, pagesize=(page_w, page_h))
 
-    c = canvas.Canvas(out_path, pagesize=A4)
-    width, height = A4
+    # These positions are relative (works robustly across the same template)
+    # Name: centered in the middle band
+    name_center_x = page_w / 2
+    name_y = page_h * 0.58
 
-    # Title
-    c.setFont("Helvetica-Bold", 26)
-    c.drawCentredString(width / 2, height - 120, "CERTIFICATE OF COMPLETION")
+    # Issued date: centered below name
+    issued_center_x = page_w / 2
+    issued_y = page_h * 0.47
 
-    # Subtitle
-    c.setFont("Helvetica", 14)
-    c.drawCentredString(width / 2, height - 165, "This certifies that")
+    # Cover old text area (small “paper color” rectangles)
+    c.setFillColor(BG)
+    c.setStrokeColor(BG)
 
-    # Name
-    c.setFont("Helvetica-Bold", 22)
-    c.drawCentredString(width / 2, height - 215, full_name.strip())
+    # name cover box
+    c.rect(name_center_x - 260, name_y - 18, 520, 55, fill=1, stroke=0)
+    # issued cover box
+    c.rect(issued_center_x - 210, issued_y - 12, 420, 30, fill=1, stroke=0)
 
-    # Program line
-    c.setFont("Helvetica", 14)
-    c.drawCentredString(width / 2, height - 255, "has successfully completed the AI Essentials Program")
+    # Write name (auto-fit)
+    font_name = "Helvetica-Bold"
+    font_size = _fit_font_size(full_name, font_name, max_size=36, min_size=18, max_width=560)
 
-    # Academy
-    c.setFont("Helvetica-Bold", 14)
-    c.drawCentredString(width / 2, height - 295, "Chumcred Academy")
+    c.setFillColor(Color(0.07, 0.10, 0.16))
+    c.setFont(font_name, font_size)
+    c.drawCentredString(name_center_x, name_y, full_name)
 
-    # Issued date
-    issued = datetime.now().strftime("%B %d, %Y")
-    c.setFont("Helvetica", 12)
-    c.drawCentredString(width / 2, height - 340, f"Issued: {issued}")
-
-    # Coordinator name
-    c.setFont("Helvetica-Bold", 12)
-    c.drawCentredString(width / 2, height - 395, "Dr. Adekunle Adegbie")
-
-    # Coordinator title
-    c.setFont("Helvetica", 12)
-    c.drawCentredString(width / 2, height - 415, "Program Coordinator")
+    # Write issued date
+    c.setFont("Helvetica", 16)
+    c.drawCentredString(issued_center_x, issued_y, issued_text)
 
     c.showPage()
     c.save()
+    return buf.getvalue()
+
+
+def _build_certificate_pdf_from_template(full_name: str, out_path: str) -> str:
+    """
+    Generates certificate using the uploaded template PDF as background.
+    """
+    template_path = _find_template_path()
+    _ensure_dir(os.path.dirname(out_path))
+
+    reader = PdfReader(template_path)
+    template_page = reader.pages[0]
+
+    page_w = float(template_page.mediabox.width)
+    page_h = float(template_page.mediabox.height)
+
+    issued_text = "Issued: " + datetime.now().strftime("%B %d, %Y")
+
+    overlay_bytes = _make_overlay_pdf(page_w, page_h, full_name.strip(), issued_text)
+    overlay_reader = PdfReader(BytesIO(overlay_bytes))
+    overlay_page = overlay_reader.pages[0]
+
+    template_page.merge_page(overlay_page)
+
+    writer = PdfWriter()
+    writer.add_page(template_page)
+
+    with open(out_path, "wb") as f:
+        writer.write(f)
 
     return os.path.abspath(out_path)
 
 
 def issue_certificate(user_id: int, full_name: str) -> str:
     """
-    Generates a certificate PDF (ReportLab only),
-    saves it to OUTPUT_DIR, and stores absolute path in DB.
+    Generates a certificate PDF using the TEMPLATE background,
+    saves it to OUTPUT_DIR, stores absolute path in DB.
     If record exists but file missing, regenerate + update record.
     """
     _ensure_cert_table()
@@ -155,8 +215,8 @@ def issue_certificate(user_id: int, full_name: str) -> str:
     if rec and rec.get("certificate_path") and os.path.exists(rec["certificate_path"]):
         return rec["certificate_path"]
 
-    # Generate PDF
-    cert_path = _build_certificate_pdf(full_name, out_path)
+    # Generate PDF from template
+    cert_path = _build_certificate_pdf_from_template(full_name, out_path)
     issued_at = datetime.utcnow().isoformat()
 
     with write_txn() as conn:

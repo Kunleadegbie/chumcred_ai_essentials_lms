@@ -394,7 +394,6 @@ def student_router(user):
 
     if st.session_state.get("show_final_exam", False):
         from modules.week6_final_exam import show_exam
-
         show_exam(user)
         return
 
@@ -457,7 +456,6 @@ def student_router(user):
     if has_certificate(user_id):
         st.success("Certificate issued")
 
-        cert_row = None
         raw_path = None
         resolved_path = None
 
@@ -466,7 +464,7 @@ def student_router(user):
                 cert_row = _get_certificate_row(conn, user_id)
 
             if cert_row:
-                for k in ["file_path", "certificate_path", "path", "pdf_path"]:
+                for k in ["certificate_path", "file_path", "path", "pdf_path"]:
                     if cert_row.get(k):
                         raw_path = cert_row.get(k)
                         break
@@ -474,7 +472,7 @@ def student_router(user):
             resolved_path = _resolve_certificate_path(raw_path) if raw_path else None
 
         except Exception:
-            cert_row = None
+            resolved_path = None
 
         if resolved_path:
             with open(resolved_path, "rb") as f:
