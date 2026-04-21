@@ -394,16 +394,82 @@ def student_router(user):
         return
 
     # =================================================
-    # CERTIFICATE  ✅ FIXED HERE
+    # CERTIFICATE (FIX: show download link/file)
     # =================================================
     st.divider()
     st.subheader("🎖 Certificate")
 
+    def _get_certificate_row(conn, uid):
+        # Read certificates row for this user (latest)
+        cols = [r[1] for r in conn.execute("PRAGMA table_info(certificates)").fetchall()]
+        if not cols:
+            return None, []
+
+        # Prefer common user id columns
+        user_col = "user_id" if "user_id" in cols else ("student_id" if "student_id" in cols else None)
+        if not user_col:
+            return None, cols
+
+        # Order by a sensible column
+        order_col = "issued_at" if "issued_at" in cols else ("created_at" if "created_at" in cols else ("id" if "id" in cols else None))
+        order_sql = f" ORDER BY {order_col} DESC" if order_col else ""
+
+        row = conn.execute(
+            f"SELECT * FROM certificates WHERE {user_col} = ?{order_sql} LIMIT 1",
+            (uid,),
+        ).fetchone()
+
+        return (dict(row) if row else None), cols
+
+
+    def _extract_cert_path(cert_row):
+        # Try common path columns
+        for k in ["file_path", "path", "certificate_path", "pdf_path"]:
+            if cert_row.get(k):
+                return cert_row.get(k)
+
+        # Sometimes only filename exists
+        for k in ["filename", "file_name"]:
+            if cert_row.get(k):
+                # common folder used in deployments
+                return os.path.join("/app/data/certificates", str(cert_row.get(k)))
+
+        return None
+
+
     if has_certificate(user_id):
         st.success("Certificate issued")
+
+        # ✅ Show download if file exists
+        try:
+            with read_conn() as conn:
+                cert_row, _cert_cols = _get_certificate_row(conn, user_id)
+
+            if cert_row:
+                cert_path = _extract_cert_path(cert_row)
+
+                if cert_path and os.path.exists(cert_path):
+                    with open(cert_path, "rb") as f:
+                        st.download_button(
+                            "⬇️ Download Certificate (PDF)",
+                            data=f.read(),                                        
+                            file_name=f"Chumcred_Certificate_{user.get('username','student')}.pdf",                            
+                            mime="application/pdf",
+                            key="download_certificate_btn"
+                        )
+                else:
+                    st.warning("Certificate record exists, but the certificate file was not found on the server.")
+                    st.caption("Admin tip: This usually means the generator saved the DB record but did not write the PDF file to disk.")
+                    st.code(str(cert_path))
+            else:
+                st.warning("Certificate is marked as issued, but no certificate record was found.")
+
+        except Exception as e:
+            st.warning("Certificate is issued, but the file could not be loaded for download.")
+            st.caption(str(e))
+
     else:
         if can_issue_certificate(user_id):
-            # ✅ NEW: supply full_name to match issue_certificate(user_id, full_name)
             full_name = (
                 user.get("full_name")
                 or user.get("name")
@@ -412,8 +478,9 @@ def student_router(user):
             )
 
             if st.button("Generate Certificate", key="generate_certificate"):
-                issue_certificate(user_id, full_name)  # ✅ FIXED
+                issue_certificate(user_id, full_name)
                 st.success("Certificate generated")
+                st.rerun()
 
     # =================================================
     # SIDEBAR
