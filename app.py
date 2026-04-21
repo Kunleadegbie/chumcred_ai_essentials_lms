@@ -12,24 +12,35 @@ st.set_page_config(
     layout="wide"
 )
 
+# ✅ GLOBAL CSS: Hide sidebar/nav and make content full-width
+st.markdown(
+    """
+    <style>
+      /* Hide Streamlit sidebar + nav completely */
+      [data-testid="stSidebar"] { display: none !important; }
+      [data-testid="stSidebarNav"] { display: none !important; }
+
+      /* Make main content full-width */
+      .block-container {
+        max-width: 100% !important;
+        padding-left: 2.5rem !important;
+        padding-right: 2.5rem !important;
+        padding-top: 1.5rem !important;
+      }
+
+      /* Optional: hide Streamlit header (hamburger/menu area) */
+      header { visibility: hidden; height: 0; }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 # Imports AFTER set_page_config
 from services.db import init_db, read_conn
 from services.auth import login_user
 from ui.admin import admin_router
 from ui.student import student_router
-from ui.landing import render_landing_page  # ✅ NEW
-
-
-def _logo_path():
-    """Locate logo safely"""
-    candidates = [
-        os.path.join("assets", "logo.png"),
-        "logo.png",
-    ]
-    for p in candidates:
-        if os.path.exists(p):
-            return p
-    return None
+from ui.landing import render_landing_page
 
 
 def _env_health_checks():
@@ -41,9 +52,8 @@ def _env_health_checks():
 
     if db_path:
         parent = os.path.dirname(db_path)
-
         if parent and not os.path.exists(parent):
-            st.sidebar.warning(
+            st.warning(
                 f"Database folder not found: {parent}\n\n"
                 "If deploying on Railway, mount a Volume to /app/data "
                 "and set LMS_DB_PATH=/app/data/chumcred_lms.db"
@@ -55,42 +65,20 @@ def _env_health_checks():
 # ----------------------------------------------------
 init_db()
 
-
 # ----------------------------------------------------
 # 2. SESSION INITIALIZATION
 # ----------------------------------------------------
 if "user" not in st.session_state:
     st.session_state.user = None
 
+# Optional environment checks (now shown in main page, not sidebar)
+_env_health_checks()
 
 # ----------------------------------------------------
-# 3. SIDEBAR BRANDING
-# ----------------------------------------------------
-with st.sidebar:
-    logo = _logo_path()
-    if logo:
-        st.image(logo, width=170)
-
-    st.markdown("## Chumcred Academy LMS")
-
-    _env_health_checks()
-
-# ----------------------------------------------------
-# LOGIN 
-# ----------------------------------------------------
-
-# If landing route is 'login', jump attention to login section
-if st.session_state.get("landing_route") == "login":
-    st.markdown("## 🔐 Login to Continue")
-else:
-    st.markdown("## 🔐 Login to Continue")
-
-# ----------------------------------------------------
-# 4. LOGIN FLOW
+# 3. LOGIN FLOW (shows landing + login when not logged in)
 # ----------------------------------------------------
 if st.session_state.user is None:
-
-    # ✅ Landing page first (new)
+    # Landing page first
     render_landing_page()
 
     st.markdown("---")
@@ -105,9 +93,8 @@ if st.session_state.user is None:
 
     st.stop()
 
-
 # ----------------------------------------------------
-# 5. AFTER LOGIN → ROUTE USER
+# 4. AFTER LOGIN → ROUTE USER
 # ----------------------------------------------------
 user = st.session_state.user
 
@@ -116,9 +103,8 @@ if not user.get("role") or not user.get("username"):
     st.session_state.user = None
     st.rerun()
 
-
 # ----------------------------------------------------
-# ✅ 5.1 BLOCK / UNBLOCK ENFORCEMENT (ADDED SAFELY)
+# 5. BLOCK / UNBLOCK ENFORCEMENT (kept as-is)
 # ----------------------------------------------------
 try:
     with read_conn() as conn:
@@ -133,11 +119,8 @@ try:
 
             if row and int(row[0] or 0) == 1:
                 st.error("🚫 Your account has been blocked. Please contact the administrator.")
-                try:
-                    if row[1]:
-                        st.caption(f"Reason: {row[1]}")
-                except Exception:
-                    pass
+                if len(row) > 1 and row[1]:
+                    st.caption(f"Reason: {row[1]}")
                 st.stop()
 
         # Option B: status column
@@ -153,7 +136,6 @@ try:
 
 except Exception:
     pass
-
 
 # ----------------------------------------------------
 # 6. ROLE-BASED ROUTING
