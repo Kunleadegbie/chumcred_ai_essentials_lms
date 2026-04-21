@@ -1,31 +1,18 @@
 import os
 import re
 from datetime import datetime
-from io import BytesIO
 
 from reportlab.pdfgen import canvas
-from reportlab.pdfbase.pdfmetrics import stringWidth
+from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.colors import Color
-
-from pypdf import PdfReader, PdfWriter
+from reportlab.lib.units import mm
+from reportlab.pdfbase.pdfmetrics import stringWidth
 
 from services.db import read_conn, write_txn
 
 
 # ✅ persistent folder (Railway volume should be mounted to /app/data)
 OUTPUT_DIR = os.getenv("CERT_OUTPUT_DIR", "/app/data/generated_certificates")
-
-# Template locations to try (works in local + Railway)
-TEMPLATE_CANDIDATES = [
-    os.getenv("CERT_TEMPLATE_PATH", "").strip(),
-    "/app/assets/chumcred_certificate_template.pdf",
-    "assets/chumcred_certificate_template.pdf",
-    "./assets/chumcred_certificate_template.pdf",
-    "chumcred_certificate_template.pdf",
-]
-
-# Background color behind name/date on your template (safe “paper” tone)
-BG = Color(244 / 255, 249 / 255, 249 / 255)
 
 
 def _ensure_dir(path: str) -> None:
@@ -94,21 +81,6 @@ def get_certificate_record(user_id: int):
         return dict(row) if row else None
 
 
-def _find_template_path() -> str:
-    for p in TEMPLATE_CANDIDATES:
-        if not p:
-            continue
-        p_abs = os.path.abspath(p)
-        if os.path.exists(p_abs):
-            return p_abs
-    raise FileNotFoundError(
-        "Certificate template PDF not found. Expected one of:\n"
-        "- /app/assets/chumcred_certificate_template.pdf (Railway)\n"
-        "- assets/chumcred_certificate_template.pdf (repo)\n"
-        "OR set CERT_TEMPLATE_PATH env var."
-    )
-
-
 def _fit_font_size(text: str, font: str, max_size: int, min_size: int, max_width: float) -> int:
     size = max_size
     while size > min_size:
@@ -118,85 +90,167 @@ def _fit_font_size(text: str, font: str, max_size: int, min_size: int, max_width
     return min_size
 
 
-def _make_overlay_pdf(page_w: float, page_h: float, full_name: str, issued_text: str) -> bytes:
+def _draw_premium_background(c: canvas.Canvas, w: float, h: float) -> None:
     """
-    Create a one-page transparent overlay PDF that covers the old name/date area and
-    writes the new name/date in the right spot.
-
-    NOTE: Coordinates are tuned to your template PDF you uploaded.
-    If you later change the template design, we may need to re-tune.
+    Create a premium-looking colorful background without external images:
+    - soft base fill
+    - diagonal color bands
+    - subtle circles / accents
     """
-    buf = BytesIO()
-    c = canvas.Canvas(buf, pagesize=(page_w, page_h))
+    # Base (very light)
+    c.setFillColor(Color(0.97, 0.98, 0.99))
+    c.rect(0, 0, w, h, fill=1, stroke=0)
 
-    # These positions are relative (works robustly across the same template)
-    # Name: centered in the middle band
-    name_center_x = page_w / 2
-    name_y = page_h * 0.58
+    # Diagonal bands (top-left to bottom-right vibe)
+    c.setFillColor(Color(0.12, 0.46, 0.96, alpha=0.10))  # soft blue
+    c.saveState()
+    c.translate(-w * 0.2, h * 0.15)
+    c.rotate(-12)
+    c.rect(0, h * 0.55, w * 1.4, h * 0.16, fill=1, stroke=0)
+    c.restoreState()
 
-    # Issued date: centered below name
-    issued_center_x = page_w / 2
-    issued_y = page_h * 0.47
+    c.setFillColor(Color(0.95, 0.42, 0.47, alpha=0.10))  # soft coral
+    c.saveState()
+    c.translate(-w * 0.1, h * 0.05)
+    c.rotate(-12)
+    c.rect(0, h * 0.32, w * 1.4, h * 0.14, fill=1, stroke=0)
+    c.restoreState()
 
-    # Cover old text area (small “paper color” rectangles)
-    c.setFillColor(BG)
-    c.setStrokeColor(BG)
+    c.setFillColor(Color(0.22, 0.78, 0.66, alpha=0.10))  # soft teal
+    c.saveState()
+    c.translate(-w * 0.05, -h * 0.10)
+    c.rotate(-12)
+    c.rect(0, h * 0.12, w * 1.4, h * 0.12, fill=1, stroke=0)
+    c.restoreState()
 
-    # name cover box
-    c.rect(name_center_x - 260, name_y - 18, 520, 55, fill=1, stroke=0)
-    # issued cover box
-    c.rect(issued_center_x - 210, issued_y - 12, 420, 30, fill=1, stroke=0)
+    # Accent circles (subtle)
+    c.setFillColor(Color(0.12, 0.46, 0.96, alpha=0.08))
+    c.circle(w * 0.90, h * 0.80, 85, fill=1, stroke=0)
 
-    # Write name (auto-fit)
-    font_name = "Helvetica-Bold"
-    font_size = _fit_font_size(full_name, font_name, max_size=36, min_size=18, max_width=560)
+    c.setFillColor(Color(0.95, 0.42, 0.47, alpha=0.08))
+    c.circle(w * 0.12, h * 0.25, 75, fill=1, stroke=0)
 
-    c.setFillColor(Color(0.07, 0.10, 0.16))
-    c.setFont(font_name, font_size)
-    c.drawCentredString(name_center_x, name_y, full_name)
+    c.setFillColor(Color(0.22, 0.78, 0.66, alpha=0.06))
+    c.circle(w * 0.82, h * 0.20, 55, fill=1, stroke=0)
 
-    # Write issued date
-    c.setFont("Helvetica", 16)
-    c.drawCentredString(issued_center_x, issued_y, issued_text)
+
+def _draw_border(c: canvas.Canvas, w: float, h: float) -> None:
+    margin = 14 * mm
+
+    # Outer border
+    c.setLineWidth(2.2)
+    c.setStrokeColor(Color(0.10, 0.15, 0.22, alpha=0.55))
+    c.roundRect(margin, margin, w - 2 * margin, h - 2 * margin, 14, stroke=1, fill=0)
+
+    # Inner border
+    c.setLineWidth(1.0)
+    c.setStrokeColor(Color(0.12, 0.46, 0.96, alpha=0.35))
+    c.roundRect(margin + 6, margin + 6, w - 2 * (margin + 6), h - 2 * (margin + 6), 12, stroke=1, fill=0)
+
+
+def _build_certificate_pdf_landscape(full_name: str, out_path: str) -> str:
+    """
+    Premium LANDSCAPE certificate with colorful background.
+    """
+    _ensure_dir(os.path.dirname(out_path))
+
+    page_w, page_h = landscape(A4)
+    c = canvas.Canvas(out_path, pagesize=(page_w, page_h))
+
+    # Background + border
+    _draw_premium_background(c, page_w, page_h)
+    _draw_border(c, page_w, page_h)
+
+    # Layout anchors
+    left = 40 * mm
+    right = page_w - 40 * mm
+    center_x = page_w / 2
+
+    # Header (Brand)
+    c.setFillColor(Color(0.08, 0.11, 0.17))
+    c.setFont("Helvetica-Bold", 18)
+    c.drawCentredString(center_x, page_h - 38 * mm, "CHUMCRED ACADEMY")
+
+    # Badge line
+    c.setFillColor(Color(0.12, 0.46, 0.96))
+    c.setFont("Helvetica-Bold", 28)
+    c.drawCentredString(center_x, page_h - 55 * mm, "CERTIFICATE OF COMPLETION")
+
+    # Subtitle
+    c.setFillColor(Color(0.20, 0.24, 0.30))
+    c.setFont("Helvetica", 14)
+    c.drawCentredString(center_x, page_h - 70 * mm, "This is to certify that")
+
+    # Name (auto-fit)
+    max_name_width = (right - left)
+    name_font = "Helvetica-Bold"
+    name_size = _fit_font_size(full_name.strip(), name_font, max_size=44, min_size=22, max_width=max_name_width)
+
+    # Name highlight bar (subtle)
+    bar_w = min(max_name_width, 160 * mm)
+    bar_h = 16 * mm
+    bar_y = page_h - 98 * mm
+    c.setFillColor(Color(0.12, 0.46, 0.96, alpha=0.10))
+    c.roundRect(center_x - bar_w / 2, bar_y - 8, bar_w, bar_h, 10, fill=1, stroke=0)
+
+    c.setFillColor(Color(0.06, 0.08, 0.12))
+    c.setFont(name_font, name_size)
+    c.drawCentredString(center_x, page_h - 95 * mm, full_name.strip())
+
+    # Program line
+    c.setFillColor(Color(0.20, 0.24, 0.30))
+    c.setFont("Helvetica", 14)
+    c.drawCentredString(center_x, page_h - 115 * mm, "has successfully completed the 6-week online training program")
+
+    c.setFillColor(Color(0.08, 0.11, 0.17))
+    c.setFont("Helvetica-Bold", 16)
+    c.drawCentredString(center_x, page_h - 128 * mm, "AI Essentials — From Zero to Confident AI User")
+
+    # Issued date
+    issued_text = "Issued: " + datetime.now().strftime("%d %b %Y")
+    c.setFillColor(Color(0.20, 0.24, 0.30))
+    c.setFont("Helvetica", 12)
+    c.drawCentredString(center_x, page_h - 145 * mm, issued_text)
+
+    # Footer signature area
+    y_sig = 28 * mm
+    c.setStrokeColor(Color(0.10, 0.15, 0.22, alpha=0.35))
+    c.setLineWidth(1)
+    c.line(left, y_sig + 18, left + 90 * mm, y_sig + 18)
+    c.line(right - 90 * mm, y_sig + 18, right, y_sig + 18)
+
+    c.setFillColor(Color(0.08, 0.11, 0.17))
+    c.setFont("Helvetica-Bold", 12)
+    c.drawString(left, y_sig, "Dr. Adekunle Adegbie")
+    c.setFillColor(Color(0.20, 0.24, 0.30))
+    c.setFont("Helvetica", 11)
+    c.drawString(left, y_sig - 12, "Program Coordinator")
+
+    c.setFillColor(Color(0.08, 0.11, 0.17))
+    c.setFont("Helvetica-Bold", 12)
+    c.drawRightString(right, y_sig, "Chumcred Academy")
+    c.setFillColor(Color(0.20, 0.24, 0.30))
+    c.setFont("Helvetica", 11)
+    c.drawRightString(right, y_sig - 12, "Official Certificate")
+
+    # Subtle watermark (optional but premium)
+    c.saveState()
+    c.setFillColor(Color(0.08, 0.11, 0.17, alpha=0.05))
+    c.translate(center_x, page_h / 2)
+    c.rotate(20)
+    c.setFont("Helvetica-Bold", 64)
+    c.drawCentredString(0, 0, "CHUMCRED")
+    c.restoreState()
 
     c.showPage()
     c.save()
-    return buf.getvalue()
-
-
-def _build_certificate_pdf_from_template(full_name: str, out_path: str) -> str:
-    """
-    Generates certificate using the uploaded template PDF as background.
-    """
-    template_path = _find_template_path()
-    _ensure_dir(os.path.dirname(out_path))
-
-    reader = PdfReader(template_path)
-    template_page = reader.pages[0]
-
-    page_w = float(template_page.mediabox.width)
-    page_h = float(template_page.mediabox.height)
-
-    issued_text = "Issued: " + datetime.now().strftime("%B %d, %Y")
-
-    overlay_bytes = _make_overlay_pdf(page_w, page_h, full_name.strip(), issued_text)
-    overlay_reader = PdfReader(BytesIO(overlay_bytes))
-    overlay_page = overlay_reader.pages[0]
-
-    template_page.merge_page(overlay_page)
-
-    writer = PdfWriter()
-    writer.add_page(template_page)
-
-    with open(out_path, "wb") as f:
-        writer.write(f)
 
     return os.path.abspath(out_path)
 
 
 def issue_certificate(user_id: int, full_name: str) -> str:
     """
-    Generates a certificate PDF using the TEMPLATE background,
+    Generates a certificate PDF (LANDSCAPE + premium background),
     saves it to OUTPUT_DIR, stores absolute path in DB.
     If record exists but file missing, regenerate + update record.
     """
@@ -215,8 +269,8 @@ def issue_certificate(user_id: int, full_name: str) -> str:
     if rec and rec.get("certificate_path") and os.path.exists(rec["certificate_path"]):
         return rec["certificate_path"]
 
-    # Generate PDF from template
-    cert_path = _build_certificate_pdf_from_template(full_name, out_path)
+    # Generate NEW premium landscape certificate
+    cert_path = _build_certificate_pdf_landscape(full_name.strip(), out_path)
     issued_at = datetime.utcnow().isoformat()
 
     with write_txn() as conn:
