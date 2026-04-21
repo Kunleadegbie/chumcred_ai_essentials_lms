@@ -394,7 +394,7 @@ def student_router(user):
         return
 
     # =================================================
-    # CERTIFICATE
+    # CERTIFICATE  ✅ FIXED HERE
     # =================================================
     st.divider()
     st.subheader("🎖 Certificate")
@@ -403,8 +403,16 @@ def student_router(user):
         st.success("Certificate issued")
     else:
         if can_issue_certificate(user_id):
+            # ✅ NEW: supply full_name to match issue_certificate(user_id, full_name)
+            full_name = (
+                user.get("full_name")
+                or user.get("name")
+                or user.get("username")
+                or "Student"
+            )
+
             if st.button("Generate Certificate", key="generate_certificate"):
-                issue_certificate(user_id)
+                issue_certificate(user_id, full_name)  # ✅ FIXED
                 st.success("Certificate generated")
 
     # =================================================
@@ -421,7 +429,6 @@ def student_router(user):
                 completed += 1
 
         ratio = completed / TOTAL_WEEKS
-        # Clamp to [0.0, 1.0] to avoid Streamlit progress error
         ratio = max(0.0, min(1.0, ratio))
 
         st.progress(ratio)
