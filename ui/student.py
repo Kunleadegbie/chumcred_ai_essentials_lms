@@ -174,8 +174,10 @@ def student_router(user):
         submissions = rows_by_week.get(wk, [])
         latest = None
         if submissions:
+
             def _sort_key(x):
                 return (x.get("submitted_at") or x.get("created_at") or "", x.get("id") or 0)
+
             latest = sorted(submissions, key=_sort_key, reverse=True)[0]
 
         grade = _extract_grade(latest) if latest else None
@@ -183,14 +185,16 @@ def student_router(user):
         submitted_at = (latest.get("submitted_at") or latest.get("created_at")) if latest else "—"
         fb = _extract_feedback(latest) if latest else ""
 
-        week_summary.append({
-            "Week": wk,
-            "Submitted": "Yes" if latest else "No",
-            "Status": status,
-            "Score/Grade": grade if grade is not None else "—",
-            "Submitted At": submitted_at,
-            "Feedback (short)": (fb[:60] + "…") if fb and len(fb) > 60 else (fb or "—"),
-        })
+        week_summary.append(
+            {
+                "Week": wk,
+                "Submitted": "Yes" if latest else "No",
+                "Status": status,
+                "Score/Grade": grade if grade is not None else "—",
+                "Submitted At": submitted_at,
+                "Feedback (short)": (fb[:60] + "…") if fb and len(fb) > 60 else (fb or "—"),
+            }
+        )
 
     st.dataframe(pd.DataFrame(week_summary), use_container_width=True)
 
@@ -303,13 +307,11 @@ def student_router(user):
                                 "username": username,
                                 "student_username": username,
                                 "week": week,
-
                                 "file_path": save_path,
                                 "path": save_path,
                                 "filename": safe_name,
                                 "file_name": safe_name,
                                 "original_filename": safe_name,
-
                                 "submitted_at": now_str,
                                 "created_at": now_str,
                                 "status": "submitted",
@@ -330,8 +332,10 @@ def student_router(user):
             latest = None
             submissions = rows_by_week.get(week, [])
             if submissions:
+
                 def _sort_key(x):
                     return (x.get("submitted_at") or x.get("created_at") or "", x.get("id") or 0)
+
                 latest = sorted(submissions, key=_sort_key, reverse=True)[0]
 
             if not latest:
@@ -390,95 +394,115 @@ def student_router(user):
 
     if st.session_state.get("show_final_exam", False):
         from modules.week6_final_exam import show_exam
+
         show_exam(user)
         return
 
     # =================================================
-    # CERTIFICATE (FIX: show download link/file)
+    # CERTIFICATE (DOWNLOAD + AUTO-RESOLVE PATH + REGENERATE)
     # =================================================
     st.divider()
     st.subheader("🎖 Certificate")
 
     def _get_certificate_row(conn, uid):
-        # Read certificates row for this user (latest)
         cols = [r[1] for r in conn.execute("PRAGMA table_info(certificates)").fetchall()]
         if not cols:
-            return None, []
+            return None
 
-        # Prefer common user id columns
         user_col = "user_id" if "user_id" in cols else ("student_id" if "student_id" in cols else None)
         if not user_col:
-            return None, cols
+            return None
 
-        # Order by a sensible column
         order_col = "issued_at" if "issued_at" in cols else ("created_at" if "created_at" in cols else ("id" if "id" in cols else None))
         order_sql = f" ORDER BY {order_col} DESC" if order_col else ""
 
         row = conn.execute(
-            f"SELECT * FROM certificates WHERE {user_col} = ?{order_sql} LIMIT 1",
+            f"SELECT * FROM certificates WHERE {user_col}=?{order_sql} LIMIT 1",
             (uid,),
         ).fetchone()
 
-        return (dict(row) if row else None), cols
+        return dict(row) if row else None
 
+    def _resolve_certificate_path(raw_path: str):
+        if not raw_path:
+            return None
 
-    def _extract_cert_path(cert_row):
-        # Try common path columns
-        for k in ["file_path", "path", "certificate_path", "pdf_path"]:
-            if cert_row.get(k):
-                return cert_row.get(k)
+        raw_path = str(raw_path).strip()
+        base = os.path.basename(raw_path)
 
-        # Sometimes only filename exists
-        for k in ["filename", "file_name"]:
-            if cert_row.get(k):
-                # common folder used in deployments
-                return os.path.join("/app/data/certificates", str(cert_row.get(k)))
+        candidates = [
+            raw_path,
+            os.path.join("/app/data", raw_path),
+            os.path.join("/app/data/generated_certificates", base),
+            os.path.join("/app/data/certificates", base),
+            os.path.join(os.getcwd(), raw_path),
+            os.path.join(os.getcwd(), "generated_certificates", base),
+        ]
+
+        for p in candidates:
+            p_abs = os.path.abspath(p)
+            if os.path.exists(p_abs):
+                return p_abs
 
         return None
 
+    def _get_full_name():
+        return (
+            user.get("full_name")
+            or user.get("name")
+            or user.get("username")
+            or "Student"
+        )
 
     if has_certificate(user_id):
         st.success("Certificate issued")
 
-        # ✅ Show download if file exists
+        cert_row = None
+        raw_path = None
+        resolved_path = None
+
         try:
             with read_conn() as conn:
-                cert_row, _cert_cols = _get_certificate_row(conn, user_id)
+                cert_row = _get_certificate_row(conn, user_id)
 
             if cert_row:
-                cert_path = _extract_cert_path(cert_row)
+                for k in ["file_path", "certificate_path", "path", "pdf_path"]:
+                    if cert_row.get(k):
+                        raw_path = cert_row.get(k)
+                        break
 
-                if cert_path and os.path.exists(cert_path):
-                    with open(cert_path, "rb") as f:
-                        st.download_button(
-                            "⬇️ Download Certificate (PDF)",
-                            data=f.read(),                                        
-                            file_name=f"Chumcred_Certificate_{user.get('username','student')}.pdf",                            
-                            mime="application/pdf",
-                            key="download_certificate_btn"
-                        )
-                else:
-                    st.warning("Certificate record exists, but the certificate file was not found on the server.")
-                    st.caption("Admin tip: This usually means the generator saved the DB record but did not write the PDF file to disk.")
-                    st.code(str(cert_path))
-            else:
-                st.warning("Certificate is marked as issued, but no certificate record was found.")
+            resolved_path = _resolve_certificate_path(raw_path) if raw_path else None
 
-        except Exception as e:
-            st.warning("Certificate is issued, but the file could not be loaded for download.")
-            st.caption(str(e))
+        except Exception:
+            cert_row = None
+
+        if resolved_path:
+            with open(resolved_path, "rb") as f:
+                st.download_button(
+                    "⬇️ Download Certificate (PDF)",
+                    data=f.read(),
+                    file_name=f"Chumcred_Certificate_{user.get('username','student')}.pdf",
+                    mime="application/pdf",
+                    key="download_certificate_btn",
+                )
+        else:
+            st.warning("Certificate record exists, but the certificate file was not found on the server.")
+            if raw_path:
+                st.code(str(raw_path))
+
+            col1, col2 = st.columns([1, 1])
+            with col1:
+                if st.button("🔁 Regenerate Certificate", key="regen_certificate_btn"):
+                    issue_certificate(user_id, _get_full_name())
+                    st.success("Certificate regenerated. Reloading…")
+                    st.rerun()
+            with col2:
+                st.info("If this persists, confirm Railway has a Volume mounted to /app/data.")
 
     else:
         if can_issue_certificate(user_id):
-            full_name = (
-                user.get("full_name")
-                or user.get("name")
-                or user.get("username")
-                or "Student"
-            )
-
             if st.button("Generate Certificate", key="generate_certificate"):
-                issue_certificate(user_id, full_name)
+                issue_certificate(user_id, _get_full_name())
                 st.success("Certificate generated")
                 st.rerun()
 
