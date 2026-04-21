@@ -8,7 +8,9 @@ from reportlab.lib.units import mm
 from services.db import read_conn, write_txn
 
 
-OUTPUT_DIR = os.getenv("CERT_OUTPUT_DIR", "generated_certificates")
+# ✅ Persisted output folder on Railway (volume mounted to /app/data)
+# Fallback to /app/data for production stability.
+OUTPUT_DIR = os.getenv("CERT_OUTPUT_DIR", "/app/data/generated_certificates")
 
 
 def _ensure_dir(path: str) -> None:
@@ -26,24 +28,31 @@ def get_certificate_record(user_id: int):
     with read_conn() as conn:
         cur = conn.cursor()
         cur.execute(
-            "SELECT id, user_id, issued_at, certificate_path FROM certificates WHERE user_id=? ORDER BY id DESC LIMIT 1",
+            "SELECT id, user_id, issued_at, certificate_path FROM certificates "
+            "WHERE user_id=? ORDER BY id DESC LIMIT 1",
             (int(user_id),),
         )
         row = cur.fetchone()
         if not row:
             return None
-        # sqlite3.Row safe conversion
         return dict(row)
 
 
 def _build_certificate_pdf(full_name: str, filename: str) -> str:
+    """
+    Builds the PDF using your current layout,
+    but guarantees it is written to a persistent folder.
+    """
     _ensure_dir(OUTPUT_DIR)
+
+    # ✅ Always save as absolute path
     out_path = os.path.join(OUTPUT_DIR, filename)
+    out_path = os.path.abspath(out_path)
 
     c = canvas.Canvas(out_path, pagesize=A4)
     width, height = A4
 
-    # --- Simple professional layout (Option B) ---
+    # --- Your existing professional layout ---
     # Border
     margin = 15 * mm
     c.setLineWidth(2)
@@ -94,20 +103,38 @@ def _build_certificate_pdf(full_name: str, filename: str) -> str:
 def issue_certificate(user_id: int, full_name: str) -> str:
     """
     Creates certificate PDF + stores record.
+    ✅ If record exists but file is missing, regenerate and UPDATE the record.
     Returns certificate_path.
-    Safe to call multiple times: will not duplicate if already issued.
     """
     user_id = int(user_id)
 
-    if has_certificate(user_id):
-        rec = get_certificate_record(user_id)
-        return rec["certificate_path"]
-
-    # Use stable filename
-    safe_name = "".join(ch for ch in full_name if ch.isalnum() or ch in (" ", "-", "_")).strip()
+    # Use stable filename (keep your safe naming approach)
+    safe_name = "".join(ch for ch in (full_name or "") if ch.isalnum() or ch in (" ", "-", "_")).strip()
     safe_name = safe_name.replace(" ", "_") or f"user_{user_id}"
     filename = f"certificate_{safe_name}_{user_id}.pdf"
 
+    existing = get_certificate_record(user_id)
+    if existing:
+        existing_path = existing.get("certificate_path")
+        # ✅ If file exists, just return it
+        if existing_path and os.path.exists(existing_path):
+            return existing_path
+
+        # ✅ If record exists but file is missing -> regenerate + update record
+        new_path = _build_certificate_pdf(full_name=full_name, filename=filename)
+        issued_at = datetime.utcnow().isoformat()
+
+        with write_txn() as conn:
+            cur = conn.cursor()
+            cur.execute(
+                "UPDATE certificates SET issued_at=?, certificate_path=? WHERE id=?",
+                (issued_at, new_path, int(existing["id"])),
+            )
+            conn.commit()
+
+        return new_path
+
+    # No record yet: create + insert
     cert_path = _build_certificate_pdf(full_name=full_name, filename=filename)
     issued_at = datetime.utcnow().isoformat()
 
@@ -117,5 +144,6 @@ def issue_certificate(user_id: int, full_name: str) -> str:
             "INSERT INTO certificates (user_id, issued_at, certificate_path) VALUES (?, ?, ?)",
             (user_id, issued_at, cert_path),
         )
+        conn.commit()
 
     return cert_path
