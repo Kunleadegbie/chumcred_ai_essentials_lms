@@ -94,24 +94,15 @@ def _fit_font_size(text: str, font: str, max_size: int, min_size: int, max_width
 
 
 def _resolve_bg_path() -> str:
-    """
-    Resolve the blank certificate background PNG.
-    This avoids Railway accidentally picking the old background.
-    """
     candidates = [
-        BG_IMG_PATH,
-        os.path.join("/app", BG_IMG_PATH),
         "/app/assets/certificate_bg_blank_v2.png",
         "assets/certificate_bg_blank_v2.png",
-        "./assets/certificate_bg_blank_v2.png",
-        "/app/data/certificate_bg_blank_v2.png",
     ]
-
     for p in candidates:
-        p = (p or "").strip()
-        if p and os.path.exists(p):
+        if os.path.exists(p):
             return p
 
+    raise FileNotFoundError("Blank background not found at assets/certificate_bg_blank_v2.png")
     raise FileNotFoundError(
         "Certificate background PNG not found. "
         "Make sure you committed: assets/certificate_bg_blank_v2.png "
