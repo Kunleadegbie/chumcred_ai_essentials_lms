@@ -4,13 +4,22 @@ from datetime import datetime
 
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4, landscape
-from reportlab.lib.colors import Color
-from reportlab.lib.units import mm
 from reportlab.pdfbase.pdfmetrics import stringWidth
+from reportlab.lib.utils import ImageReader
 
 from services.db import read_conn, write_txn
 
+# Persistent folder (Railway volume should be mounted to /app/data)
 OUTPUT_DIR = os.getenv("CERT_OUTPUT_DIR", "/app/data/generated_certificates")
+
+# PNG background (commit this file into your repo)
+BG_IMG_PATH = os.getenv("CERT_BG_IMG_PATH", "assets/certificate_bg.png")
+
+# ---- TUNING (positions are fractions of page height) ----
+# These values are good starting points for your sample.
+NAME_Y_FRAC = 0.54     # 54% up from bottom
+DATE_Y_FRAC = 0.40     # 40% up from bottom
+NAME_MAX_WIDTH_FRAC = 0.70  # name can occupy 70% of page width
 
 
 def _ensure_dir(path: str) -> None:
@@ -25,10 +34,12 @@ def _safe_filename(name: str) -> str:
 
 
 def _ensure_cert_table():
+    """Ensure certificates table exists + required columns (non-destructive)."""
     with write_txn() as conn:
         exists = conn.execute(
             "SELECT name FROM sqlite_master WHERE type='table' AND name='certificates'"
         ).fetchone()
+
         if not exists:
             conn.execute(
                 """
@@ -83,131 +94,53 @@ def _fit_font_size(text: str, font: str, max_size: int, min_size: int, max_width
     return min_size
 
 
-def _bg(c: canvas.Canvas, w: float, h: float) -> None:
-    # base
-    c.setFillColor(Color(0.98, 0.99, 1.00))
-    c.rect(0, 0, w, h, fill=1, stroke=0)
-
-    # soft bands
-    c.setFillColor(Color(0.10, 0.40, 0.85, alpha=0.10))
-    c.saveState(); c.translate(-w*0.15, h*0.10); c.rotate(-10)
-    c.rect(0, h*0.55, w*1.4, h*0.18, fill=1, stroke=0)
-    c.restoreState()
-
-    c.setFillColor(Color(0.95, 0.55, 0.15, alpha=0.10))
-    c.saveState(); c.translate(-w*0.10, h*0.02); c.rotate(-10)
-    c.rect(0, h*0.32, w*1.4, h*0.14, fill=1, stroke=0)
-    c.restoreState()
-
-    c.setFillColor(Color(0.20, 0.75, 0.60, alpha=0.10))
-    c.saveState(); c.translate(-w*0.06, -h*0.10); c.rotate(-10)
-    c.rect(0, h*0.12, w*1.4, h*0.12, fill=1, stroke=0)
-    c.restoreState()
-
-    # accents
-    c.setFillColor(Color(0.10, 0.40, 0.85, alpha=0.08))
-    c.circle(w*0.90, h*0.80, 85, fill=1, stroke=0)
-    c.setFillColor(Color(0.95, 0.55, 0.15, alpha=0.07))
-    c.circle(w*0.12, h*0.25, 70, fill=1, stroke=0)
+def _resolve_bg_path() -> str:
+    candidates = [
+        BG_IMG_PATH,
+        os.path.join("/app", BG_IMG_PATH),
+        "/app/assets/certificate_bg.png",
+        "assets/certificate_bg.png",
+        "./assets/certificate_bg.png",
+    ]
+    for p in candidates:
+        p = (p or "").strip()
+        if p and os.path.exists(p):
+            return p
+    raise FileNotFoundError(
+        "Certificate background PNG not found. "
+        "Make sure you committed: assets/certificate_bg.png (or set CERT_BG_IMG_PATH)."
+    )
 
 
-def _borders(c: canvas.Canvas, w: float, h: float) -> None:
-    m = 14 * mm
-    c.setStrokeColor(Color(0.08, 0.12, 0.20, alpha=0.70))
-    c.setLineWidth(2.3)
-    c.roundRect(m, m, w-2*m, h-2*m, 16, stroke=1, fill=0)
-
-    c.setStrokeColor(Color(0.80, 0.62, 0.22, alpha=0.65))
-    c.setLineWidth(1.2)
-    c.roundRect(m+6, m+6, w-2*(m+6), h-2*(m+6), 14, stroke=1, fill=0)
-
-
-def _watermark(c: canvas.Canvas, w: float, h: float) -> None:
-    c.saveState()
-    c.setFillColor(Color(0.10, 0.40, 0.85, alpha=0.05))
-    c.translate(w/2, h/2)
-    c.rotate(20)
-    c.setFont("Helvetica-Bold", 84)
-    c.drawCentredString(0, 0, "CHUMCRED")
-    c.restoreState()
-
-
-def _build_pdf(full_name: str, out_path: str) -> str:
+def _build_certificate_pdf(full_name: str, out_path: str) -> str:
     _ensure_dir(os.path.dirname(out_path))
+
     w, h = landscape(A4)
     c = canvas.Canvas(out_path, pagesize=(w, h))
 
-    _bg(c, w, h)
-    _watermark(c, w, h)
-    _borders(c, w, h)
+    # Draw PNG background full-page
+    bg_path = _resolve_bg_path()
+    bg = ImageReader(bg_path)
+    c.drawImage(bg, 0, 0, width=w, height=h, mask="auto")
 
-    left = 34 * mm
-    right = w - 34 * mm
+    # Overlay dynamic text
     cx = w / 2
 
-    # marker so you can confirm THIS code is running
-    c.setFillColor(Color(0.10, 0.12, 0.16, alpha=0.18))
-    c.setFont("Helvetica-Bold", 10)
-    c.drawRightString(right, h - 18 * mm, "PREMIUM_LANDSCAPE_V3")
+    # Name
+    name_font = "Helvetica-Bold"
+    max_name_width = w * NAME_MAX_WIDTH_FRAC
+    name_size = _fit_font_size(full_name, name_font, max_size=42, min_size=18, max_width=max_name_width)
+    c.setFont(name_font, name_size)
+    c.drawCentredString(cx, h * NAME_Y_FRAC, full_name)
 
-    # header
-    c.setFillColor(Color(0.05, 0.10, 0.18))
-    c.setFont("Helvetica-Bold", 20)
-    c.drawCentredString(cx, h - 30 * mm, "CHUMCRED ACADEMY")
+    # Issued date
+    issued_text = "Issued: " + datetime.now().strftime("%B %d, %Y")
+    c.setFont("Helvetica", 16)
+    c.drawCentredString(cx, h * DATE_Y_FRAC, issued_text)
 
-    c.setFillColor(Color(0.10, 0.40, 0.85))
-    c.setFont("Helvetica-Bold", 30)
-    c.drawCentredString(cx, h - 50 * mm, "CERTIFICATE OF COMPLETION")
-
-    c.setFillColor(Color(0.20, 0.26, 0.34))
-    c.setFont("Helvetica", 14)
-    c.drawCentredString(cx, h - 66 * mm, "This is to certify that")
-
-    # name
-    max_width = right - left
-    size = _fit_font_size(full_name, "Helvetica-Bold", 48, 24, max_width)
-    c.setFillColor(Color(0.10, 0.40, 0.85, alpha=0.10))
-    c.roundRect(cx - min(max_width, 180*mm)/2, h - 92*mm, min(max_width, 180*mm), 18*mm, 12, fill=1, stroke=0)
-
-    c.setFillColor(Color(0.06, 0.08, 0.12))
-    c.setFont("Helvetica-Bold", size)
-    c.drawCentredString(cx, h - 88 * mm, full_name)
-
-    # body
-    c.setFillColor(Color(0.20, 0.26, 0.34))
-    c.setFont("Helvetica", 14)
-    c.drawCentredString(cx, h - 110 * mm, "has successfully completed the 6-week online training program")
-
-    c.setFillColor(Color(0.05, 0.10, 0.18))
-    c.setFont("Helvetica-Bold", 17)
-    c.drawCentredString(cx, h - 124 * mm, "AI Essentials — From Zero to Confident AI User")
-
-    # date
-    issued_text = "Issued: " + datetime.now().strftime("%d %B %Y")
-    c.setFillColor(Color(0.20, 0.26, 0.34))
-    c.setFont("Helvetica", 12)
-    c.drawCentredString(cx, h - 140 * mm, issued_text)
-
-    # signatures
-    y_sig = 24 * mm
-    c.setStrokeColor(Color(0.05, 0.10, 0.18, alpha=0.35))
-    c.setLineWidth(1)
-    c.line(left, y_sig + 18, left + 95 * mm, y_sig + 18)
-    c.line(right - 95 * mm, y_sig + 18, right, y_sig + 18)
-
-    c.setFillColor(Color(0.05, 0.10, 0.18))
-    c.setFont("Helvetica-Bold", 12)
-    c.drawString(left, y_sig, "Dr. Adekunle Adegbie")
-    c.setFillColor(Color(0.20, 0.26, 0.34))
-    c.setFont("Helvetica", 11)
-    c.drawString(left, y_sig - 12, "Program Coordinator")
-
-    c.setFillColor(Color(0.05, 0.10, 0.18))
-    c.setFont("Helvetica-Bold", 12)
-    c.drawRightString(right, y_sig, "Chumcred Academy")
-    c.setFillColor(Color(0.20, 0.26, 0.34))
-    c.setFont("Helvetica", 11)
-    c.drawRightString(right, y_sig - 12, "Official Certificate")
+    # Small invisible marker (helps you confirm you’re using the new generator)
+    c.setFont("Helvetica", 1)
+    c.drawString(2, 2, "BG_CERT_V1")
 
     c.showPage()
     c.save()
@@ -216,7 +149,7 @@ def _build_pdf(full_name: str, out_path: str) -> str:
 
 def issue_certificate(user_id: int, full_name: str) -> str:
     """
-    ALWAYS generate a brand-new premium landscape certificate and update DB.
+    Always generates a new certificate using the PNG background and updates DB.
     """
     _ensure_cert_table()
     user_id = int(user_id)
@@ -224,10 +157,10 @@ def issue_certificate(user_id: int, full_name: str) -> str:
 
     safe = _safe_filename(full_name)
     ts = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
-    filename = f"PREMIUM_LANDSCAPE_V3_{safe}_{user_id}_{ts}.pdf"
+    filename = f"certificate_{safe}_{user_id}_{ts}.pdf"
     out_path = os.path.abspath(os.path.join(OUTPUT_DIR, filename))
 
-    cert_path = _build_pdf(full_name.strip(), out_path)
+    cert_path = _build_certificate_pdf(full_name.strip(), out_path)
     issued_at = datetime.utcnow().isoformat()
 
     rec = get_certificate_record(user_id)
