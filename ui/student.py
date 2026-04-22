@@ -504,6 +504,13 @@ def student_router(user):
                 st.success("Certificate generated")
                 st.rerun()
 
+
+        if st.button("🔁 Regenerate Certificate (New Design)", key="regen_new_design"):
+            full_name = user.get("full_name") or user.get("name") or user.get("username") or "Student"
+            issue_certificate(user_id, full_name)
+            st.success("New certificate generated. Reloading…")
+            st.rerun()
+
     # =================================================
     # SIDEBAR
     # =================================================
