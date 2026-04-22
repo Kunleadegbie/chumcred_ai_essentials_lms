@@ -398,10 +398,13 @@ def student_router(user):
         return
 
     # =================================================
-    # CERTIFICATE (DOWNLOAD + AUTO-RESOLVE PATH + REGENERATE)
+    # CERTIFICATE (AUTO-UPGRADE FOR OLD STUDENTS + DOWNLOAD + REGENERATE)
     # =================================================
     st.divider()
     st.subheader("🎖 Certificate")
+
+    # Must match the version in services/certificates.py
+    EXPECTED_TEMPLATE_VERSION = "blank_v2_layout_v1"
 
     def _get_certificate_row(conn, uid):
         cols = [r[1] for r in conn.execute("PRAGMA table_info(certificates)").fetchall()]
@@ -453,63 +456,62 @@ def student_router(user):
             or "Student"
         )
 
-    if has_certificate(user_id):
-        st.success("Certificate issued")
+    # --- Load cert row ---
+    cert_row = None
+    try:
+        with read_conn() as conn:
+            cert_row = _get_certificate_row(conn, user_id)
+    except Exception:
+        cert_row = None
 
-        raw_path = None
-        resolved_path = None
+    # --- Auto-upgrade once per session for existing students ---
+    auto_key = f"cert_autoupgrade_done_{user_id}"
+    if cert_row and not st.session_state.get(auto_key, False):
+        current_ver = cert_row.get("template_version")
+        resolved = _resolve_certificate_path(cert_row.get("certificate_path") or cert_row.get("path") or "")
 
-        try:
+        if (not current_ver) or (current_ver != EXPECTED_TEMPLATE_VERSION) or (resolved is None):
+            # force regeneration using new template/version
+            issue_certificate(user_id, _get_full_name())
+            # reload cert row
             with read_conn() as conn:
                 cert_row = _get_certificate_row(conn, user_id)
 
-            if cert_row:
-                for k in ["certificate_path", "file_path", "path", "pdf_path"]:
-                    if cert_row.get(k):
-                        raw_path = cert_row.get(k)
-                        break
+        st.session_state[auto_key] = True
 
-            resolved_path = _resolve_certificate_path(raw_path) if raw_path else None
+    # --- Always show upgrade/regenerate button for everyone ---
+    if st.button("🔁 Upgrade / Regenerate Certificate (New Design)", key="regen_new_design_btn"):
+        issue_certificate(user_id, _get_full_name())
+        st.success("Certificate updated. Reloading…")
+        st.rerun()
 
-        except Exception:
-            resolved_path = None
+    # --- Download / Generate UI ---
+    raw_path = None
+    resolved_path = None
+    if cert_row:
+        for k in ["certificate_path", "file_path", "path", "pdf_path"]:
+            if cert_row.get(k):
+                raw_path = cert_row.get(k)
+                break
+        resolved_path = _resolve_certificate_path(raw_path) if raw_path else None
 
-        if resolved_path:
-            with open(resolved_path, "rb") as f:
-                st.download_button(
-                    "⬇️ Download Certificate (PDF)",
-                    data=f.read(),
-                    file_name=f"Chumcred_Certificate_{user.get('username','student')}.pdf",
-                    mime="application/pdf",
-                    key="download_certificate_btn",
-                )
-        else:
-            st.warning("Certificate record exists, but the certificate file was not found on the server.")
-            if raw_path:
-                st.code(str(raw_path))
-
-            col1, col2 = st.columns([1, 1])
-            with col1:
-                if st.button("🔁 Regenerate Certificate", key="regen_certificate_btn"):
-                    issue_certificate(user_id, _get_full_name())
-                    st.success("Certificate regenerated. Reloading…")
-                    st.rerun()
-            with col2:
-                st.info("If this persists, confirm Railway has a Volume mounted to /app/data.")
-
+    if resolved_path:
+        st.success("Certificate available")
+        with open(resolved_path, "rb") as f:
+            st.download_button(
+                "⬇️ Download Certificate (PDF)",
+                data=f.read(),
+                file_name=f"Chumcred_Certificate_{user.get('username','student')}.pdf",
+                mime="application/pdf",
+                key="download_certificate_btn",
+            )
     else:
+        st.info("Certificate not generated yet.")
         if can_issue_certificate(user_id):
-            if st.button("Generate Certificate", key="generate_certificate"):
+            if st.button("Generate Certificate", key="generate_certificate_btn"):
                 issue_certificate(user_id, _get_full_name())
-                st.success("Certificate generated")
+                st.success("Certificate generated. Reloading…")
                 st.rerun()
-
-
-        if st.button("🔁 Regenerate Certificate (New Design)", key="regen_new_design"):
-            full_name = user.get("full_name") or user.get("name") or user.get("username") or "Student"
-            issue_certificate(user_id, full_name)
-            st.success("New certificate generated. Reloading…")
-            st.rerun()
 
     # =================================================
     # SIDEBAR
