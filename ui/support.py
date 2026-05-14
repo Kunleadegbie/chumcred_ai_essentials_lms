@@ -1,10 +1,13 @@
 # --------------------------------------------------
 # ui/support.py
 # --------------------------------------------------
-# Student Help & Support page (SQLite) — FIXED
+# Student Help & Support page (SQLite) — UPDATED (categories + guidance)
 #
-# Goal: make sure NEW student enquiries are written into the SAME SQLite DB
-# that the admin reads, and make failures obvious (row counts + Ticket ID).
+# Enhancements (minimal changes, same structure):
+# - Adds category dropdown (4 categories)
+# - Adds response targets guidance
+# - Adds structured "feedback before submission" format
+# - Stores category in DB if column exists; otherwise prefixes subject with [Category]
 #
 # Works with BOTH schemas:
 # - support_tickets(student_user_id, student_username, ...)
@@ -18,6 +21,14 @@ from typing import Dict, List
 import streamlit as st
 
 from services.db import read_conn
+
+
+CATEGORIES = [
+    "Can’t access a week",
+    "Can’t upload an assignment",
+    "Need clarity on a template",
+    "Want feedback before submission",
+]
 
 
 def _now() -> str:
@@ -36,7 +47,7 @@ def _cols(conn, table: str) -> List[str]:
     return [r[1] for r in conn.execute(f"PRAGMA table_info({table})").fetchall()]
 
 
-def _insert_support_ticket(conn, user: Dict, subject: str, message: str) -> int:
+def _insert_support_ticket(conn, user: Dict, category: str, subject: str, message: str) -> int:
     cols = _cols(conn, "support_tickets")
 
     # map schema differences
@@ -54,10 +65,20 @@ def _insert_support_ticket(conn, user: Dict, subject: str, message: str) -> int:
         fields.append(uname_col)
         params.append(user.get("username"))
 
+    # category storage (preferred)
+    if "category" in cols:
+        fields.append("category")
+        params.append(category)
+
     # content
+    # If no category column, prefix subject with [Category]
+    final_subject = subject
+    if "category" not in cols and category:
+        final_subject = f"[{category}] {subject}"
+
     if "subject" in cols:
         fields.append("subject")
-        params.append(subject)
+        params.append(final_subject)
     if "message" in cols:
         fields.append("message")
         params.append(message)
@@ -77,7 +98,6 @@ def _insert_support_ticket(conn, user: Dict, subject: str, message: str) -> int:
     sql = f"INSERT INTO support_tickets ({', '.join(fields)}) VALUES ({placeholders})"
 
     cur = conn.execute(sql, params)
-    # if INTEGER PK
     ticket_id = cur.lastrowid
     try:
         return int(ticket_id) if ticket_id is not None else 0
@@ -93,10 +113,41 @@ def support_page(user: Dict):
             st.error("Missing table: support_tickets. Support cannot work until DB is initialized.")
             st.stop()
 
-    st.markdown("Send your question to the admin/instructor. You’ll get a reply here once it’s addressed.")
+    st.markdown(
+        "Use this page to ask the instructor/admin for help. "
+        "Choose the right category so your request is handled faster."
+    )
+
+    # ✅ Response targets (international-style)
+    with st.expander("⏱ Response Targets (What to expect)", expanded=False):
+        st.write(
+            "- **Access/technical issues:** within 24 hours\n"
+            "- **Template clarification:** within 48 hours\n"
+            "- **Feedback before submission:** within 72 hours (short guidance, not full rewriting)\n"
+        )
+
+    # ✅ Category
+    category = st.selectbox("Category", CATEGORIES, index=0)
+
+    # Helpful prompt for feedback requests
+    if category == "Want feedback before submission":
+        st.info(
+            "For faster feedback, include:\n"
+            "1) Prompt used\n"
+            "2) Output received (short)\n"
+            "3) What you want improved (tone / structure / accuracy)\n"
+        )
 
     subject = st.text_input("Subject", placeholder="e.g., Week 2 assignment clarification")
-    message = st.text_area("Your message", height=160, placeholder="Describe your issue clearly...")
+    message_placeholder = "Describe your issue clearly..."
+    if category == "Want feedback before submission":
+        message_placeholder = (
+            "Paste in this format:\n\n"
+            "PROMPT USED:\n...\n\n"
+            "OUTPUT RECEIVED (short):\n...\n\n"
+            "WHAT I WANT IMPROVED (pick one): tone / structure / accuracy\n...\n"
+        )
+    message = st.text_area("Your message", height=200, placeholder=message_placeholder)
 
     if st.button("Submit Request", type="primary", key="submit_support_ticket"):
         if not subject.strip() or not message.strip():
@@ -105,7 +156,7 @@ def support_page(user: Dict):
 
         try:
             with read_conn() as conn:
-                ticket_id = _insert_support_ticket(conn, user, subject.strip(), message.strip())
+                ticket_id = _insert_support_ticket(conn, user, category, subject.strip(), message.strip())
                 conn.commit()
 
             st.success(f"✅ Submitted! Ticket ID: {ticket_id if ticket_id else 'created'}")
@@ -148,7 +199,17 @@ def support_page(user: Dict):
             tid = t.get("id")
             status = t.get("status", "open")
             created_at = t.get("created_at", "")
+
+            # show category if exists, else parse from subject prefix
+            cat = t.get("category")
+            subj = t.get("subject") or ""
+            if not cat and subj.startswith("[") and "]" in subj:
+                cat = subj.split("]", 1)[0].replace("[", "").strip()
+
             title = f"#{tid} • {status} • {created_at}"
+            if cat:
+                title = f"{title} • {cat}"
+
             with st.expander(title, expanded=False):
                 if t.get("subject"):
                     st.write("**Subject:**", t.get("subject"))
