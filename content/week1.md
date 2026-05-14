@@ -86,19 +86,72 @@ After any AI output:
 ---
 
 ## 🧪 WEEK 1 PRE-TEST (Baseline Quiz — 10 questions)
-Answer quickly (no stress). This helps you track growth by Week 6.
+**Instruction:** Tick **one** option per question. Don’t overthink it — this is just to measure your starting point.
 
-1) AI is best used to: A replace thinking / **B assist thinking** / C avoid learning / D guess facts  
-2) One risk of AI output: A perfect accuracy / **B hallucination** / C no creativity / D no text  
-3) Best action for AI facts: A post / **B verify** / C ignore / D delete  
-4) Sensitive info not to paste: A bio / **B password/PIN** / C job title / D course title  
-5) A good prompt should include: A intent only / B emojis / **C context + intent** / D none  
-6) Output improves when you specify: **A tone/structure** / B nothing / C “help” / D slang  
-7) AI can help with: A summaries / B drafts / C planning / **D all**  
-8) If AI makes an error: A accept / **B refine prompt** / C insult / D stop learning  
-9) Prompting means: A random words / **B clear instructions** / C memes / D coding only  
-10) Good learning includes: A practice / B assignment / C feedback / **D all**
+---
 
+### 1) AI is best used to:
+- [ ] A. Replace thinking  
+- [ ] B. Assist thinking  
+- [ ] C. Avoid learning  
+- [ ] D. Guess facts  
+
+### 2) One risk of AI output is:
+- [ ] A. Perfect accuracy  
+- [ ] B. Hallucination (confident but wrong output)  
+- [ ] C. No creativity  
+- [ ] D. No text  
+
+### 3) Best action when AI gives a fact:
+- [ ] A. Post immediately  
+- [ ] B. Verify  
+- [ ] C. Ignore  
+- [ ] D. Delete  
+
+### 4) Sensitive info you should NOT paste into AI:
+- [ ] A. General bio  
+- [ ] B. Password/PIN  
+- [ ] C. Job title  
+- [ ] D. Course title  
+
+### 5) A good prompt should include:
+- [ ] A. Intent only  
+- [ ] B. Emojis only  
+- [ ] C. Context + intent  
+- [ ] D. None  
+
+### 6) Output quality improves when you specify:
+- [ ] A. Tone/structure  
+- [ ] B. Nothing  
+- [ ] C. Only “help”  
+- [ ] D. Slang  
+
+### 7) AI can help with:
+- [ ] A. Summaries  
+- [ ] B. Drafts  
+- [ ] C. Planning  
+- [ ] D. All  
+
+### 8) If AI makes an error, you should:
+- [ ] A. Accept it  
+- [ ] B. Refine the prompt  
+- [ ] C. Insult the AI  
+- [ ] D. Stop learning  
+
+### 9) “Prompting” means:
+- [ ] A. Typing random words  
+- [ ] B. Giving clear instructions  
+- [ ] C. Copying memes  
+- [ ] D. Coding only  
+
+### 10) Good learning includes:
+- [ ] A. Practice  
+- [ ] B. Assignment  
+- [ ] C. Feedback  
+- [ ] D. All  
+
+---
+✅ **Submit:** Just take a screenshot of your selected answers (optional). We will re-check at Week 6 to see your growth.
 ---
 
 ## 🛠 Hands-On Lab (Mandatory)

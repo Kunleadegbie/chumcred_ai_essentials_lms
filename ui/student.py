@@ -174,7 +174,7 @@ def _render_resources_page(user):
     if resources_md:
         st.markdown(resources_md)
     else:
-        st.warning("resources.md not found. Add it to: content/resources.md")
+        st.info("Resources will appear here shortly. Please use the templates below for now.")
 
     st.divider()
     st.subheader("⬇️ Download Templates")

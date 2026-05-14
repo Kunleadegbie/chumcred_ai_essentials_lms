@@ -132,17 +132,72 @@ To receive certificate, student must:
 ---
 
 ## 🧠 Week 6 Post-Test (10 questions)
-1) Portfolio must show: A certificates only / **B proof of projects** / C photos / D school results  
-2) Case study should include: A problem only / B tools only / **C problem→solution→impact** / D memes  
-3) Best LinkedIn strategy: A once/year / **B consistent value posts** / C spam / D no profile  
-4) Proposal should include: A greeting only / B price only / **C approach + deliverables** / D nothing  
-5) Monetize AI means: A learn only / **B solve problems** / C avoid clients / D hide work  
-6) Proof is stronger than: A excuses / B certificates only / **C portfolio + demos** / D silence  
-7) Applications improve when CV is: A generic / **B tailored** / C empty / D too long  
-8) Good portfolio includes: A contact / B screenshots / C results / **D all**  
-9) Best habit after graduation: A stop / **B build+share+apply** / C complain / D wait  
-10) Certification should reflect: A speed / **B score+competence** / C luck / D vibes  
+**Instruction:** Tick **one** option per question. This helps you confirm readiness for certification + career launch.
 
+---
+
+### 1) A portfolio must show:
+- [ ] A. Only certificates  
+- [ ] B. Proof of projects  
+- [ ] C. Only photos  
+- [ ] D. Only school results  
+
+### 2) A case study should include:
+- [ ] A. Problem only  
+- [ ] B. Tools only  
+- [ ] C. Problem → Solution → Impact  
+- [ ] D. Memes  
+
+### 3) Best LinkedIn strategy:
+- [ ] A. Post once/year  
+- [ ] B. Consistent value posts  
+- [ ] C. Copy spam  
+- [ ] D. No profile  
+
+### 4) A freelance proposal should include:
+- [ ] A. Greeting only  
+- [ ] B. Price only  
+- [ ] C. Approach + deliverables  
+- [ ] D. Nothing  
+
+### 5) “Monetize AI skills” means:
+- [ ] A. Learn only  
+- [ ] B. Apply to solve problems  
+- [ ] C. Avoid clients  
+- [ ] D. Hide your work  
+
+### 6) Proof of work is stronger than:
+- [ ] A. Excuses  
+- [ ] B. Certificates only  
+- [ ] C. Portfolio links + demos  
+- [ ] D. Silence  
+
+### 7) Job applications improve when CV is:
+- [ ] A. Generic  
+- [ ] B. Tailored to the job description  
+- [ ] C. Empty  
+- [ ] D. Too long  
+
+### 8) A good portfolio includes:
+- [ ] A. Contact info  
+- [ ] B. Screenshots  
+- [ ] C. Results/impact  
+- [ ] D. All  
+
+### 9) Best weekly habit after graduation:
+- [ ] A. Stop learning  
+- [ ] B. Build + share + apply  
+- [ ] C. Complain  
+- [ ] D. Wait  
+
+### 10) Certification level should reflect:
+- [ ] A. Speed only  
+- [ ] B. Score + competence  
+- [ ] C. Luck  
+- [ ] D. Vibes  
+
+---
+✅ **Tip:** If you missed any, revisit Week 2 (prompts), Week 3 (workflows), and Week 5 (capstone). This is your professional level now.
 ---
 
 ## ✅ What “Good” Looks Like
