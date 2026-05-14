@@ -1,281 +1,104 @@
-# 🚀 **WEEK 4: AI for Business Growth, Income & Career Advancement**
-
-## 🎯 Theme:
-
-**Using AI to Grow Your Income, Business, and Professional Value**
-
----
-
-## 📌 WEEK 4 OBJECTIVE
-
-By the end of this week, you will be able to:
-
-✅ Use AI to improve your business decisions
-✅ Create business plans with AI
-✅ Use AI for marketing and branding
-✅ Improve your career prospects
-✅ Monetize AI skills
-✅ Think like a digital entrepreneur
-
-This week turns you from **AI user → AI earner**.
+# WEEK 4 — AI FOR BUSINESS & CAREER GROWTH
+**Theme:** Build Value. Build Income. Build Direction.  
+**Estimated time:** 2–4 hours self-study + 1-hour Saturday live recap  
+**Tools needed:** ChatGPT, Google Docs, optional Canva
 
 ---
 
-## 🧠 WHY THIS WEEK IS IMPORTANT
-
-Many people learn AI but never make money from it.
-
-This week teaches you how to:
-
-💼 Turn AI into income
-📈 Use AI to scale business
-🎯 Position yourself professionally
-🌍 Compete globally
-
-If you master this week, you can:
-
-✔ Start a side business
-✔ Grow your current job value
-✔ Freelance online
-✔ Launch digital products
-✔ Become an AI consultant
+## 🌟 Welcome to Week 4
+This week helps you convert AI skill into:
+- career opportunities
+- business income
+- professional branding
 
 ---
 
-# 📘 MODULE 1: AI for Business Planning
+## 🎥 Recommended Videos (Optional but Strongly Encouraged)
+🎬 **AI for Business Strategy & Planning — Use AI to Build Business Ideas & Plans**  
+📌 https://youtu.be/PwW1ZV5Mffs?si=MHhAklwdSmLsbyE9
 
-### 🔹 What You Will Learn
+🎬 **AI for Marketing & Content Creation — Use AI to Create Marketing Content That Converts**  
+📌 https://youtu.be/nkuPUJVzB_E?si=iYKnyaRBSmVAvfSt
 
-* Writing business plans with AI
-* Market research using ChatGPT
-* SWOT analysis with AI
-* Customer profiling
+🎬 **AI for Career Growth & Job Success — Use AI to Improve Your Job Search & Career Skills**  
+📌 https://youtu.be/zqC1YjwJ2kQ?si=gmIUg7KMM539Qxvj  
+📌 https://youtu.be/tEQFa4boUqc?si=oJobY0MxlCHglRO5
 
-### 🔹 Example Prompt
-
-Paste into ChatGPT:
-
-> “Create a simple business plan for a [business type] in Nigeria targeting [audience]. Include startup cost, pricing, and marketing strategy.”
-
-### 🔹 Practice Task
-
-Create a mini business plan for:
-
-* A training business
-* An online store
-* A consulting service
-* A digital product
+🎬 **Making Money with AI — How Anyone Can Make Money With AI in 2026**  
+📌 https://youtu.be/GEa7KiO-kE4?si=BncwwiuzA2Y0K2O9
 
 ---
 
-##🎥 AI for Business Strategy & Planning
-*Title: Use AI to Build Business Ideas & Plans*
-🔗 https://youtu.be/PwW1ZV5Mffs?si=MHhAklwdSmLsbyE9
-
-
----
-
-# 📘 MODULE 2: AI for Marketing & Branding
-
-### 🔹 What You Will Learn
-
-* Writing adverts with AI
-* Social media content creation
-* Email marketing
-* Personal branding
-
-### 🔹 Tools
-
-* ChatGPT
-* Canva AI
-* Copy.ai
-* Notion AI
-
-### 🔹 Example Prompt
-
-> “Write a 7-day social media content plan for my business selling [product/service].”
-
----
-## 🎥 AI for Marketing & Content Creation
-*Title: Use AI to Create Marketing Content That Converts*
-🔗 https://youtu.be/nkuPUJVzB_E?si=iYKnyaRBSmVAvfSt 
+## 🎯 Learning Objectives
+By the end of Week 4 you will:
+✅ Define a clear service/skill offer  
+✅ Create marketing samples that attract clients/employers  
+✅ Improve CV + LinkedIn positioning  
+✅ Build a 6-month plan for income/career growth  
 
 ---
 
-# 📘 MODULE 3: AI for Career Advancement
+## ✅ Core + Bonus Structure (to reduce overload)
+### CORE (Must-do): Choose ONE track
+**Track A — Career Track (Core)**
+- Updated CV
+- LinkedIn headline + About
+- 6-month career/action plan
 
-### 🔹 What You Will Learn
+**Track B — Business Track (Core)**
+- Clear service offer + pricing
+- Marketing samples
+- 6-month income plan
 
-* CV optimization with AI
-* Cover letter writing
-* Interview practice
-* Skill gap analysis
-
-### 🔹 Example Prompt
-
-> “Rewrite my CV for a job in [role] using ATS standards.”
-
-> “Act as an interviewer for [job role] and interview me.”
-
----
-## 🎥 AI for Career Growth & Job Success
-*Title: Use AI to Improve Your Job Search & Career Skills*
-🔗 https://youtu.be/zqC1YjwJ2kQ?si=gmIUg7KMM539Qxvj
-🔗 https://youtu.be/tEQFa4boUqc?si=oJobY0MxlCHglRO5
+### BONUS (Optional)
+Do the second track for extra marks.
 
 ---
 
-# 📘 MODULE 4: Making Money with AI
-
-### 🔹 Income Streams
-
-You can earn using AI through:
-
-💰 Freelancing
-💰 Consulting
-💰 Content creation
-💰 Course creation
-💰 Digital products
-💰 Automation services
-
-### 🔹 Popular AI Gigs
-
-* Resume writing
-* Social media management
-* Data analysis
-* Business proposals
-* Chatbot setup
-* Prompt engineering
+## 🛠 Required Marketing Samples (Business Track)
+Provide:
+- 5 social media posts
+- 1 advert copy
+- 1 email campaign (subject + body + CTA)
 
 ---
 
-## 🎥 Making Money with AI
-*Title: “How Anyone Can Make Money With AI in 2026”*
-🔗 https://youtu.be/GEa7KiO-kE4?si=BncwwiuzA2Y0K2O9
+## 📝 Week 4 Assignment (Graded)
+**Title:** My AI Business and/or Career Plan  
+Submit based on your chosen track:
+- Track A or Track B (Core)
+- Bonus track (optional)
+
+**Submission format:** Week4_BusinessCareer_YourName.pdf (or .docx)
 
 ---
 
-# 📘 MODULE 5: Ethics, Responsibility & Sustainability
-
-### 🔹 What You Will Learn
-
-* Responsible AI use
-* Avoiding plagiarism
-* Data privacy
-* Professional integrity
-
-### 🔹 Discussion Topic
-
-> “Should AI-generated work be disclosed in business and education?”
-
-Post your thoughts in the forum.
+## ✅ Week 4 Rubric (/100)
+- Clear offer/career direction (20)  
+- Marketing samples quality (20)  
+- CV/LinkedIn quality (20)  
+- 6-month plan realism (20)  
+- Evidence of AI use + personalization (10)  
+- Professional formatting (10)
 
 ---
 
-# 🛠️ PRACTICAL LAB — WEEK 4 PROJECT
-
-## 📍 Project Title:
-
-**My AI Business & Career Plan**
-
-### You Must Submit:
-
-Create a document containing:
-
-### 1️⃣ Business Idea
-
-Describe:
-
-* What you want to do
-* Target audience
-* Pricing
-
-### 2️⃣ Marketing Strategy
-
-* 5 social media posts
-* 1 advert
-* 1 email campaign
-
-### 3️⃣ Career Plan
-
-* Updated CV (AI-assisted)
-* Target role
-* Skill improvement plan
-
-### 4️⃣ Income Plan
-
-Explain how you will earn with AI in the next 6 months.
+## ✅ What “Good” Looks Like
+A strong Week 4 submission includes:
+- one clear offer (not 10)
+- pricing tiers (Basic/Standard/Premium)
+- measurable goals (clients/month, posts/week, income target)
+- strong CTA (WhatsApp/email)
 
 ---
 
-# 📝 Submission Format
-
-Upload:
-
-✅ PDF / DOCX
-✅ Screenshots of prompts
-✅ AI outputs
-
-File name:
-
-> `Week4_BusinessPlan_YourName.pdf`
+## 💬 Discussion Prompt
+“If someone pays you monthly, what will they pay you for using AI?”
 
 ---
 
-# 🌟 BONUS SECTION: REAL SUCCESS STORIES
-
-### Case Study 1: Freelancer
-
-Used AI to:
-✔ Write proposals
-✔ Win clients
-✔ Earn $2,000/month
-
-### Case Study 2: Trainer
-
-Used AI to:
-✔ Create courses
-✔ Sell online
-✔ Build community
-
-### Case Study 3: Consultant
-
-Used AI to:
-✔ Automate analysis
-✔ Offer advisory
-✔ Work remotely
-
----
-
-# 💬 WEEKLY REFLECTION
-
-Answer in your journal:
-
-1. What income idea excites me most?
-2. What skill must I improve?
-3. How will I use AI weekly?
-4. What stops me from starting?
-
----
-
-# 🧭 WEEK 4 MOTIVATION
-
-> “AI will not replace you.
-> Someone using AI will.”
-
-Start becoming that person now.
-
----
-
-# 🎯 COMPLETION CHECKLIST
-
-Before moving to Week 5, ensure you have:
-
-✅ Written a business idea
-✅ Created marketing samples
-✅ Updated CV
-✅ Submitted project
-✅ Watched videos
-
----
-
+## 📋 Completion Checklist
+☑ Chose track (Career or Business)  
+☑ Submitted core assignment  
+☑ Bonus submitted (optional)  
+☑ Posted discussion response

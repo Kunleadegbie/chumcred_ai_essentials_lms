@@ -1,330 +1,122 @@
-# 🎯 **WEEK 2 — PROMPT ENGINEERING & AI COMMUNICATION MASTERY**
-
-## *How to Talk to AI Like a Professional*
+# WEEK 2 — PROMPT MASTERY (CITSK + QUALITY OUTPUTS)
+**Theme:** From Random Prompts → Professional Prompts  
+**Estimated time:** 2–4 hours self-study + 1-hour Saturday live recap  
+**Tools needed:** ChatGPT, Google Docs/Word
 
 ---
 
 ## 🌟 Welcome to Week 2
+This week will change how you use AI forever.
 
-Welcome to the most important skill in AI usage:
+Many people get poor results from AI because their prompts are unclear.  
+This week teaches you a simple system to get **clean, accurate, structured outputs**.
 
-> 💬 **How you talk to AI determines what you get from AI.**
+---
 
-Two people can use ChatGPT.
-
-One gets poor results.
-The other gets powerful insights.
-
-The difference?
-
-**Prompt Engineering.**
-
-This week will make you an AI power user.
+## 🎥 Recommended Videos (Optional but Strongly Encouraged)
+🎬 **Prompt Engineering Explained Simply**  
+📌 https://www.youtube.com/watch?v=jC4v5AS4RIM
 
 ---
 
 ## 🎯 Learning Objectives
-
 By the end of this week, you will:
-
-✅ Understand how AI interprets prompts
-✅ Structure professional prompts
-✅ Get accurate responses
-✅ Reduce errors
-✅ Save time
-✅ Use AI like an expert
+✅ Understand prompt layers (CITSK)  
+✅ Write prompts that produce structured output (table/steps/template)  
+✅ Improve outputs using a repeatable refinement loop  
+✅ Know how to request recap to confirm AI understands you  
 
 ---
 
-## 📚 What Is Prompt Engineering?
+## 🧠 AI Reads Prompts in Layers (CITSK)
+**Context → Intent → Tone → Structure → Keywords**
 
-Prompt Engineering means:
+- **Context:** background and situation  
+- **Intent:** what you want done  
+- **Tone:** formal, friendly, simple, expert  
+- **Structure:** bullets, table, steps, template  
+- **Keywords:** terms that guide accuracy
 
-> ✍️ Designing clear, structured instructions for AI.
-
-It is like giving directions.
-
-Bad directions → Wrong destination
-Good directions → Perfect result
-
----
-
-### Example
-
-❌ Bad Prompt:
-
-> “Write about business.”
-
-✅ Good Prompt:
-
-> “Write a 500-word article on how small businesses in Nigeria can use AI for customer service. Use simple language.”
-
-See the difference?
+If one layer is missing, output quality drops.
 
 ---
 
-## 🧠 How AI Understands Your Prompts
-
-AI reads your prompt in layers:
-
-1️⃣ Context
-2️⃣ Intent
-3️⃣ Tone
-4️⃣ Structure
-5️⃣ Keywords
-
-Missing one = weak output.
+## ✅ Prompt Template (CITSK+)
+Context: …  
+Intent: …  
+Tone: …  
+Structure: …  
+Keywords: …  
+Constraints: word count, do/don’t include  
+**Please recap what you understood before answering.**
 
 ---
 
-## 🏗 The PRO Framework (Professional Prompt Model)
+## 🔁 Prompt Evaluation Loop (International Standard)
+Students must follow this loop for Week 2 submission:
 
-Use this structure always:
-
-### 🔹 P — Purpose
-
-What do you want?
-
-### 🔹 R — Role
-
-Who should AI act as?
-
-### 🔹 O — Output
-
-What format?
-
-### 🔹 S — Style
-
-Tone and language
-
----
-
-### Example (PRO)
-
-> Act as a business consultant.
-> Create a marketing plan for a small fashion business in Lagos.
-> Present in bullet points.
-> Use simple English.
-
----
-
-## 🎥 Recommended Video
-
-🎬 **Prompt Engineering Explained Simply**
-📌 [https://www.youtube.com/watch?v=jC4v5AS4RIM](https://www.youtube.com/watch?v=jC4v5AS4RIM)
-
----
-
-## ⚡ 10 High-Impact Prompt Styles
-
-### 1️⃣ Expert Prompt
-
-> Act as a financial analyst…
-
-### 2️⃣ Teacher Prompt
-
-> Explain like I’m a beginner…
-
-### 3️⃣ Interview Prompt
-
-> Ask me questions about…
-
-### 4️⃣ Research Prompt
-
-> Summarize this topic…
-
-### 5️⃣ Creative Prompt
-
-> Write a story about…
-
-### 6️⃣ Debugging Prompt
-
-> Fix this error…
-
-### 7️⃣ Comparison Prompt
-
-> Compare A and B…
-
-### 8️⃣ Planning Prompt
-
-> Create a roadmap…
-
-### 9️⃣ Editing Prompt
-
-> Improve this text…
-
-### 🔟 Simulation Prompt
-
-> Act as my customer…
-
----
-
-## 🛑 Common Prompt Mistakes
-
-Avoid:
-
-❌ One-line prompts
-❌ No context
-❌ No output format
-❌ Vague instructions
-❌ Overloading questions
-
----
-
-## 💼 Prompting for Career & Business
-
-### For Job Seekers
-
-✔ CV writing
-✔ Interview prep
-✔ Cover letters
-
-### For Business
-
-✔ Proposals
-✔ Marketing content
-✔ Customer responses
-
-### For Students
-
-✔ Notes
-✔ Research
-✔ Explanations
+1) Prompt v1  
+2) Output v1  
+3) What was wrong? (accuracy/format/tone/missing info)  
+4) Prompt v2 (improved)  
+5) Output v2  
+6) What changed and why?
 
 ---
 
 ## 🛠 Hands-On Lab (Mandatory)
+### Lab 1: Fix a weak prompt
+Take a weak prompt like:
+“Write me something about business.”
 
-### 🔬 Lab 1: Prompt Upgrade
+Improve it using CITSK:
+- add context, intent, tone, structure, keywords
+- request recap
 
-Take this weak prompt:
-
-> “Write about leadership.”
-
-Upgrade it using PRO.
-
-Minimum: 3 improved versions.
-
----
-
-### 🔬 Lab 2: Roleplay
-
-Prompt:
-
-> Act as a career coach.
-> Help me plan my next 5 years.
-
-Save the output.
-
----
-
-## 🎮 Interactive Challenge
-
-### Prompt Battle
-
-Try:
-
-> Create 3 different prompts to generate a business plan.
-
-Compare outputs.
-
-Choose best.
-
----
-
-## 📊 Case Study
-
-### Scenario: Small Business Owner
-
-Mary runs a bakery.
-
-She uses this prompt:
-
-> Act as a marketing expert.
-> Create a social media plan for my bakery in Abuja.
-> Focus on Instagram and WhatsApp.
-> Include sample posts.
-
-Result: Increased sales by 30%.
-
-Prompting = Profit.
+### Lab 2: Produce structured output
+Write a prompt that forces AI to respond in:
+- a table
+- a checklist
+- a 5-step plan
 
 ---
 
 ## 📝 Week 2 Assignment (Graded)
+**Title:** Prompt Improvement Portfolio  
+Submit:
+- 3 prompts using CITSK (different real-life scenarios)
+- for at least 2 prompts: show Prompt v1 → Output v1 → Prompt v2 → Output v2
+- include “Please recap” in each prompt
 
-### 📌 Title:
-
-**My Prompt Engineering Portfolio**
-
-### Instructions:
-
-Submit a document containing:
-
-1. 10 professional prompts
-2. Purpose of each
-3. Output received
-4. Your evaluation
-
-### Format:
-
-✔ PDF
+**Submission format:** Week2_Prompting_YourName.pdf (or .docx)
 
 ---
 
-## 🏅 Skill Badge
-
-After completion:
-
-🥈 **Prompt Master Badge**
-
-You now:
-
-✔ Control AI
-✔ Reduce mistakes
-✔ Work faster
+## ✅ Week 2 Rubric (/100)
+- Correct use of CITSK layers (25)  
+- Quality of refinement loop (20)  
+- Structure/tone control (15)  
+- Accuracy + relevance (15)  
+- Practical usefulness (15)  
+- Proof of testing (10)
 
 ---
 
-## 🌟 Motivation
-
-> “The future belongs to those who can communicate with machines.”
-
-You are learning that future skill.
-
----
-
-## 📌 Completion Checklist
-
-☑ Watched video
-☑ Practiced prompts
-☑ Completed lab
-☑ Submitted assignment
+## ✅ What “Good” Looks Like
+A strong Week 2 submission:
+- includes recap request
+- forces structured output (table/steps)
+- shows improvement from v1 to v2
+- uses real-life tasks (not only “training examples”)
 
 ---
 
-## 🚀 Coming Next: Week 3
-
-### Next Topic:
-
-## 🧠 *AI for Productivity, Automation & Smart Workflows*
-
-You will learn:
-
-✔ Automate tasks
-✔ Build workflows
-✔ Save hours weekly
-✔ Multiply output
+## 💬 Discussion Prompt
+“What prompt mistake do you make most: missing context, vague intent, wrong structure, or weak keywords?”
 
 ---
 
-## ✅ End of Week 2
-
-You are becoming dangerous—in a good way.
-
-Smart.
-Skilled.
-Digital-ready.
-
----
-
+## 📋 Completion Checklist
+☑ Completed Lab 1 and Lab 2  
+☑ Submitted Week 2 assignment  
+☑ Posted discussion response

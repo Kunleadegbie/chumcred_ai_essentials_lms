@@ -1,283 +1,121 @@
-# 🚀 **WEEK 5: Advanced AI Applications & Real-World Projects**
-
-## 🎯 Theme:
-
-**From Learning AI → Applying AI Like a Professional**
-
----
-
-## 📌 WEEK 5 OBJECTIVE
-
-By the end of this week, you will be able to:
-
-✅ Design AI-powered solutions
-✅ Automate tasks
-✅ Analyze data with AI
-✅ Build mini AI systems
-✅ Present AI projects
-✅ Work like an AI consultant
-
-This week transforms you into a **problem-solver**.
+# WEEK 5 — ADVANCED AI APPLICATIONS & REAL-WORLD PROJECTS (CAPSTONE)
+**Theme:** From Learning AI → Applying AI Like a Professional  
+**Estimated time:** 3–5 hours self-study + 1-hour Saturday live recap  
+**Tools needed:** ChatGPT, Google Docs/Sheets, optional Notion/Zapier/Make
 
 ---
 
-## 🧠 WHY THIS WEEK MATTERS
-
+## 🌟 Welcome to Week 5
 Most people stop at “knowing AI tools.”
-
 Professionals go further:
+- design workflows
+- automate systems
+- build solutions
+- show impact with evidence
 
-✔ They design workflows
-✔ They automate systems
-✔ They create solutions
-✔ They save companies money
-✔ They increase productivity
-
-After this week, you will be valuable anywhere.
+This week is your **capstone**.
 
 ---
 
-# 📘 MODULE 1: AI Workflow & Automation
+## 🎥 Recommended Videos (Optional but Strongly Encouraged)
+🎬 **Automate Your Work with AI — Best Use Cases**  
+📌 https://youtu.be/KSOxkhWs2Ic?si=KfY8Zgi-ybwaUHtV
 
-### 🔹 What You Will Learn
-
-* Building AI workflows
-* Task automation
-* AI + Google Sheets
-* AI + Notion
-* AI + Email systems
-
-### 🔹 Example Prompt
-
-> “Create an automated workflow for managing customer inquiries using AI.”
-
-### 🔹 Tools
-
-* Zapier
-* Make.com
-* ChatGPT
-* Google Workspace
-
----
-
-## 🎥 AI Automation & Productivity/AI Automation for Beginners
-*Title: “Automate Your Work with AI — Best Use Cases”*
-📌 https://youtu.be/KSOxkhWs2Ic?si=KfY8Zgi-ybwaUHtV 
-
----
-
-# 📘 MODULE 2: AI for Data Analysis & Decision Making
-
-### 🔹 What You Will Learn
-
-* Data cleaning with AI
-* Insight generation
-* Report writing
-* Visualization prompts
-
-### 🔹 Example Prompt
-
-> “Analyze this dataset and give business insights.”
-
----
-## 🎥 AI for Data Analysis
-*Title: “Use AI to Analyze Data — ChatGPT for Excel & Sheets”*
+🎬 **Use AI to Analyze Data — ChatGPT for Excel & Sheets**  
 📌 https://youtu.be/FKLr3ft8ea0?si=gNhDis8srkwZieeD
 
----
-
-# 📘 MODULE 3: Building Mini AI Systems
-
-### 🔹 What You Will Learn
-
-* Creating chatbots
-* Knowledge assistants
-* Helpdesk bots
-* FAQ systems
-
-### 🔹 Tools
-
-* ChatGPT Custom GPTs
-* Botpress
-* Flowise
-* Voiceflow
-
----
-##🎥 Build a Chatbot with AI/Build Your First AI Assistant
-*Title: “Create AI Chatbots Without Coding”*
+🎬 **Create AI Chatbots Without Coding**  
 📌 https://youtu.be/-8_9G9fwN-Q?si=Qm-n73Iy8HliSoto
 
----
-
-# 📘 MODULE 4: AI Project Management
-
-### 🔹 What You Will Learn
-
-* Planning AI projects
-* Risk assessment
-* Documentation
-* Client communication
-
-### 🔹 Template
-
-Students receive:
-✔ AI Project Proposal
-✔ Implementation Plan
-✔ Risk Register
-✔ Delivery Checklist
-
----
-## 🎥 Managing AI Projects
-*Title: “AI Skills Every Project Manager MUST Master“*
+🎬 **AI Skills Every Project Manager MUST Master**  
 📌 https://youtu.be/ZL8PBS7WRAs?si=tzsmn4o2Y3GR2P0s
 
----
-
-# 📘 MODULE 5: Advanced Prompt Engineering
-
-### 🔹 What You Will Learn
-
-* Role prompting
-* Chain-of-thought
-* Context engineering
-* Output structuring
-
-### 🔹 Master Prompt
-
-> “You are an AI consultant. Design a complete solution for any business using AI prompt"
-
----
-## 🎥 Video: Advanced Prompting
-*Title: Discovered The Perfect ChatGPT Prompt Formula”*
+🎬 **Discovered The Perfect ChatGPT Prompt Formula**  
 📌 https://youtu.be/pmzZF2EnKaA?si=pNVnrRaR3ruruB58
 
----
-
-# 🛠️ PRACTICAL LAB — WEEK 5 CAPSTONE PROJECT
-
-## 📍 Project Title:
-
-**My Real-World AI Solution**
-
-Students must solve **one real problem**.
+🎬 **DIY (Optional): How to Make Your Pictures Talk Using Free AI Apps**  
+📌 https://youtu.be/OKa5q8DTy8U?si=lQImuC6u0D0q-DcQ
 
 ---
 
-### ✅ Choose One Track:
-
-#### 🏢 Business Track
-
-* Customer support bot
-* Sales automation
-* Marketing automation
-
-#### 📊 Data Track
-
-* Sales analysis
-* Credit risk model
-* Performance dashboard
-
-#### 🎓 Education Track
-
-* Study assistant
-* Quiz generator
-* Learning planner
-
-#### 💼 Career Track
-
-* Job application system
-* Interview trainer
-* Resume optimizer
+## 🎯 Week 5 Objective
+By the end of Week 5 you will be able to:
+✅ design AI-powered solutions  
+✅ automate tasks  
+✅ analyze data with AI  
+✅ build mini AI systems  
+✅ present AI projects like a consultant  
 
 ---
 
-### 📦 Project Deliverables
-
-Submit:
-
-1️⃣ Problem Description
-2️⃣ AI Workflow Diagram
-3️⃣ Prompts Used
-4️⃣ Output Screenshots
-5️⃣ Business Impact Analysis
+## 📘 Modules (Quick Summary)
+**1) Workflows & Automation** — Zapier/Make + ChatGPT  
+**2) AI for Data Analysis** — cleaning, insights, visualization prompts  
+**3) Mini AI Systems** — chatbot/FAQ assistant/helpdesk  
+**4) AI Project Management** — planning, risks, documentation  
+**5) Advanced Prompting** — roles, context engineering, structured outputs
 
 ---
 
-# 📝 Submission Format
+## 🛠 Week 5 Capstone Project (Mandatory)
+**Project Title:** My Real-World AI Solution  
 
-Name file:
+Choose ONE track:
+- Business: customer support bot / sales automation / marketing automation  
+- Data: sales analysis / dashboard / risk analysis  
+- Education: study assistant / quiz generator  
+- Career: job application system / interview trainer
 
-> `Week5_AI_Project_YourName.pdf`
+### Deliverables (must include)
+1) Problem description  
+2) AI workflow diagram  
+3) Prompts used  
+4) Output screenshots  
+5) Business impact analysis + KPIs  
+6) Next steps (how you’ll improve it)
 
----
-
-# 🌟 BONUS: INDUSTRY CASE STUDIES
-
-### Case 1: SME Automation
-
-Saved ₦500k/month using AI.
-
-### Case 2: HR Department
-
-Reduced hiring time by 60%.
-
-### Case 3: Startup
-
-Built MVP with AI in 3 weeks.
+**Submission format:** Week5_AI_Project_YourName.pdf
 
 ---
 
-# 💬 DO-IT-YOURSELF (DIY)
-
-Watch the video below and create your own Talking Pictures. You can post what you have created for public to see and post the link via your "Help & Support" page 
-
-🎥 How to Make Your Pictures Talk Using Free AI Apps (No Editing or Paid Tools Needed)
-
-🔗 https://youtu.be/OKa5q8DTy8U?si=lQImuC6u0D0q-DcQ
-
----
-
-# 🧭 WEEK 5 REFLECTION
-
-Answer:
-
-1. What problem did I solve?
-2. What skill did I master?
-3. How marketable am I now?
-4. Who can pay for this skill?
+## ✅ Week 5 Rubric (/100)
+- Problem clarity + target user (15)  
+- Workflow diagram + logic (20)  
+- Prompts quality + structure (20)  
+- Outputs + screenshots (15)  
+- Business impact + KPIs (20)  
+- Presentation polish (10)
 
 ---
 
-# 🎯 SKILLS YOU NOW POSSESS
-
-After Week 5, you can:
-
-✅ Build AI systems
-✅ Automate workflows
-✅ Analyze business data
-✅ Design solutions
-✅ Lead AI projects
-
-You are now **industry-ready**.
+## 👥 Peer Review (International Standard)
+Review 2 classmates using this checklist:
+- Is the problem clear?  
+- Does the workflow make sense?  
+- Are prompts reusable?  
+- Are outputs shown?  
+- Is impact measurable?
 
 ---
 
-# 🚀 MOTIVATION
-
-> “Skills pay bills.
-> AI skills pay globally.”
-
----
-
-# 📋 COMPLETION CHECKLIST
-
-Before moving to Week 6:
-
-☑ Project submitted
-☑ Workflow built
-☑ Automation tested
-☑ Peer reviews done
-☑ Reflection completed
+## ✅ What “Good” Looks Like
+A strong Week 5 capstone:
+- feels like a mini system (not just one prompt)
+- has screenshots
+- has KPIs (time saved, response speed, errors reduced)
+- has a clear next step
 
 ---
 
+## 💬 Discussion Prompt
+“What is the simplest AI solution you can build that people will pay you for?”
+
+---
+
+## 📋 Completion Checklist
+☑ Selected track  
+☑ Built workflow diagram  
+☑ Added prompts + outputs  
+☑ Added impact + KPIs  
+☑ Submitted capstone  
+☑ Completed peer reviews

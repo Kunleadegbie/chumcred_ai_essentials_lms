@@ -1,286 +1,173 @@
-# 🎓 **WEEK 6: Certification, Portfolio & Career Launch**
-
-## 🌟 Theme:
-
-**From AI Learner → Certified AI Professional**
-
----
-
-## 🎯 WEEK 6 OBJECTIVE
-
-By the end of this week, every student will:
-
-✅ Have a professional AI portfolio
-✅ Own a certification
-✅ Build a personal brand
-✅ Apply for jobs/freelance roles
-✅ Know how to monetize AI skills
-✅ Become a Chumcred Ambassador
+# WEEK 6 — CERTIFICATION, PORTFOLIO & CAREER LAUNCH
+**Theme:** From AI Learner → Certified AI Professional  
+**Estimated time:** 3–5 hours self-study + 1-hour Saturday live recap  
+**Tools needed:** ChatGPT, Google Drive/Notion, LinkedIn
 
 ---
 
-# 🧠 WHY WEEK 6 MATTERS
-
-Most courses stop at “completion.”
-
-Your course ends with **transformation**.
-
-Graduates will leave with:
-
-✔ Proof of skill
-✔ Confidence
-✔ Market value
-✔ Direction
-
-This is what makes your program premium.
+## 🌟 Welcome to Week 6
+Most courses stop at “completion.”  
+This course ends with **transformation**:
+Proof of skill + confidence + market value + direction.
 
 ---
 
-# 📘 MODULE 1: Building Your AI Portfolio
+## 🎥 Recommended Videos (Optional but Strongly Encouraged)
+🎬 **How to Build a Professional Portfolio (AI & Tech)**  
+📌 https://youtu.be/IDuBsWmMWus?si=V60XmeGIOnPW1XdG
 
-### 🔹 What You Will Learn
+🎬 **How to get started with tech (Certification Preparation)**  
+📌 https://youtu.be/CxD-pl3JBNE?si=Cto0IcO0OS9JJWET
 
-* Structuring portfolios
-* Writing case studies
-* Showcasing AI projects
-* GitHub + Notion portfolios
-* Google Drive showcase
+🎬 **How to Build a $10M/Year Personal Brand**  
+📌 https://youtu.be/NN8aw7eyruU?si=zrXWf56xkvZ-btbx
 
----
+🎬 **How to get your first tech job**  
+📌 https://youtu.be/5GjxTr0tAC8?si=5LRAHk7yf8xpAMIB
 
-### 📁 Portfolio Template
-
-Students must include:
-
-1️⃣ Profile summary
-2️⃣ Top 3 AI projects
-3️⃣ Workflow screenshots
-4️⃣ Business impact
-5️⃣ Testimonials
-6️⃣ Contact info
-
----
-## 🎥 Build Your Tech Portfolio
-*Title: “How to Build a Professional Portfolio (AI & Tech)”*
-📌 https://youtu.be/IDuBsWmMWus?si=V60XmeGIOnPW1XdG 
-
----
-
-# 📘 MODULE 2: Professional Certification & Assessment
-
-### 🔹 Final Examination
-
-Students complete:
-
-✔ 10 AI scenario questions
-✔ 2 case studies
-✔ 1 practical project defense
-
----
-
-### 🏅 Certification Levels
-
-| Score | Level  |
-| ----- | ------ |
-| 85%+  | Gold   |
-| 70–84 | Silver |
-| 60–69 | Bronze |
-
----
-## 🎥 Video: Preparing for Tech Certification
-*Title: “How to get started with tech”*
-📌 https://youtu.be/CxD-pl3JBNE?si=Cto0IcO0OS9JJWET 
-
----
-
-# 📘 MODULE 3: Personal Branding & Visibility
-
-### 🔹 What You Will Learn
-
-* LinkedIn branding
-* Twitter/X presence
-* Thought leadership
-* Content strategy
-* Authority building
-
----
-
-### ✍ Sample Headline
-
-> Certified AI Practitioner | Automation Specialist | Data Analyst
-
----
-
-## 🎥 Video: Build Your Personal Brand
-*Title: “How to Build a $10M/Year Personal Brand”*
-📌 https://youtu.be/NN8aw7eyruU?si=zrXWf56xkvZ-btbx 
-
----
-
-# 📘 MODULE 4: Job Search & Freelancing Strategy
-
-### 🔹 What You Will Learn
-
-* Global job platforms
-* Freelancing profiles
-* Proposal writing
-* Client pitching
-* Interview prep
-
----
-
-### 🌍 Platforms
-
-* Upwork
-* Fiverr
-* Toptal
-* LinkedIn Jobs
-* RemoteOK
-
----
-## 🎥 Video: How to Get Your First Tech Job
-*Title: ”how to get your first tech job”*
-📌 https://youtu.be/5GjxTr0tAC8?si=5LRAHk7yf8xpAMIB 
-
----
-
-# 📘 MODULE 5: Monetizing AI Skills
-
-### 🔹 What You Will Learn
-
-* Consulting
-* Coaching
-* Micro-agencies
-* SaaS ideas
-* AI products
-
----
-
-### 💼 Monetization Paths
-
-| Path        | Monthly Potential |
-| ----------- | ----------------- |
-| Freelancing | ₦200k – ₦800k     |
-| Consulting  | ₦500k+            |
-| SaaS MVP    | Unlimited         |
-| Training    | ₦300k+            |
-
----
-##🎥 3. Make Money with AI Services
-*Title: “5 Genius Ways to Make Money From Home in 2026 (Using AI)”*
+🎬 **5 Genius Ways to Make Money From Home in 2026 (Using AI)**  
 📌 https://youtu.be/pLs6ZKEDixQ?si=ZbgS55RPuQTfBGyi
 
----
-
-# 🛠️ FINAL CAPSTONE — CAREER LAUNCH PROJECT
-
-## 📍 Project Title:
-
-**My AI Career Blueprint**
+🎬 **Getting job fast using the Chumcred TalentIQ**  
+📌 https://youtu.be/57lO3K_3E0c?si=60-ehiNTxodixQbu
 
 ---
 
-### 📦 Submission Must Include:
-
-1️⃣ Personal Portfolio Link
-2️⃣ Updated CV
-3️⃣ LinkedIn Profile
-4️⃣ 2 Job Applications
-5️⃣ 1 Freelance Proposal
-6️⃣ Income Plan (6 months)
-
----
-
-# 📝 Submission Format
-
-> `Week6_CareerLaunch_YourName.pdf`
+## 🎯 Week 6 Objective
+By the end of this week, every student will:
+✅ have a professional AI portfolio  
+✅ earn certification  
+✅ build personal brand visibility  
+✅ apply for jobs/freelance roles  
+✅ know how to monetize AI skills  
 
 ---
 
-## 🎥 Video: Getting job fast using the Chumcred TalentIQ
+## 📘 Module 1: Build Your AI Portfolio
+Your portfolio must include:
+1) Profile summary  
+2) Top 3 AI projects  
+3) Workflow screenshots  
+4) Business impact  
+5) Testimonials (optional)  
+6) Contact info
 
-Chumcred TalentIQ is an AI-powered talent intelligence engine that helps job seekers measure, improve, and predict job-market success. It combines global job search with smart tools like ATS SmartMatch (CV vs. Job Description scoring + explanation), Resume & Cover Letter generation, Skills Extraction, Eligibility Check, Job Recommendations, and InterviewIQ (practice questions, scoring, and coaching).
-
-📌 [https://youtu.be/57lO3K_3E0c?si=60-ehiNTxodixQbu]
-
----
-
-# 🌟 BONUS: MENTORSHIP SESSION
-
-Top students receive:
-
-✔ 1-on-1 mentoring
-✔ Job referrals
-✔ Project collaborations
-✔ Alumni community access
-
-
+Where to host:
+- Notion
+- GitHub
+- Google Drive showcase
 
 ---
 
-# 💬 COMMUNITY ACTIVITY
+## 📘 Module 2: Certification & Assessment
+### Final assessment format
+- 10 AI scenario questions
+- 2 case studies
+- 1 practical project defense (your capstone)
 
-### Alumni Network
-
-Students join:
-
-✅ WhatsApp group
-✅ Telegram channel
-✅ Monthly meetups
-✅ Job sharing hub
-
----
-
-# 🧭 FINAL REFLECTION
-
-Students answer:
-
-1. Who was I before this program?
-2. What skills do I have now?
-3. How much am I worth in the market?
-4. Where will I be in 1 year?
-5. How will I give back?
+### Certification levels
+85%+ = Gold  
+70–84 = Silver  
+60–69 = Bronze  
 
 ---
 
-# 🎯 GRADUATE PROFILE
-
-After Week 6, your graduates are:
-
-✅ Certified
-✅ Employable
-✅ Confident
-✅ Visible
-✅ Bankable
-
-They are **Chumcred AI Professionals**.
+## 📘 Module 3: Personal Branding
+Minimum requirement:
+- LinkedIn headline + About
+- “Featured” section (portfolio link + capstone)
+- 2 posts showing what you built
 
 ---
 
-# 🎉 GRADUATION CEREMONY (OPTIONAL BUT POWERFUL)
+## 📘 Module 4: Job Search & Freelancing
+Platforms:
+Upwork • Fiverr • LinkedIn Jobs • RemoteOK • Toptal
 
-You can host:
-
-✔ Virtual graduation
-✔ Certificate presentation
-✔ Best student awards
-✔ Testimonials recording
-✔ Social media campaign
+Proposal formula:
+1) I understand your problem  
+2) My approach  
+3) What you will get  
+4) Timeline + price  
+5) One question to start
 
 ---
 
-# 📋 COMPLETION CHECKLIST
+## 📘 Module 5: Monetizing AI Skills
+Paths:
+Freelancing • Consulting • Training • SaaS ideas
 
-☑ Portfolio done
-☑ CV updated
-☑ Certification passed
-☑ Career plan submitted
+---
+
+## 🛠 Final Capstone (Week 6 Career Launch Project)
+**Project Title:** My AI Career Blueprint  
+Submit:
+1) Portfolio link  
+2) Updated CV  
+3) LinkedIn profile link  
+4) 2 job applications (proof/link)  
+5) 1 freelance proposal  
+6) 6-month income plan
+
+**Submission format:** Week6_CareerLaunch_YourName.pdf (or .docx)
+
+---
+
+## ✅ Certificate Eligibility Rules (Clear + Global)
+To receive certificate, student must:
+- submit at least **4 out of 6 weekly assignments**, AND  
+- submit Week 6 Career Launch project, AND  
+- score **60%+** in final assessment
+
+---
+
+## ✅ Week 6 Rubric (/100)
+- Portfolio quality + proof (25)  
+- CV + LinkedIn quality (20)  
+- Job applications proof (15)  
+- Freelance proposal quality (15)  
+- 6-month income plan (15)  
+- Reflection + clarity (10)
+
+---
+
+## 🧠 Week 6 Post-Test (10 questions)
+1) Portfolio must show: A certificates only / **B proof of projects** / C photos / D school results  
+2) Case study should include: A problem only / B tools only / **C problem→solution→impact** / D memes  
+3) Best LinkedIn strategy: A once/year / **B consistent value posts** / C spam / D no profile  
+4) Proposal should include: A greeting only / B price only / **C approach + deliverables** / D nothing  
+5) Monetize AI means: A learn only / **B solve problems** / C avoid clients / D hide work  
+6) Proof is stronger than: A excuses / B certificates only / **C portfolio + demos** / D silence  
+7) Applications improve when CV is: A generic / **B tailored** / C empty / D too long  
+8) Good portfolio includes: A contact / B screenshots / C results / **D all**  
+9) Best habit after graduation: A stop / **B build+share+apply** / C complain / D wait  
+10) Certification should reflect: A speed / **B score+competence** / C luck / D vibes  
+
+---
+
+## ✅ What “Good” Looks Like
+A strong Week 6 submission:
+- portfolio has 2–3 case studies with screenshots
+- includes real job links or proof of submission
+- freelance offer has package + timeline + price
+- income plan includes measurable targets
+
+---
+
+## 💬 Final Reflection Prompt
+Who was I before this program?  
+What skills do I have now?  
+How much am I worth in the market?  
+Where will I be in 1 year?  
+How will I give back?
+
+---
+
+## 📋 Completion Checklist
+☑ Portfolio done  
+☑ CV updated  
+☑ Certification passed  
+☑ Career plan submitted  
 ☑ Alumni registered
 
----
-
-# 💎 FINAL MESSAGE TO STUDENTS
-
-> “This is not the end.
-> This is your beginning.”
-
+**Final message:** “This is not the end. This is your beginning.”

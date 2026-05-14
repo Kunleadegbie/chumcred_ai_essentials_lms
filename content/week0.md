@@ -1,302 +1,143 @@
-
-# 🌟 **WEEK 0 — ORIENTATION & SUCCESS BLUEPRINT**
-
-## *AI Essentials: From Zero to Confident AI User*
-
----
-
-## 🎉 Welcome to Your AI Transformation Journey
-
-Congratulations!
-
-You have successfully enrolled in the **AI Essentials: From Zero to Confident AI User** program.
-
-This is not just a course.
-It is a **career upgrade, mindset shift, and digital empowerment journey.**
-
-Over the next 6 weeks, you will learn how to:
-
-✅ Use AI confidently
-✅ Work smarter and faster
-✅ Build digital products
-✅ Improve your income potential
-✅ Stay relevant in the digital economy
-
-> 🚀 *If you take this seriously, this program can change your life.*
+# WEEK 0 — ORIENTATION 
+**Theme:** Start Strong. Finish Strong.  
+**Estimated time:** 30–60 minutes  
+**Purpose:** Help you understand how the LMS works, how to learn weekly, how to submit assignments, and how to get support.
 
 ---
 
-## 👋 Message from Your Instructor
+## 🌟 Welcome to Chumcred Academy — AI Essentials (6 Weeks)
+Welcome! You’re about to build a real-life AI skill that you can use for:
+- school and learning
+- work productivity
+- business growth
+- career advancement
+- freelancing and income
 
-Dear Participant,
-
-Welcome to Chumcred Academy’s flagship AI training.
-
-This course was designed for individuals who are ready to:
-
-* Upgrade their skills
-* Increase their value
-* Build modern careers
-* Embrace technology
-* Become future-ready
-
-You were selected because we believe you have the potential to succeed.
-
-Your success depends on three things:
-
-✔ Commitment
-✔ Consistency
-✔ Practice
-
-If you give this program your best, you will finish strong.
-
-Welcome onboard.
-
-**— Chumcred Academy Team**
+This program is designed to be simple, practical, and beginner-friendly.
 
 ---
 
-## 🧭 Your 6-Week Learning Roadmap
-
-Here is how your journey is structured:
-
-| Week   | Theme              | Focus            |
-| ------ | ------------------ | ---------------- |
-| Week 0 | Orientation        | Setup & Mindset  |
-| Week 1 | AI Foundations     | Understanding AI |
-| Week 2 | Prompt Engineering | Talking to AI    |
-| Week 3 | Data & Analysis    | Smart Decisions  |
-| Week 4 | Content & Design   | Creativity       |
-| Week 5 | Websites & No-Code | Building Tools   |
-| Week 6 | Monetization       | Making Money     |
-
-Each week includes:
-
-✔ Video Lessons
-✔ Reading Materials
-✔ Practical Tasks
-✔ Assignments
-✔ Assessments
-✔ Grades
+## 🎯 Week 0 Outcomes
+By the end of Week 0, you will:
+✅ Understand how the LMS works (weeks, progress, grades)  
+✅ Know how assignments are submitted and graded  
+✅ Know how Saturday live recap sessions work  
+✅ Know how to get help using Help & Support  
+✅ Understand the rules for certificate eligibility  
+✅ Set your personal learning goal for the 6 weeks  
 
 ---
 
-## 🖥️ How This Platform Works
+## 🧭 How the Program Works (Simple)
+Each week follows this flow:
 
-### 📌 1. Your Dashboard
-
-Your dashboard shows:
-
-* Your progress
-* Completed weeks
-* Grades
-* Certificates
-* Announcements
-
-Always check your dashboard.
+1) **Learn** (read weekly content + watch recommended videos)  
+2) **Practice** (hands-on lab tasks)  
+3) **Submit** (weekly assignment)  
+4) **Get feedback** (grade + comments)  
+5) **Improve** (use feedback to get better)
 
 ---
 
-### 📌 2. Weekly Learning Pages
-
-Each week contains:
-
-* Study content
-* Videos
-* Exercises
-* Assignment upload
-* Feedback
-
-You must complete each week before moving forward.
+## 📚 Weekly Learning Rhythm
+**Recommended weekly routine**
+- Day 1–2: Read week content
+- Day 3–4: Do labs and practice prompts
+- Day 5: Prepare assignment
+- Day 6 (Saturday): Join live recap + ask questions
+- Day 7: Submit (if not submitted yet)
 
 ---
 
-### 📌 3. Assignments & Grading
+## 🧩 LMS Navigation Guide
+### 1) Course Progress
+- Weeks 1–6 are displayed as buttons
+- Locked weeks stay locked until unlocked (based on progress/admin settings)
+- Week 0 is always open
 
-All assignments:
+### 2) Grades (All Weeks)
+- You can view your grades per week on your dashboard
+- If a grade is not released yet, it will show “—” or “not yet released”
 
-✔ Must be submitted online
-✔ Are graded by facilitators
-✔ Receive feedback
-✔ Affect your final score
-
-Late submissions may affect your grade.
-
----
-
-## 📚 Learning Format (How You Will Learn)
-
-This course uses **blended learning**:
-
-🎥 Video Learning
-📖 Guided Reading
-🧠 Practice Tasks
-🛠 Hands-on Projects
-📝 Assignments
-💬 Feedback
-
-You will learn by **doing**, not just reading.
+### 3) Help & Support
+Use this when you:
+- don’t understand a topic
+- have a technical issue
+- need clarity on assignment requirements
 
 ---
 
-## ⏰ Study Expectations
+## 📤 How Assignment Submission Works
+For each week (Week 1–6):
+1) Open the week content
+2) Scroll to **Assignment Submission**
+3) Upload your file (PDF/DOCX/PNG/JPG)
+4) Click **Submit Assignment**
+5) Confirm you see “✅ Submitted”
 
-To succeed, we recommend:
-
-| Activity    | Time         |
-| ----------- | ------------ |
-| Study       | 3–4 hrs/week |
-| Practice    | 2 hrs/week   |
-| Assignments | 1–2 hrs/week |
-
-Minimum commitment: **5 hours per week**
-
-The more you practice, the better you become.
+**Tip:** Always name your file properly:
+- `Week2_Prompting_YourName.pdf`
 
 ---
 
-## 🧠 Success Mindset (Very Important)
+## ✅ How Grading Works (International-style)
+Each week is graded **/100** using a simple rubric.
 
-Before you continue, understand this:
-
-❌ This is NOT a “watch and forget” course
-❌ This is NOT for lazy learners
-❌ This is NOT for shortcuts
-
-This is for people who are ready to grow.
-
-Adopt this mindset:
-
-✔ I will be consistent
-✔ I will practice daily
-✔ I will ask questions
-✔ I will finish strong
+Grading checks:
+- clarity and structure
+- correctness and relevance
+- proof you tested prompts/workflows
+- practical usefulness
+- professionalism
 
 ---
 
-## 💼 What You Will Be Able to Do After This Program
-
-By the end of Week 6, you should be able to:
-
-✅ Use ChatGPT and AI tools professionally
-✅ Analyze data with AI
-✅ Create digital content
-✅ Build websites with AI
-✅ Design business solutions
-✅ Monetize AI skills
-✅ Support businesses
-✅ Freelance or consult
-
-These are **marketable skills**.
+## 🎓 Certificate Eligibility (Clear Rule)
+To receive certificate, you must:
+- submit at least **4 out of 6 weekly assignments**, AND  
+- submit Week 6 Career Launch project, AND  
+- score **60%+** in the final assessment
 
 ---
 
-## 📜 Rules & Code of Conduct
+## 🔒 Rules for Safe AI Usage (Very Important)
+Never paste:
+- passwords, OTPs, PINs
+- private bank details
+- confidential company information
+- private customer data
 
-All participants must:
-
-✔ Respect facilitators
-✔ Respect fellow students
-✔ Avoid plagiarism
-✔ Submit original work
-✔ Maintain professionalism
-
-Any misconduct may lead to suspension.
-
----
-
-## 🛠 Technical Requirements
-
-Ensure you have:
-
-✔ Smartphone / Laptop
-✔ Internet Access
-✔ Email Address
-✔ Google Account
-✔ PDF Reader
-
-Recommended:
-
-✔ Headset
-✔ Notebook
-✔ Pen
+Always:
+- verify facts that matter
+- keep sensitive data private
 
 ---
 
-## 🎯 Certification Requirements
+## 🎯 Set Your Personal Goal (Mandatory)
+Write your goal for this program:
+**Example goals**
+- “I want to use AI to write better reports.”
+- “I want to build AI workflows for my business.”
+- “I want to become employable with a portfolio.”
 
-To earn your certificate, you must:
-
-✔ Complete all weeks
-✔ Submit all assignments
-✔ Score at least 60%
-✔ Participate actively
-
-Certificates are issued only to committed learners.
+✅ **Task:** Write your goal in 2 sentences and save it.
 
 ---
 
-## 🤝 Support & Communication
-
-If you need help:
-
-📧 Contact Admin
-💬 Use platform messages
-📢 Check announcements
-
-Do not struggle in silence.
-
-We are here to support you.
+## 💬 Community Activity (Week 0)
+Post in your group:
+1) Your name
+2) Your goal for the program
+3) One thing you want AI to help you do
 
 ---
 
-## 🔐 Your Commitment Pledge
+## 📋 Week 0 Completion Checklist
+☑ Read this orientation page  
+☑ Understand LMS navigation  
+☑ Know how to submit assignments  
+☑ Know how to ask for help  
+☑ Set your goal  
+☑ Post in community group  
 
-Before continuing, take a moment to commit:
-
-> ✍️ *I commit to completing this program with discipline, focus, and integrity. I will give my best and finish strong.*
-
----
-
-## 🚀 Next Step: Unlock Your Journey
-
-When you click the button below, you confirm that:
-
-✔ You have read this orientation
-✔ You understand the rules
-✔ You are ready to proceed
-✔ You are committed
-
-After clicking, **Week 1 will unlock.**
-
----
-
-### ✅ Click the Button Below to Continue
-
-👉 **“I have read and understood the Orientation”**
-
----
-
-## 🌟 Final Motivation
-
-Remember:
-
-You did not join this program by accident.
-
-You are here because:
-
-* You want more
-* You want better
-* You want growth
-* You want success
-
-Stay focused.
-
-Stay consistent.
-
-Your future starts here.
-
-**Welcome to AI Essentials. 🚀**
-
----
-Chumcred Academy - 2026
+**See you in Week 1.**

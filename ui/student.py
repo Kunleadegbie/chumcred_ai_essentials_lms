@@ -136,6 +136,81 @@ def _fetch_all_assignments_for_student(conn, user_id: str):
     return out, cols
 
 
+# ------------------------------
+# ✅ NEW: Resources helpers
+# ------------------------------
+def _read_md(path: str) -> str:
+    if os.path.exists(path):
+        with open(path, "r", encoding="utf-8") as f:
+            return f.read()
+    return ""
+
+
+def _read_bytes(path: str) -> bytes | None:
+    if os.path.exists(path):
+        with open(path, "rb") as f:
+            return f.read()
+    return None
+
+
+def _render_resources_page(user):
+    """
+    Resources page:
+    - shows Resources index markdown
+    - provides download buttons for template markdown files
+    """
+    st.markdown("### 📚 Resources & Templates")
+
+    if st.button("⬅️ Return to Dashboard", key="student_resources_back_btn"):
+        st.session_state["page"] = None
+        st.rerun()
+
+    st.caption("Use these templates to improve your prompts, workflows, capstone project, and portfolio.")
+
+    # Index page
+    resources_md_path = os.path.join(CONTENT_DIR, "resources.md")
+    resources_md = _read_md(resources_md_path)
+
+    if resources_md:
+        st.markdown(resources_md)
+    else:
+        st.warning("resources.md not found. Add it to: content/resources.md")
+
+    st.divider()
+    st.subheader("⬇️ Download Templates")
+
+    templates_dir = os.path.join(CONTENT_DIR, "templates")
+
+    templates = [
+        ("Prompt Template (CITSK+)", os.path.join(templates_dir, "Prompt_Template_CITSK.md")),
+        ("Workflow Template (SMART)", os.path.join(templates_dir, "Workflow_Template_SMART.md")),
+        ("Capstone Project Template (Week 5)", os.path.join(templates_dir, "Capstone_Project_Template_Week5.md")),
+        ("Portfolio Case Study Template (Week 6)", os.path.join(templates_dir, "Portfolio_Case_Study_Template_Week6.md")),
+    ]
+
+    for title, path in templates:
+        data = _read_bytes(path)
+        col1, col2 = st.columns([2, 1])
+        with col1:
+            st.markdown(f"**{title}**")
+            st.caption(path)
+        with col2:
+            if data:
+                st.download_button(
+                    label="Download .md",
+                    data=data,
+                    file_name=os.path.basename(path),
+                    mime="text/markdown",
+                    key=f"dl_{os.path.basename(path)}",
+                    use_container_width=True,
+                )
+            else:
+                st.button("Missing file", disabled=True, key=f"missing_{os.path.basename(path)}")
+
+    st.divider()
+    st.info("Tip: Copy a template into Google Docs, fill it, then export PDF and upload as your assignment.")
+
+
 def student_router(user):
     st.title("🎓 AI Essentials — Student Dashboard")
 
@@ -151,6 +226,13 @@ def student_router(user):
             st.session_state["page"] = None
             st.rerun()
         support_page(user)
+        return
+
+    # ------------------------------
+    # ✅ NEW: Resources page routing
+    # ------------------------------
+    if st.session_state.get("page") == "resources":
+        _render_resources_page(user)
         return
 
     progress = get_progress(user_id)
@@ -471,9 +553,7 @@ def student_router(user):
         resolved = _resolve_certificate_path(cert_row.get("certificate_path") or cert_row.get("path") or "")
 
         if (not current_ver) or (current_ver != EXPECTED_TEMPLATE_VERSION) or (resolved is None):
-            # force regeneration using new template/version
             issue_certificate(user_id, _get_full_name())
-            # reload cert row
             with read_conn() as conn:
                 cert_row = _get_certificate_row(conn, user_id)
 
@@ -534,6 +614,11 @@ def student_router(user):
 
         if st.button("Week 0 (Orientation)", key="week0_btn_sidebar"):
             st.session_state["selected_week"] = 0
+            st.rerun()
+
+        # ✅ NEW: Resources button (does not break existing navigation)
+        if st.button("📚 Resources / Templates", key="student_resources_btn"):
+            st.session_state["page"] = "resources"
             st.rerun()
 
         if st.button("🆘 Help & Support", key="student_help_support_btn"):
